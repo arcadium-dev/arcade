@@ -1,0 +1,40 @@
+name: Create and Push Release Containers
+
+env:
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  release_containers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH access to strata private repos
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.DSO_CICD_SSH_PRIVATE_KEY }}"
+          ssh-add -l
+
+      - name: Create container images
+        run: |
+          make container
+
+      - name: Push release container images to AWS ECR
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.STRATA_SAAS_SANDBOX_AWS_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_STRAWMAN }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_ECR_STRAWMAN }}
+        run: |
+          make push_release_container
+
+      - name: Cleanup SSH
+        run: |
+          ssh-add -D

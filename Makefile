@@ -53,9 +53,12 @@ export ldflags := -s -w -X main.version=$(version) -X main.branch=$(branch) -X m
 # go_version is used to build the containers.
 export go_version := 1.17
 
+# aws_region denotes the region we will be pushing container images to.
+export aws_region := us-west-2
+
 # container_registry is the location where the container images will be pushed to.
-# AWS_ACCOUNT and AWS_REGION are expected to be available in the environment.
-export container_registry="${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/arcadium"
+# AWS_ACCOUNT and is expected to be available in the environment.
+export container_registry="${AWS_ACCOUNT}.dkr.ecr.$(aws_region).amazonaws.com/arcadium"
 
 .PHONY: all
 all: lint test

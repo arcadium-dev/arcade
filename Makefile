@@ -58,7 +58,7 @@ export aws_region := us-west-2
 
 # container_registry is the location where the container images will be pushed to.
 # AWS_ACCOUNT and is expected to be available in the environment.
-export container_registry="${AWS_ACCOUNT}.dkr.ecr.$(aws_region).amazonaws.com/arcadium"
+export container_registry="${AWS_ACCOUNT}.dkr.ecr.$(aws_region).amazonaws.com"
 
 .PHONY: all
 all: lint test
@@ -114,13 +114,13 @@ containers: Dockerfile
 
 push_dev_containers: prefix := dev-
 push_dev_containers: push_release_containers
-	docker tag $(app):$(container_version) $(container_registry)/$(app):$(branch)
-	docker push $(container_registry)/$(app):$(branch)
+	docker tag $(app):$(container_version) $(container_registry)/arcadium/$(app):$(branch)
+	docker push $(container_registry)/arcadium/$(app):$(branch)
 
 push_release_containers:
 	aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(container_registry)
-	docker tag $(app):$(container_version) $(container_registry)/$(app):$(prefix)$(container_version)
-	docker push $(container_registry)/$(app):$(prefix)$(container_version)
+	docker tag $(app):$(container_version) $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
+	docker push $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
 
 # ____ clean artifacts ______________________________________________________________
 

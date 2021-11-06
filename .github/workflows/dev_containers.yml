@@ -27,8 +27,8 @@ jobs:
       - name: Push dev container images to AWS ECR
         env:
           AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
         run: |
           make branch=${{ github.head_ref }} push_dev_containers
 

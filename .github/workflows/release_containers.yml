@@ -17,10 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup SSH access to strata private repos
+      - name: Setup SSH access to private repos
         run: |
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add - <<< "${{ secrets.DSO_CICD_SSH_PRIVATE_KEY }}"
+          ssh-add - <<< "${{ secrets.CI_SSH_PRIVATE_KEY }}"
           ssh-add -l
 
       - name: Create container images
@@ -29,9 +29,9 @@ jobs:
 
       - name: Push release container images to AWS ECR
         env:
-          AWS_ACCOUNT_ID: ${{ secrets.STRATA_SAAS_SANDBOX_AWS_ACCOUNT_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_STRAWMAN }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_ECR_STRAWMAN }}
+          AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           make push_release_container
 

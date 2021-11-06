@@ -33,7 +33,7 @@ export version := $(shell git describe --tags --dirty --abbrev=$(sha_len))
 export container_version := $(subst v,,$(version))
 
 # branch is the name of the current branch
-export branch := $(shell git rev-parse --abbrev-ref HEAD)
+export branch ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 # SHASUM is the sha sum of the latest commit
 export shasum := $(shell git rev-parse --short=$(sha_len) HEAD)

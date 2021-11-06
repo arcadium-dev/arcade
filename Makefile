@@ -118,7 +118,7 @@ push_dev_containers: push_release_containers
 	docker push $(container_registry)/arcadium/$(app):$(branch)
 
 push_release_containers:
-	aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(container_registry)
+	aws ecr get-login-password --region $(aws_region) | docker login --username AWS --password-stdin $(container_registry)
 	docker tag $(app):$(container_version) $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
 	docker push $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
 

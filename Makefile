@@ -35,8 +35,8 @@ export container_version := $(subst v,,$(version))
 # branch is the name of the current branch
 export branch ?= $(shell git rev-parse --abbrev-ref HEAD)
 
-# SHASUM is the sha sum of the latest commit
-export shasum := $(shell git rev-parse --short=$(sha_len) HEAD)
+# commit is the shasum of the latest commit
+export commit := $(shell git rev-parse HEAD)
 
 # date is the date of the build
 export date := $(shell date -u --iso-8601='seconds')
@@ -92,6 +92,14 @@ unit_test:
 
 test: unit_test
 
+# ____ build _________________________________________________________________________
+
+.PHONY: build
+
+build:
+	@printf "\nBuilding $(app)...\n"
+	@CGO_ENABLED=0 go build -ldflags "$(ldflags)" -o ./dist/$(app) ./cmd/$(app)
+
 # ____ container artifacts ______________________________________________________________
 
 .PHONY: containers push_release_containers push_dev_containers
@@ -99,13 +107,25 @@ test: unit_test
 containers: Dockerfile
 	DOCKER_BUILDKIT=1 docker build \
 		--ssh default \
-		--build-arg app=$(app) \
-		--build-arg user=$(app) \
+		--target debug \
+		--build-arg user=arcadium \
 		--build-arg go_version=$(go_version) \
 		--build-arg version=$(version) \
 		--build-arg branch=$(branch) \
 		--build-arg commit=$(commit) \
-		--build-arg build_date=$(build_date) \
+		--build-arg build_date=$(date) \
+		--rm --force-rm \
+		--tag $(app)-debug:latest \
+		--tag $(app)-debug:$(container_version) \
+		.
+	DOCKER_BUILDKIT=1 docker build \
+		--ssh default \
+		--build-arg user=arcadium \
+		--build-arg go_version=$(go_version) \
+		--build-arg version=$(version) \
+		--build-arg branch=$(branch) \
+		--build-arg commit=$(commit) \
+		--build-arg build_date=$(date) \
 		--rm --force-rm \
 		--tag $(app):latest \
 		--tag $(app):$(container_version) \

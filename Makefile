@@ -88,7 +88,7 @@ lint: fmt tidy
 
 unit_test:
 	@printf "\nRunning go test...\n"
-	@go test -cover -race ./...
+	@go test -cover -race $$(go list ./... | grep -v /mock)
 
 test: unit_test
 

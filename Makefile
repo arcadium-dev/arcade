@@ -14,6 +14,8 @@
 
 export SHELL := /bin/bash
 
+app := arcade
+
 # sha_len is the length of the sha sum used with the version and the sha
 sha_len := 7
 
@@ -25,16 +27,19 @@ sha_len := 7
 # 5 commits ahead of the release, g07a65db is the git sha of
 # the latest commit, and dirty denotes that there are uncommitted
 # changes to the code.
-version := $(shell git describe --tags --dirty --abbrev=$(sha_len))
+export version := $(shell git describe --tags --dirty --abbrev=$(sha_len))
+
+# container_version is the version with the initial 'v' removed.
+export container_version := $(subst v,,$(version))
 
 # branch is the name of the current branch
-branch := $(shell git rev-parse --abbrev-ref HEAD)
+export branch ?= $(shell git rev-parse --abbrev-ref HEAD)
 
-# SHASUM is the sha sum of the latest commit
-shasum := $(shell git rev-parse --short=$(sha_len) HEAD)
+# commit is the shasum of the latest commit
+export commit := $(shell git rev-parse HEAD)
 
 # date is the date of the build
-date := $(shell date -u --iso-8601='seconds')
+export date := $(shell date -u --iso-8601='seconds')
 
 # ldflags are the go linker flags we pass to the go command.
 #   -s    Omit the symbol table and debug information.
@@ -43,11 +48,22 @@ date := $(shell date -u --iso-8601='seconds')
 #         Set the value of the string variable in importpath named name to value.
 #         This is only effective if the variable is declared in the source code either uninitialized
 #         or initialized to a constant string expression.
-export ldflags := -s -w -X main.version=$(version) -X main.branch=$(branch) -X main.shasum=$(shasum) -X main.date=$(date)
+export ldflags := -s -w -X main.version=$(version) -X main.branch=$(branch) -X main.commit=$(shasum) -X main.date=$(date)
 
+# go_version is used to build the containers.
+export go_version := 1.17
+
+# aws_region denotes the region we will be pushing container images to.
+export aws_region := us-west-2
+
+# container_registry is the location where the container images will be pushed to.
+# AWS_ACCOUNT and is expected to be available in the environment.
+export container_registry="${AWS_ACCOUNT}.dkr.ecr.$(aws_region).amazonaws.com"
 
 .PHONY: all
 all: lint test
+
+# ____ lint _________________________________________________________________________
 
 .PHONY: fmt
 fmt:
@@ -66,20 +82,69 @@ lint: fmt tidy
 	@printf "\n"
 	@if [[ "$${CI}" == "true" ]]; then $$(exit $$(git status --porcelain | wc -l)); fi
 
-.PHONY: unit_test
+# ____ test _________________________________________________________________________
+
+.PHONY: unit_test test
+
 unit_test:
 	@printf "\nRunning go test...\n"
 	@go test -cover -race $$(go list ./... | grep -v /mock)
 
-.PHONY: test
 test: unit_test
 
+# ____ build _________________________________________________________________________
+
 .PHONY: build
+
 build:
-	@printf "\nRunning go build...\n"
-	@CGO_ENABLED=0 go build -ldflags "$(ldflags)" -o ./dist/arcade ./cmd/arcade
+	@printf "\nBuilding $(app)...\n"
+	@CGO_ENABLED=0 go build -ldflags "$(ldflags)" -o ./dist/$(app) ./cmd/$(app)
+
+# ____ container artifacts ______________________________________________________________
+
+.PHONY: containers push_release_containers push_dev_containers
+
+containers: Dockerfile
+	DOCKER_BUILDKIT=1 docker build \
+		--ssh default \
+		--target debug \
+		--build-arg user=arcadium \
+		--build-arg go_version=$(go_version) \
+		--build-arg version=$(version) \
+		--build-arg branch=$(branch) \
+		--build-arg commit=$(commit) \
+		--build-arg build_date=$(date) \
+		--rm --force-rm \
+		--tag $(app)-debug:latest \
+		--tag $(app)-debug:$(container_version) \
+		.
+	DOCKER_BUILDKIT=1 docker build \
+		--ssh default \
+		--build-arg user=arcadium \
+		--build-arg go_version=$(go_version) \
+		--build-arg version=$(version) \
+		--build-arg branch=$(branch) \
+		--build-arg commit=$(commit) \
+		--build-arg build_date=$(date) \
+		--rm --force-rm \
+		--tag $(app):latest \
+		--tag $(app):$(container_version) \
+		.
+	docker image ls | grep $(app)
+
+push_dev_containers: prefix := dev-
+push_dev_containers: push_release_containers
+	docker tag $(app):$(container_version) $(container_registry)/arcadium/$(app):$(branch)
+	docker push $(container_registry)/arcadium/$(app):$(branch)
+
+push_release_containers:
+	aws ecr get-login-password --region $(aws_region) | docker login --username AWS --password-stdin $(container_registry)
+	docker tag $(app):$(container_version) $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
+	docker push $(container_registry)/arcadium/$(app):$(prefix)$(container_version)
+
+# ____ clean artifacts ______________________________________________________________
 
 .PHONY: clean
 clean:
 	@printf "\nClean...\n"
-	@-rm -f dist/arcade
+	@-rm -f dist/*

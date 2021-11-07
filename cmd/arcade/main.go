@@ -1,32 +1,23 @@
 package main
 
 import (
-	"fmt"
-	l "log"
 	"os"
+	"path/filepath"
+	"runtime"
 
-	"arcadium.dev/build"
-	"arcadium.dev/log"
+	"arcadium.dev/arcade/internal/arcade"
 )
 
+// Build information.
 var (
 	version string
 	branch  string
-	shasum  string
+	commit  string
 	date    string
 )
 
 func main() {
-	info := build.Info(version, branch, shasum, date)
-	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Println(info)
-		os.Exit(0)
-	}
-
-	logger, err := log.New()
-	if err != nil {
-		l.Fatalf("Exiting: %s", err)
-	}
-	logger.Info("msg", "starting")
-	logger.Info(info.Fields()...)
+	os.Exit(
+		arcade.New(filepath.Base(os.Args[0]), version, branch, commit, date, runtime.Version()).Start(os.Args),
+	)
 }

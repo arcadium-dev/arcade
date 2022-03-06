@@ -100,10 +100,13 @@ version:
 
 # ____ container artifacts ___________________________________________________
 
-.PHONY: containers
+.PHONY: containers push_containers
 
 containers:
 	 make -C dockerfiles all
+
+push_containers:
+	make -C dockerfiles push_containers
 
 # ____ clean artifacts _______________________________________________________
 

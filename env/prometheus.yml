@@ -1,0 +1,10 @@
+scrape_configs:
+- job_name: metrics
+  scrape_interval: 10s
+  scheme: https
+  tls_config:
+    ca_file: /etc/certs/rootCA.pem
+  static_configs:
+  - targets:
+    - arcade:4202
+    - assets:4202

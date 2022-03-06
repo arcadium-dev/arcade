@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS rooms (
+  rooms_id UUID PRIMARY KEY,
+
+  created TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  updated TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc')
+);

@@ -1,0 +1,130 @@
+version: '3.3'
+
+services:
+
+  # Infrastructure
+  #--------------------------------------------------------------------------
+  cockroach:
+    image: cockroachdb/cockroach:v21.2.6
+    container_name: cockroach
+    hostname: cockroach
+    command: ["start-single-node", "--certs-dir=/etc/certs"]
+    ports:
+      - 4000:8080
+    volumes:
+      - certificates_volume:/etc/certs
+      - database_volume:/cockroach/cockroach-data
+    networks:
+      - data_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - 4001:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - certificates_volume:/etc/certs
+      - ./env/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - metrics_network
+
+  game:
+    image: marcincuber/2048-game
+    container_name: game
+    ports:
+      - 4010:80
+    networks:
+      - game_network
+
+  # Services
+  #--------------------------------------------------------------------------
+  arcade:
+    image: arcade:latest
+    container_name: arcade
+    depends_on:
+      - cockroach
+    env_file:
+      - env/arcade
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - game_network
+      - assets_network
+      - metrics_network
+
+  assets:
+    image: assets:latest
+    container_name: assets
+    depends_on:
+      - cockroach
+    env_file:
+      - env/assets
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - assets_network
+      - data_network
+      - metrics_network
+
+  # Migrations
+  #--------------------------------------------------------------------------
+  migrate:
+    image: migrate:latest
+    depends_on:
+      - cockroach
+    env_file:
+      - env/migrate
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - data_network
+
+  # Tools
+  #--------------------------------------------------------------------------
+  mkcert:
+    image: mkcert:latest
+    environment:
+      - CAROOT=/etc/certs
+    volumes:
+      - certificates_volume:/etc/certs
+
+  curl:
+    image: curl:latest
+    working_dir: /etc
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - assets_network
+
+  csql:
+    image: cockroachdb/cockroach:v21.2.6
+    entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
+    env_file:
+      - env/csql
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - data_network
+
+  # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
+  create_migration:
+    image: migrate/migrate:v4.15.1
+    entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
+    volumes:
+      - ./migrations:/migrations
+
+volumes:
+  certificates_volume:
+  database_volume:
+
+networks:
+  game_network:
+    external: true
+  assets_network:
+    external: true
+  data_network:
+    external: true
+  metrics_network:
+    external: true

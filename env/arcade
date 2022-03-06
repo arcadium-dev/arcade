@@ -1,4 +1,9 @@
-ARCADE_POSTGRES_DB=arcade
-ARCADE_POSTGRES_HOST=posgres
-ARCADE_LOG_LEVEL=debug
-ARCADE_LOG_FORMAT=logfmt
+MTLS_SERVER_ADDR=:4201
+TLS_SERVER_ADDR=:4202
+
+SERVER_CERT=/etc/certs/arcade.pem
+SERVER_KEY=/etc/certs/arcade_key.pem
+SERVER_CACERT=/etc/certs/rootCA.pem
+
+LOG_LEVEL=info
+LOG_FORMAT=logfmt

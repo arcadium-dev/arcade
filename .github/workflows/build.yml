@@ -12,15 +12,17 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Set up Go
+    - name: Install Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17
+        stable: false
+        go-version: 1.18.0-rc1
 
     - name: Lint
       run: |

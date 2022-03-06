@@ -1,0 +1,55 @@
+# Build
+ARG go_version
+FROM golang:${go_version}-alpine as builder
+LABEL stage=intermediate
+
+ENV GOPRIVATE arcadium.dev
+
+WORKDIR $GOPATH/src/arcadium.dev/arcade
+
+# Create a layer for accessing a private github repo via ssh.
+RUN apk update && apk add --no-cache openssh-client git && \
+    git config --global url."git@github.com:".insteadOf "https://github.com/" && \
+    mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+# Create a separate layer for the go dependencies to facilitate faster builds.
+COPY go.mod go.sum ./
+RUN --mount=type=ssh go mod download && go mod verify
+
+# Create a layer for the build.
+COPY . .
+
+ARG version
+ARG branch
+ARG commit
+ARG build_date
+
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-s -w \
+      -X 'main.version=${version}' \
+      -X 'main.branch=${branch}' \
+      -X 'main.commit=${commit}' \
+      -X 'main.date=${build_date}'" \
+      -o dist/assets ./cmd/assets
+
+
+# Assemble the image
+FROM alpine
+
+RUN apk update && \
+    apk add --no-cache ca-certificates tzdata bash && update-ca-certificates && \
+    adduser \
+      --disabled-password \
+      --gecos "" \
+      --home "/nonexistent" \
+      --shell "/sbin/nologin" \
+      --no-create-home \
+      --uid "10001" \
+      arcadium
+
+
+COPY --from=builder /go/src/arcadium.dev/arcade/dist/assets /usr/local/bin/assets
+
+WORKDIR /home/arcadium
+USER arcadium:arcadium
+EXPOSE 4201 4202
+ENTRYPOINT ["/usr/local/bin/assets"]

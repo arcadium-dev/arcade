@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"arcadium.dev/arcade/internal/arcade"
+	"arcadium.dev/arcade/internal/assets"
 )
 
 // Build information.
@@ -17,5 +17,5 @@ var (
 )
 
 func main() {
-	arcade.New(filepath.Base(os.Args[0]), version, branch, commit, date, runtime.Version()).Start(os.Args)
+	assets.New(filepath.Base(os.Args[0]), version, branch, commit, date, runtime.Version()).Start(os.Args)
 }

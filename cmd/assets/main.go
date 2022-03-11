@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 
+	_ "arcadium.dev/core/sql/postgres"
+
 	"arcadium.dev/arcade/internal/assets"
 )
 

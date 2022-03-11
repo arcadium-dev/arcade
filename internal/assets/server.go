@@ -229,7 +229,6 @@ func (s *Server) Start(args []string) {
 		s.logger,
 	)
 	if err != nil {
-		s.telemetryWG.Done()
 		s.logger.Error("msg", "failed to create telemetry server", "error", err)
 		return
 	}

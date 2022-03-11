@@ -17,7 +17,7 @@ package assets
 import (
 	"crypto/tls"
 
-	cfg "arcadium.dev/core/config"
+	cconfig "arcadium.dev/core/config"
 )
 
 type (
@@ -44,7 +44,7 @@ type (
 		Cert() string
 		Key() string
 		CACert() string
-		TLSConfig(...cfg.TLSOption) (*tls.Config, error)
+		TLSConfig(...cconfig.TLSOption) (*tls.Config, error)
 	}
 
 	serverConfig interface {
@@ -53,24 +53,24 @@ type (
 )
 
 // newConfig returns the configuration of the server.
-func newConfig(opts ...cfg.Option) (config, error) {
+func newConfig(opts ...cconfig.Option) (config, error) {
 	var err error
 	c := config{}
-	if c.logger, err = cfg.NewLogger(opts...); err != nil {
+	if c.logger, err = cconfig.NewLogger(opts...); err != nil {
 		return config{}, err
 	}
-	if c.sql, err = cfg.NewSQL(opts...); err != nil {
+	if c.sql, err = cconfig.NewSQL(opts...); err != nil {
 		return config{}, err
 	}
-	if c.tls, err = cfg.NewTLS(opts...); err != nil {
+	if c.tls, err = cconfig.NewTLS(opts...); err != nil {
 		return config{}, err
 	}
-	apiOpts := append(opts, cfg.WithPrefix("api"))
-	if c.apiServer, err = cfg.NewServer(apiOpts...); err != nil {
+	apiOpts := append(opts, cconfig.WithPrefix("api"))
+	if c.apiServer, err = cconfig.NewServer(apiOpts...); err != nil {
 		return config{}, err
 	}
-	telemertyOpts := append(opts, cfg.WithPrefix("telemetry"))
-	if c.telemetryServer, err = cfg.NewServer(telemertyOpts...); err != nil {
+	telemertyOpts := append(opts, cconfig.WithPrefix("telemetry"))
+	if c.telemetryServer, err = cconfig.NewServer(telemertyOpts...); err != nil {
 		return config{}, err
 	}
 	return c, nil

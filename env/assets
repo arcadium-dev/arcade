@@ -1,9 +1,9 @@
-MTLS_SERVER_ADDR=:4201
-TLS_SERVER_ADDR=:4202
+API_SERVER_ADDR=:4201
+TELEMETRY_SERVER_ADDR=:4202
 
-SERVER_CERT=/etc/certs/assets.pem
-SERVER_KEY=/etc/certs/assets_key.pem
-SERVER_CACERT=/etc/certs/rootCA.pem
+TLS_CERT=/etc/certs/assets.pem
+TLS_KEY=/etc/certs/assets_key.pem
+TLS_CACERT=/etc/certs/rootCA.pem
 
 LOG_LEVEL=info
 LOG_FORMAT=logfmt

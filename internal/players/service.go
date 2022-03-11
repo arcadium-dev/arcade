@@ -81,7 +81,7 @@ type (
 	}
 
 	// playerResponse is used to json encoded a response with a single player.
-	deploymentResponse struct {
+	playerResponse struct {
 		Data playerResponseData `json:"data"`
 	}
 

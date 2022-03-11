@@ -212,7 +212,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		s := New("infra", "version", "branch", "commit", "date", "go")
+		s := New("assets", "version", "branch", "commit", "date", "go")
 		s.ctors.newDB = func(sqlConfig, log.Logger) (*sql.DB, error) {
 			db, _, err := sqlmock.New()
 			return &sql.DB{DB: db}, err

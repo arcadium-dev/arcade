@@ -1,9 +1,7 @@
-MTLS_SERVER_ADDR=:4201
-TLS_SERVER_ADDR=:4202
+TELEMETRY_SERVER_ADDR=:4202
 
-SERVER_CERT=/etc/certs/arcade.pem
-SERVER_KEY=/etc/certs/arcade_key.pem
-SERVER_CACERT=/etc/certs/rootCA.pem
+TLS_CERT=/etc/certs/arcade.pem
+TLS_KEY=/etc/certs/arcade_key.pem
 
 LOG_LEVEL=info
 LOG_FORMAT=logfmt

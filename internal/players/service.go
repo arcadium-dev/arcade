@@ -1,4 +1,4 @@
-//  Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 
@@ -60,47 +59,6 @@ func (Service) Name() string {
 
 // Shutdown is a no-op since there no long running processes for this service.
 func (Service) Shutdown() {}
-
-type (
-	// playerRequest is the payload of a player request.
-	playerRequest struct {
-		PlayerID    string `json:"playerID"`
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	}
-
-	// playerResponse is used as payload data for player responses.
-	playerResponseData struct {
-		PlayerID    string    `json:"playerID"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Home        string    `json:"home"`
-		Location    string    `json:"location"`
-		Inventory   []string  `json"inventory"`
-		Created     time.Time `json:"created"`
-	}
-
-	// playerResponse is used to json encoded a response with a single player.
-	playerResponse struct {
-		Data playerResponseData `json:"data"`
-	}
-
-	// playersResponse is used to json encoded a response with a multiple players.
-	playersResponse struct {
-		Data []playerResponseData `json:"data"`
-	}
-
-	// player is the internal representation of the data related to a player.
-	player struct {
-		playerID    string
-		name        string
-		description string
-		home        string
-		location    string
-		inventory   []string
-		created     time.Time
-	}
-)
 
 const (
 	// Queries

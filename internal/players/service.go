@@ -70,13 +70,13 @@ func (Service) Shutdown() {}
 
 const (
 	// Queries
-	listQuery   = "SELECT player_id, name, description, home, location, created, updated FROM players"
-	getQuery    = "SELECT player_id, name, description, home, location, create, updated FROM players WHERE player_id = $1"
-	upsertQuery = "INSERT INTO players (player_id, name, description, home, location) " +
-		"VALUES ($1, $2, $3, $4, $5) " +
-		"ON CONFLICT (player_id) DO " +
-		"SET name = EXCLUDED.name, description = EXCLUDED.descrption, home = EXCLUDED.home, location = EXCLUDED.location"
-	removeQuery = "DELETE FROM players WHERE player_id = $1"
+	listQuery   = `SELECT player_id, name, description, home, location, created, updated FROM players`
+	getQuery    = `SELECT player_id, name, description, home, location, create, updated FROM players WHERE player_id = $1`
+	upsertQuery = `INSERT INTO players (player_id, name, description, home, location) ` +
+		`VALUES ($1, $2, $3, $4, $5) ` +
+		`ON CONFLICT (player_id) DO ` +
+		`SET name = EXCLUDED.name, description = EXCLUDED.descrption, home = EXCLUDED.home, location = EXCLUDED.location`
+	removeQuery = `DELETE FROM players WHERE player_id = $1`
 )
 
 func (s *Service) list(ctx context.Context) ([]arcade.Player, error) {

@@ -63,14 +63,6 @@ type (
 	}
 )
 
-func (p player) PlayerID() string    { return p.playerID }
-func (p player) Name() string        { return p.name }
-func (p player) Description() string { return p.description }
-func (p player) Home() string        { return p.home }
-func (p player) Location() string    { return p.location }
-func (p player) Created() time.Time  { return p.created }
-func (p player) Updated() time.Time  { return p.updated }
-
 func newPlayer(p playerRequest) arcade.Player {
 	return player{
 		playerID:    p.PlayerID,
@@ -80,6 +72,14 @@ func newPlayer(p playerRequest) arcade.Player {
 		location:    p.Location,
 	}
 }
+
+func (p player) PlayerID() string    { return p.playerID }
+func (p player) Name() string        { return p.name }
+func (p player) Description() string { return p.description }
+func (p player) Home() string        { return p.home }
+func (p player) Location() string    { return p.location }
+func (p player) Created() time.Time  { return p.created }
+func (p player) Updated() time.Time  { return p.updated }
 
 func newPlayerResponseData(p arcade.Player) playerResponseData {
 	return playerResponseData{

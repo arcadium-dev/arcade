@@ -17,7 +17,7 @@ package arcade
 import "time"
 
 type (
-	// Player ...
+	// Player defines the behavior common to a player.
 	Player interface {
 		PlayerID() string
 		Name() string

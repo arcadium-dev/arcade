@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS links (
   updated TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc')
 );
 
+COMMIT;
+
+BEGIN;
+
 INSERT INTO players (player_id, name, description)
 VALUES (
   '00000000-0000-0000-0000-000000000001',

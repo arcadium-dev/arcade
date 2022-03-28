@@ -26,9 +26,10 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 
-	"arcadium.dev/arcade/internal/arcade"
 	cerrors "arcadium.dev/core/errors"
 	"arcadium.dev/core/log"
+
+	"arcadium.dev/arcade/internal/arcade"
 )
 
 const (

@@ -21,6 +21,17 @@ import (
 )
 
 type (
+	// player is the internal representation of the data related to a player.
+	player struct {
+		playerID    string
+		name        string
+		description string
+		home        string
+		location    string
+		created     time.Time
+		updated     time.Time
+	}
+
 	// playerRequest is the payload of a player request.
 	playerRequest struct {
 		PlayerID    string `json:"playerID"`
@@ -50,18 +61,25 @@ type (
 	playersResponse struct {
 		Data []playerResponseData `json:"data"`
 	}
-
-	// player is the internal representation of the data related to a player.
-	player struct {
-		playerID    string
-		name        string
-		description string
-		home        string
-		location    string
-		created     time.Time
-		updated     time.Time
-	}
 )
+
+func (p player) PlayerID() string    { return p.playerID }
+func (p player) Name() string        { return p.name }
+func (p player) Description() string { return p.description }
+func (p player) Home() string        { return p.home }
+func (p player) Location() string    { return p.location }
+func (p player) Created() time.Time  { return p.created }
+func (p player) Updated() time.Time  { return p.updated }
+
+func newPlayer(p playerRequest) arcade.Player {
+	return player{
+		playerID:    p.PlayerID,
+		name:        p.Name,
+		description: p.Description,
+		home:        p.Home,
+		location:    p.Location,
+	}
+}
 
 func newPlayerResponseData(p arcade.Player) playerResponseData {
 	return playerResponseData{
@@ -88,21 +106,3 @@ func newPlayersResponse(ps []arcade.Player) playersResponse {
 	}
 	return r
 }
-
-func newPlayer(p playerRequest) arcade.Player {
-	return player{
-		playerID:    p.PlayerID,
-		name:        p.Name,
-		description: p.Description,
-		home:        p.Home,
-		location:    p.Location,
-	}
-}
-
-func (p player) PlayerID() string    { return p.playerID }
-func (p player) Name() string        { return p.name }
-func (p player) Description() string { return p.description }
-func (p player) Home() string        { return p.home }
-func (p player) Location() string    { return p.location }
-func (p player) Created() time.Time  { return p.created }
-func (p player) Updated() time.Time  { return p.updated }

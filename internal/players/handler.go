@@ -21,11 +21,13 @@ import (
 	"io"
 	"net/http"
 
-	"arcadium.dev/arcade/internal/arcade"
+	"github.com/gorilla/mux"
+
 	cerrors "arcadium.dev/core/errors"
 	chttp "arcadium.dev/core/http"
 	"arcadium.dev/core/log"
-	"github.com/gorilla/mux"
+
+	"arcadium.dev/arcade/internal/arcade"
 )
 
 type (

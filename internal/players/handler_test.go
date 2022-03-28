@@ -13,3 +13,71 @@
 //  limitations under the License.
 
 package players
+
+import "testing"
+
+func TestHandlerList(t *testing.T) {
+	t.Run("service: unknown error", func(t *testing.T) {
+	})
+
+	t.Run("success", func(t *testing.T) {
+	})
+}
+
+func TestHandlerGet(t *testing.T) {
+	t.Run("service: invalid player id", func(t *testing.T) {
+	})
+
+	t.Run("service: not found", func(t *testing.T) {
+	})
+
+	t.Run("service: unknown error", func(t *testing.T) {
+	})
+
+	t.Run("success", func(t *testing.T) {
+	})
+}
+
+func TestHandlerCreate(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+	})
+}
+
+func TestHandlerUpdate(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+	})
+}
+
+func TestHandlerUpsert(t *testing.T) {
+	t.Run("handler: missing body", func(t *testing.T) {
+	})
+
+	t.Run("handler: invalid json", func(t *testing.T) {
+	})
+
+	t.Run("service: invalid argument", func(t *testing.T) {
+	})
+
+	t.Run("service: already exists", func(t *testing.T) {
+	})
+
+	t.Run("service: unknown error", func(t *testing.T) {
+	})
+
+	t.Run("success", func(t *testing.T) {
+	})
+}
+
+func TestHandlerRemove(t *testing.T) {
+	t.Run("service: invalid argument", func(t *testing.T) {
+	})
+
+	t.Run("service: not found", func(t *testing.T) {
+	})
+
+	t.Run("service: unknown error", func(t *testing.T) {
+	})
+
+	t.Run("success", func(t *testing.T) {
+	})
+}

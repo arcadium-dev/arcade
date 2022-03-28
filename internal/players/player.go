@@ -34,7 +34,6 @@ type (
 
 	// playerRequest is the payload of a player request.
 	playerRequest struct {
-		PlayerID    string `json:"playerID"`
 		Name        string `json:"name"`
 		Description string `json:"description"`
 		Home        string `json:"home"`
@@ -65,7 +64,6 @@ type (
 
 func newPlayer(p playerRequest) arcade.Player {
 	return player{
-		playerID:    p.PlayerID,
 		name:        p.Name,
 		description: p.Description,
 		home:        p.Home,

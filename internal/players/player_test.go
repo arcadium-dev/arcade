@@ -13,3 +13,110 @@
 //  limitations under the License.
 
 package players
+
+import (
+	"testing"
+	"time"
+
+	"arcadium.dev/arcade/internal/arcade"
+)
+
+const (
+	playerID    = "00000000-0000-0000-0000-000000000001"
+	name        = "Nobody"
+	description = "A person of no importance."
+	home        = "00000000-0000-0000-0000-000000000001"
+	location    = "00000000-0000-0000-0000-000000000001"
+)
+
+var (
+	created = time.Now()
+	updated = time.Now()
+
+	p = player{
+		playerID:    playerID,
+		name:        name,
+		description: description,
+		home:        home,
+		location:    location,
+		created:     created,
+		updated:     updated,
+	}
+
+	req = playerRequest{
+		Name:        name,
+		Description: description,
+		Home:        home,
+		Location:    location,
+	}
+)
+
+func TestNewPlayer(t *testing.T) {
+	p := newPlayer(req)
+	if p.Name() != name ||
+		p.Description() != description ||
+		p.Home() != home ||
+		p.Location() != location {
+		t.Errorf("Unexpected player: %+v", p)
+	}
+
+	if p.PlayerID() != "" ||
+		!p.Created().IsZero() ||
+		!p.Updated().IsZero() {
+		t.Errorf("Unexpected player: %+v", p)
+	}
+}
+
+func TestPlayer(t *testing.T) {
+	if p.PlayerID() != playerID ||
+		p.Name() != name ||
+		p.Description() != description ||
+		p.Home() != home ||
+		p.Location() != location ||
+		!created.Equal(p.Created()) ||
+		!updated.Equal(p.Updated()) {
+		t.Errorf("Unexpected player: %+v", p)
+	}
+}
+
+func TestNewPlayerResponsData(t *testing.T) {
+	data := newPlayerResponseData(p)
+
+	if data.PlayerID != playerID ||
+		data.Name != name ||
+		data.Description != description ||
+		data.Home != home ||
+		data.Location != location ||
+		!created.Equal(data.Created) ||
+		!updated.Equal(data.Updated) {
+		t.Errorf("Unexpected data: %+v", data)
+	}
+}
+
+func TestNewPlayerResponse(t *testing.T) {
+	r := newPlayerResponse(p)
+
+	if r.Data.PlayerID != playerID ||
+		r.Data.Name != name ||
+		r.Data.Description != description ||
+		r.Data.Home != home ||
+		r.Data.Location != location ||
+		!created.Equal(r.Data.Created) ||
+		!updated.Equal(r.Data.Updated) {
+		t.Errorf("Unexpected response: %+v", r)
+	}
+}
+
+func TestNewPlayersReponse(t *testing.T) {
+	r := newPlayersResponse([]arcade.Player{p})
+
+	if r.Data[0].PlayerID != playerID ||
+		r.Data[0].Name != name ||
+		r.Data[0].Description != description ||
+		r.Data[0].Home != home ||
+		r.Data[0].Location != location ||
+		!created.Equal(r.Data[0].Created) ||
+		!updated.Equal(r.Data[0].Updated) {
+		t.Errorf("Unexpected response: %+v", r)
+	}
+}

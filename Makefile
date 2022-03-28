@@ -83,13 +83,9 @@ test: unit_test
 
 # ____ build _________________________________________________________________
 
-.PHONY: build arcade assets version
+.PHONY: build assets version
 
-build: arcade assets
-
-arcade:
-	@printf "\nBuilding arcade...\n"
-	CGO_ENABLED=0 go build -ldflags "$(ldflags)" -o ./dist/arcade ./cmd/arcade
+build: assets
 
 assets:
 	@printf "\nBuilding assets...\n"
@@ -104,6 +100,9 @@ version:
 
 containers:
 	 make -C dockerfiles all
+
+migrate_container:
+	make -C dockerfiles migrate_container
 
 push_containers:
 	make -C dockerfiles push_containers

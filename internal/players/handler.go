@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 
+	"arcadium.dev/arcade/internal/arcade"
 	cerrors "arcadium.dev/core/errors"
 	chttp "arcadium.dev/core/http"
 	"arcadium.dev/core/log"
@@ -33,10 +34,10 @@ type (
 	}
 
 	service interface {
-		list(ctx context.Context) ([]player, error)
-		get(ctx context.Context, playerID string) (player, error)
-		create(ctx context.Context, p player) error
-		update(ctx context.Context, p player) error
+		list(ctx context.Context) ([]arcade.Player, error)
+		get(ctx context.Context, playerID string) (arcade.Player, error)
+		create(ctx context.Context, p arcade.Player) error
+		update(ctx context.Context, p arcade.Player) error
 		remove(ctx context.Context, playerID string) error
 	}
 )
@@ -119,8 +120,8 @@ func (h handler) create(w http.ResponseWriter, r *http.Request) {
 	p := newPlayer(req)
 
 	logger = logger.With(
-		"playerID", p.playerID,
-		"name", p.Name,
+		"playerID", p.PlayerID(),
+		"name", p.Name(),
 	)
 	ctx = log.NewContextWithLogger(ctx, logger)
 

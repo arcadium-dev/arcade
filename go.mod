@@ -5,7 +5,10 @@ go 1.17
 require (
 	arcadium.dev/core v0.13.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
+	github.com/jackc/pgconn v1.11.0
+	github.com/jackc/pgerrcode v0.0.0-20201024163028-a0d42d470451
 	github.com/prometheus/client_golang v1.12.1
 )
 
@@ -16,7 +19,6 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.2.0 // indirect

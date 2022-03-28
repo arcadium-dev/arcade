@@ -14,7 +14,11 @@
 
 package players
 
-import "time"
+import (
+	"time"
+
+	"arcadium.dev/arcade/internal/arcade"
+)
 
 type (
 	// playerRequest is the payload of a player request.
@@ -59,25 +63,25 @@ type (
 	}
 )
 
-func newPlayerResponseData(p player) playerResponseData {
+func newPlayerResponseData(p arcade.Player) playerResponseData {
 	return playerResponseData{
-		PlayerID:    p.playerID,
-		Name:        p.name,
-		Description: p.description,
-		Home:        p.home,
-		Location:    p.location,
-		Created:     p.created,
-		Updated:     p.updated,
+		PlayerID:    p.PlayerID(),
+		Name:        p.Name(),
+		Description: p.Description(),
+		Home:        p.Home(),
+		Location:    p.Location(),
+		Created:     p.Created(),
+		Updated:     p.Updated(),
 	}
 }
 
-func newPlayerResponse(p player) playerResponse {
+func newPlayerResponse(p arcade.Player) playerResponse {
 	return playerResponse{
 		Data: newPlayerResponseData(p),
 	}
 }
 
-func newPlayersResponse(ps []player) playersResponse {
+func newPlayersResponse(ps []arcade.Player) playersResponse {
 	var r playersResponse
 	for _, p := range ps {
 		r.Data = append(r.Data, newPlayerResponseData(p))
@@ -85,7 +89,7 @@ func newPlayersResponse(ps []player) playersResponse {
 	return r
 }
 
-func newPlayer(p playerRequest) player {
+func newPlayer(p playerRequest) arcade.Player {
 	return player{
 		playerID:    p.PlayerID,
 		name:        p.Name,

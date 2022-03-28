@@ -8,8 +8,23 @@
 //
 //  Unless required by applicable law or agreed to in writing, software
 //  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or impliep.
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package players
+package arcade
+
+import "time"
+
+type (
+	// Player ...
+	Player interface {
+		PlayerID() string
+		Name() string
+		Description() string
+		Home() string
+		Location() string
+		Created() time.Time
+		Updated() time.Time
+	}
+)

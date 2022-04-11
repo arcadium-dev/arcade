@@ -69,13 +69,10 @@ func (Service) Name() string {
 func (Service) Shutdown() {}
 
 const (
-	// Queries
 	listQuery   = `SELECT player_id, name, description, home, location, created, updated FROM players`
-	getQuery    = `SELECT player_id, name, description, home, location, create, updated FROM players WHERE player_id = $1`
-	upsertQuery = `INSERT INTO players (player_id, name, description, home, location) ` +
-		`VALUES ($1, $2, $3, $4, $5) ` +
-		`ON CONFLICT (player_id) DO ` +
-		`SET name = EXCLUDED.name, description = EXCLUDED.descrption, home = EXCLUDED.home, location = EXCLUDED.location`
+	getQuery    = `SELECT player_id, name, description, home, location, created, updated FROM players WHERE player_id = $1`
+	insertQuery = `INSERT INTO players (name, description, home, location) VALUES ($1, $2, $3, $4) `
+	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5 WHERE player_id = $1`
 	removeQuery = `DELETE FROM players WHERE player_id = $1`
 )
 
@@ -156,10 +153,7 @@ func (s *Service) create(ctx context.Context, p arcade.Player) error {
 func (s *Service) update(ctx context.Context, p arcade.Player) error {
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "update player")
-	return s.upsert(ctx, p)
-}
 
-func (s *Service) upsert(ctx context.Context, p arcade.Player) error {
 	// Validate the input arguments.
 	playerID, err := uuid.Parse(p.PlayerID())
 	if err != nil {
@@ -196,7 +190,7 @@ func (s *Service) upsert(ctx context.Context, p arcade.Player) error {
 	}
 
 	// Upsert the player into the db.
-	_, err = s.db.ExecContext(ctx, upsertQuery,
+	_, err = s.db.ExecContext(ctx, updateQuery,
 		playerID,
 		p.Name(),
 		p.Description(),

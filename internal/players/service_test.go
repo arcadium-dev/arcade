@@ -13,3 +13,52 @@
 //  limitations under the License.
 
 package players
+
+import (
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+)
+
+func TestServiceNew(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal("Failed to create mock db")
+	}
+
+	s := New(db)
+
+	if s.db != db {
+		t.Error("Failed to set service db")
+	}
+	if s.h.s != s {
+		t.Error("Failed to set handler service")
+	}
+}
+
+func TestServiceName(t *testing.T) {
+	s := Service{}
+	if s.Name() != "players" {
+		t.Error("Unexpected service name")
+	}
+}
+
+func TestServiceShutdown(t *testing.T) {
+	s := Service{}
+	s.Shutdown()
+}
+
+func TestServiceList(t *testing.T) {
+}
+
+func TestServiceGet(t *testing.T) {
+}
+
+func TestServiceCreate(t *testing.T) {
+}
+
+func TestServiceUpdate(t *testing.T) {
+}
+
+func TestServiceRemove(t *testing.T) {
+}

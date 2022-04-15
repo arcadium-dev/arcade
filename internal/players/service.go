@@ -44,10 +44,10 @@ type (
 	}
 )
 
-func New(db *sql.DB) *Service {
+func New(db *sql.DB) Service {
 	s := &Service{db: db}
 	s.h = handler{s: s}
-	return s
+	return *s
 }
 
 // Register sets up the http handler for this service with the given router.
@@ -80,7 +80,7 @@ const (
 	removeQuery = `DELETE FROM players WHERE player_id = $1`
 )
 
-func (s *Service) list(ctx context.Context) ([]arcade.Player, error) {
+func (s Service) list(ctx context.Context) ([]arcade.Player, error) {
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "list players")
 
@@ -88,7 +88,7 @@ func (s *Service) list(ctx context.Context) ([]arcade.Player, error) {
 
 	rows, err := s.db.QueryContext(ctx, listQuery)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", cerrors.ErrInternal, err)
+		return nil, fmt.Errorf("%w: failed to list players: %s", cerrors.ErrInternal, err)
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -120,7 +120,7 @@ func (s *Service) list(ctx context.Context) ([]arcade.Player, error) {
 	return players, nil
 }
 
-func (s *Service) get(ctx context.Context, pid string) (arcade.Player, error) {
+func (s Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 	log.LoggerFromContext(ctx).Info("msg", "get player")
 
 	playerID, err := uuid.Parse(pid)
@@ -148,7 +148,7 @@ func (s *Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 	return p, nil
 }
 
-func (s *Service) create(ctx context.Context, req playerRequest) (arcade.Player, error) {
+func (s Service) create(ctx context.Context, req playerRequest) (arcade.Player, error) {
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "create player")
 
@@ -215,7 +215,7 @@ func (s *Service) create(ctx context.Context, req playerRequest) (arcade.Player,
 	return p, nil
 }
 
-func (s *Service) update(ctx context.Context, pid string, req playerRequest) (arcade.Player, error) {
+func (s Service) update(ctx context.Context, pid string, req playerRequest) (arcade.Player, error) {
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "update player")
 
@@ -285,7 +285,7 @@ func (s *Service) update(ctx context.Context, pid string, req playerRequest) (ar
 	return p, nil
 }
 
-func (s *Service) remove(ctx context.Context, pid string) error {
+func (s Service) remove(ctx context.Context, pid string) error {
 	log.LoggerFromContext(ctx).Info("msg", "remove player")
 
 	playerID, err := uuid.Parse(pid)

@@ -54,12 +54,12 @@ error_field() {
   local field="$1" body="$2"
   param_check "${field}" "${body}"
 
-  jq -r ".errors[0].${field}" <(echo "${body}")
+  jq -r ".error.${field}" <(echo "${body}")
 }
 
 is_error() {
   local err
-  err="$(jq .errors[0] <(echo "${@:-}"))" 
+  err="$(jq .error <(echo "${@:-}"))" 
   if [[ "${err}" == "null" || "${err}" == "" ]]; then
     return ${FAILURE}
   fi
@@ -88,17 +88,18 @@ contains() {
   return ${SUCCESS}
 }
 
-deployments_create() {
-  local _orchestrator_id="$1" _token="$2" _domain_name="$3"
-  param_check "${_orchestrator_id}" "${_token}" "${_domain_name}"
+players_create() {
+  local _name="$1" _desc="$2" _home="$3" _loc="$4"
+  param_check "${_name}" "${_desc}" "${_home}" "${_loc}"
 
-  info "Creating deployment" >&2
-  msg "orchestrator id:   ${_orchestrator_id}" >&2
-  msg "regstration token: ${_token}" >&2
-  msg "domain name:       ${_domain_name}" >&2
+  info "Creating player" >&2
+  msg "name:        ${_name}" >&2
+  msg "description: ${_desc}" >&2
+  msg "home:        ${_home}" >&2
+  msg "location:    ${_loc}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"orchestratorID":"'${_orchestrator_id}'", "registrationToken": "'${_token}'", "domainName": "'${_domain_name}'"}' "https://infra:8443/deployments" 2>/dev/null)"
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","home":"'"${_home}"'","location":"'"${_loc}"'"}' "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result}" != "" ]]; then
@@ -108,11 +109,11 @@ deployments_create() {
   return ${rc}
 }
 
-deployments_list() {
-  info "Listing deployments" >&2
+players_list() {
+  info "Listing players" >&2
   
   local result
-  result="$(bin/dev run curl --request GET "https://infra:8443/deployments" 2>/dev/null)"
+  result="$(bin/dev run curl --request GET "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result}" != "" ]]; then
@@ -122,15 +123,15 @@ deployments_list() {
   return ${rc}
 }
 
-deployments_get() {
-  local _orchestrator_id="$1"
-  param_check "${_orchestrator_id}"
+players_get() {
+  local _id="$1"
+  param_check "${_id}"
 
-  info "Getting deployment" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
+  info "Getting player" >&2
+  msg "id: ${_id}" >&2
 
   local result
-  result="$(bin/dev run curl --request GET "https://infra:8443/deployments/${_orchestrator_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request GET "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result}" != "" ]]; then
@@ -140,109 +141,15 @@ deployments_get() {
   return ${rc}
 }
 
-deployments_remove() {
-  local _orchestrator_id="$1"
-  param_check "${_orchestrator_id}"
+players_remove() {
+  local _id="$1"
+  param_check "${_id}"
 
-  info "Removing deployment" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-
-  local result
-  result="$(bin/dev run curl --request DELETE "https://infra:8443/deployments/${_orchestrator_id}" 2>/dev/null)"
-  local rc=$?
-
-  if [[ "${result}" != "" ]]; then
-    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
-    echo "${result}" >&1
-  fi
-  return ${rc}
-}
-
-hostnames_create() {
-  local _orchestrator_id="$1" _hostname="$2"
-  param_check "${_orchestrator_id}" "${_hostname}"
-
-  info "Creating hostname" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-  msg "hostname:        ${_hostname}" >&2
+  info "Removing player" >&2
+  msg "orchestrator id: ${_id}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"hostname": "'${_hostname}'"}' "https://infra:8443/deployments/${_orchestrator_id}/hostnames" 2>/dev/null)"
-  local rc=$?
-
-  if [[ "${result}" != "" ]]; then
-    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
-    echo "${result}" >&1
-  fi
-  return ${rc}
-}
-
-hostnames_list() {
-  local _orchestrator_id="$1"
-  param_check "${_orchestrator_id}"
-
-  info "Listing hostname" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-
-  local result
-  result="$(bin/dev run curl --request GET  "https://infra:8443/deployments/${_orchestrator_id}/hostnames" 2>/dev/null)"
-  local rc=$?
-
-  if [[ "${result}" != "" ]]; then
-    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
-    echo "${result}" >&1
-  fi
-  return ${rc}
-}
-
-hostnames_get() {
-  local _orchestrator_id="$1" _hostname_id="$2"
-  param_check "${_orchestrator_id}" "${_hostname_id}"
-
-  info "Geting hostname" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-  msg "hostname_id:     ${_hostname_id}" >&2
-
-  local result
-  result="$(bin/dev run curl --request GET "https://infra:8443/deployments/${_orchestrator_id}/hostnames/${_hostname_id}" 2>/dev/null)"
-  local rc=$?
-
-  if [[ "${result}" != "" ]]; then
-    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
-    echo "${result}" >&1
-  fi
-  return ${rc}
-}
-
-hostnames_status() {
-  local _orchestrator_id="$1" _hostname_id="$2"
-  param_check "${_orchestrator_id}" "${_hostname_id}"
-
-  info "Updating hostname status" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-  msg "hostname_id:     ${_hostname_id}" >&2
-
-  local result
-  result="$(bin/dev run curl --request GET "https://infra:8443/deployments/${_orchestrator_id}/hostnames/${_hostname_id}/status" 2>/dev/null)"
-  local rc=$?
-
-  if [[ "${result}" != "" ]]; then
-    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
-    echo "${result}" >&1
-  fi
-  return ${rc}
-}
-
-hostnames_remove() {
-  local _orchestrator_id="$1" _hostname_id="$2"
-  param_check "${_orchestrator_id}" "${_hostname_id}"
-
-  info "Removing hostname" >&2
-  msg "orchestrator id: ${_orchestrator_id}" >&2
-  msg "hostname_id:     ${_hostname_id}" >&2
-
-  local result
-  result="$(bin/dev run curl --request DELETE "https://infra:8443/deployments/${_orchestrator_id}/hostnames/${_hostname_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request DELETE "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result}" != "" ]]; then

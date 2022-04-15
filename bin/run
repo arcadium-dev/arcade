@@ -6,4 +6,4 @@ else
   bin/dev stop
 fi
 
-make containers && bin/dev init && bin/dev start && bin/dev logs -f arcade assets
+make containers && bin/dev init && bin/dev start && bin/dev logs -f assets

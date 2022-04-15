@@ -42,7 +42,7 @@ services:
   #--------------------------------------------------------------------------
   game:
     image: game:latest
-    container_name: arcade
+    container_name: game
     depends_on:
       - cockroach
     env_file:

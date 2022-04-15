@@ -73,7 +73,7 @@ const (
 	getQuery    = `SELECT player_id, name, description, home, location, created, updated FROM players WHERE player_id = $1`
 	createQuery = `INSERT INTO players (name, description, home, location) ` +
 		`VALUES ($1, $2, $3, $4) ` +
-		`RETURNING player_id, name, home, location, created, updated`
+		`RETURNING player_id, name, description, home, location, created, updated`
 	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5 ` +
 		`WHERE player_id = $1` +
 		`RETURNING player_id, name, home, location, created, updated`
@@ -135,7 +135,7 @@ func (s *Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 		&p.description,
 		&p.home,
 		&p.location,
-		&p.location,
+		&p.created,
 		&p.updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {

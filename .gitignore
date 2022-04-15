@@ -4,7 +4,6 @@
 .tags_swap
 .vagrant
 .vscode
-bin/
 dist/
 .ccls-cache
 .idea

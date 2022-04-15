@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == "--clean" ]]; then
+  bin/dev clean
+else
+  bin/dev stop
+fi
+
+make containers && bin/dev init && bin/dev start && bin/dev logs -f arcade assets

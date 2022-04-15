@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+source "$(dirname $0)/common.sh"
+source "$(dirname $0)/client.sh"
+
+set +o noglob
+source <(cat test/integration/*.sh)
+set -o noglob
+
+main() {
+  local -a tests
+  if [[ "$#" -gt 0 ]]; then
+    tests=( "$@" )
+  else
+    tests=( $(compgen -A function | grep "^test_") )
+  fi
+
+  local -i errors=0
+  local -i skipped=0
+  if cmd_check "${tests[@]}"; then
+    for test in "${tests[@]}"; do
+      # Run the test in a sub-shell so that exits from failed or skipped test
+      # won't cause the entire suite of tests to exit.
+      set +o errexit
+      ( "${test}" )
+      rc=$?
+      if [[ $rc -eq $SKIPPED ]]; then
+        (( skipped++ ))
+      elif [[ $rc -ne $SUCCESS ]]; then
+        (( errors++ ))
+      fi
+      set -o errexit
+    done
+  else
+    error "Tests not found: ${tests[@]}"
+  fi
+  
+  if [[ ${skipped} -gt 0 ]]; then
+    msg "\n${BLUE}Skipped tests:${CLEAR} ${skipped}"
+  fi
+  if [[ ${errors} -gt 0 ]]; then
+    msg "\n${RED}Failed tests:${CLEAR} ${errors}"
+  fi
+  return ${errors}
+}
+
+time main "$@"

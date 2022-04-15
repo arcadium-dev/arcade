@@ -1,5 +1,7 @@
 arcadium.dev/core v0.13.0 h1:CHmusWt/fUXOHIUFOKEZEcbHdQ8D8wbIHC63JIyhsuY=
 arcadium.dev/core v0.13.0/go.mod h1:VvLZSX0c0xJ7S1DnUemqceAWzgj74MTG1+xPTgv7gWY=
+arcadium.dev/core v0.14.0 h1:6ttuVJil1aQ2vtUHUq76mxMtSG6UtdFuIHFVscpN/Sc=
+arcadium.dev/core v0.14.0/go.mod h1:VvLZSX0c0xJ7S1DnUemqceAWzgj74MTG1+xPTgv7gWY=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=

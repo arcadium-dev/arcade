@@ -19,7 +19,7 @@ import "time"
 type (
 	// Player defines the behavior common to a player.
 	Player interface {
-		PlayerID() string
+		ID() string
 		Name() string
 		Description() string
 		Home() string

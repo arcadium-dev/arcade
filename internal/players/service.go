@@ -71,8 +71,12 @@ func (Service) Shutdown() {}
 const (
 	listQuery   = `SELECT player_id, name, description, home, location, created, updated FROM players`
 	getQuery    = `SELECT player_id, name, description, home, location, created, updated FROM players WHERE player_id = $1`
-	insertQuery = `INSERT INTO players (name, description, home, location) VALUES ($1, $2, $3, $4) `
-	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5 WHERE player_id = $1`
+	createQuery = `INSERT INTO players (name, description, home, location) ` +
+		`VALUES ($1, $2, $3, $4) ` +
+		`RETURNING player_id, name, home, location, created, updated`
+	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5 ` +
+		`WHERE player_id = $1` +
+		`RETURNING player_id, name, home, location, created, updated`
 	removeQuery = `DELETE FROM players WHERE player_id = $1`
 )
 
@@ -96,7 +100,7 @@ func (s *Service) list(ctx context.Context) ([]arcade.Player, error) {
 	for rows.Next() {
 		var p player
 		err := rows.Scan(
-			&p.playerID,
+			&p.id,
 			&p.name,
 			&p.description,
 			&p.home,
@@ -126,7 +130,7 @@ func (s *Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 
 	var p player
 	err = s.db.QueryRowContext(ctx, getQuery, playerID).Scan(
-		&p.playerID,
+		&p.id,
 		&p.name,
 		&p.description,
 		&p.home,
@@ -144,58 +148,48 @@ func (s *Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 	return p, nil
 }
 
-func (s *Service) create(ctx context.Context, p arcade.Player) error {
+func (s *Service) create(ctx context.Context, req playerRequest) (arcade.Player, error) {
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "create player")
-	return s.upsert(ctx, p)
-}
 
-func (s *Service) update(ctx context.Context, p arcade.Player) error {
-	logger := log.LoggerFromContext(ctx)
-	logger.Info("msg", "update player")
-
-	// Validate the input arguments.
-	playerID, err := uuid.Parse(p.PlayerID())
+	// Validate the input.
+	if req.Name == "" {
+		return nil, fmt.Errorf("%w: empty player name", cerrors.ErrInvalidArgument)
+	}
+	if len(req.Name) > maxNameLen {
+		return nil, fmt.Errorf("%w: player name exceeds maximum length", cerrors.ErrInvalidArgument)
+	}
+	if req.Description == "" {
+		return nil, fmt.Errorf("%w: empty player description", cerrors.ErrInvalidArgument)
+	}
+	if len(req.Description) > maxDescriptionLen {
+		return nil, fmt.Errorf("%w: player description exceeds maximum length ", cerrors.ErrInvalidArgument)
+	}
+	homeID, err := uuid.Parse(req.Home)
 	if err != nil {
-		return fmt.Errorf(
-			"%w: invalid player id: '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(),
-		)
+		return nil, fmt.Errorf(
+			"%w: invalid home: '%s'", cerrors.ErrInvalidArgument, req.Home)
 	}
-	if p.Name() == "" {
-		return fmt.Errorf(
-			"%w: empty player name for player '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(),
-		)
-	}
-	if p.Description() == "" {
-		return fmt.Errorf(
-			"%w: empty player description for player '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(),
-		)
-	}
-	homeID, err := uuid.Parse(p.Home())
+	locationID, err := uuid.Parse(req.Location)
 	if err != nil {
-		return fmt.Errorf(
-			"%w: invalid home for player '%s': home '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(), p.Home(),
-		)
-	}
-	locationID, err := uuid.Parse(p.Location())
-	if err != nil {
-		return fmt.Errorf(
-			"%w: invalid location for player '%s': location '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(), p.Location(),
-		)
+		return nil, fmt.Errorf("%w: invalid location: '%s'", cerrors.ErrInvalidArgument, req.Location)
 	}
 
-	// Upsert the player into the db.
-	_, err = s.db.ExecContext(ctx, updateQuery,
-		playerID,
-		p.Name(),
-		p.Description(),
+	// Query the database.
+	var p player
+	err = s.db.QueryRowContext(ctx, createQuery,
+		req.Name,
+		req.Description,
 		homeID,
 		locationID,
+	).Scan(
+		&p.id,
+		&p.name,
+		&p.description,
+		&p.home,
+		&p.location,
+		&p.created,
+		&p.updated,
 	)
 
 	var pgErr *pgconn.PgError
@@ -203,28 +197,92 @@ func (s *Service) update(ctx context.Context, p arcade.Player) error {
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
-		return fmt.Errorf(
-			"%w: for player '%s, the given home or location given does not exist: home '%s', location '%s'",
-			cerrors.ErrInvalidArgument, p.PlayerID(), p.Home(), p.Location(),
+		return nil, fmt.Errorf(
+			"%w: the given home or location given does not exist: home '%s', location '%s'",
+			cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}
 
 	// A UniqueViolation means the inserted player violated a uniqueness
 	// constraint, and that the player record already exists in the table.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return fmt.Errorf(
-			"%w: player '%s' already exists",
-			cerrors.ErrAlreadyExists, p.PlayerID(),
-		)
+		return nil, fmt.Errorf("%w: player already exists", cerrors.ErrAlreadyExists)
 	}
+
 	if err != nil {
-		return fmt.Errorf(
-			"%w: unable to create player '%s':  %s",
-			cerrors.ErrInternal, p.PlayerID(), err.Error(),
+		return nil, fmt.Errorf("%w: unable to create player:  %s", cerrors.ErrInternal, err.Error())
+	}
+	return p, nil
+}
+
+func (s *Service) update(ctx context.Context, pid string, req playerRequest) (arcade.Player, error) {
+	logger := log.LoggerFromContext(ctx)
+	logger.Info("msg", "update player")
+
+	// Validate the input.
+	playerID, err := uuid.Parse(pid)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid player id: '%s'", cerrors.ErrInvalidArgument, pid)
+	}
+	if req.Name == "" {
+		return nil, fmt.Errorf("%w: empty player name", cerrors.ErrInvalidArgument)
+	}
+	if len(req.Name) > maxNameLen {
+		return nil, fmt.Errorf("%w: player name exceeds maximum length", cerrors.ErrInvalidArgument)
+	}
+	if req.Description == "" {
+		return nil, fmt.Errorf("%w: empty player description", cerrors.ErrInvalidArgument)
+	}
+	if len(req.Description) > maxDescriptionLen {
+		return nil, fmt.Errorf("%w: player description exceeds maximum length ", cerrors.ErrInvalidArgument)
+	}
+	homeID, err := uuid.Parse(req.Home)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid home: '%s'", cerrors.ErrInvalidArgument, req.Home)
+	}
+	locationID, err := uuid.Parse(req.Location)
+	if err != nil {
+		return nil, fmt.Errorf("%w: invalid location: '%s'", cerrors.ErrInvalidArgument, req.Location)
+	}
+
+	// Query the database.
+	var p player
+	err = s.db.QueryRowContext(ctx, updateQuery,
+		playerID,
+		req.Name,
+		req.Description,
+		homeID,
+		locationID,
+	).Scan(
+		&p.id,
+		&p.name,
+		&p.description,
+		&p.home,
+		&p.location,
+		&p.created,
+		&p.updated,
+	)
+
+	// Tried to update a player that doesn't exist.
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, cerrors.ErrNotFound
+	}
+
+	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
+	// in the rooms table, thus we will return an invalid argument error.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
+		return nil, fmt.Errorf(
+			"%w: the given home or location given does not exist: home '%s', location '%s'",
+			cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}
 
-	return nil
+	if err != nil {
+		return nil, fmt.Errorf("%w: unable to update player '%s':  %s", cerrors.ErrInternal, pid, err.Error())
+	}
+
+	return p, nil
 }
 
 func (s *Service) remove(ctx context.Context, pid string) error {

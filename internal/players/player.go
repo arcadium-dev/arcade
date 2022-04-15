@@ -20,10 +20,15 @@ import (
 	"arcadium.dev/arcade/internal/arcade"
 )
 
+const (
+	maxNameLen        = 255
+	maxDescriptionLen = 4096
+)
+
 type (
 	// player is the internal representation of the data related to a player.
 	player struct {
-		playerID    string
+		id          string
 		name        string
 		description string
 		home        string
@@ -71,7 +76,7 @@ func newPlayer(p playerRequest) arcade.Player {
 	}
 }
 
-func (p player) PlayerID() string    { return p.playerID }
+func (p player) ID() string          { return p.id }
 func (p player) Name() string        { return p.name }
 func (p player) Description() string { return p.description }
 func (p player) Home() string        { return p.home }
@@ -81,7 +86,7 @@ func (p player) Updated() time.Time  { return p.updated }
 
 func newPlayerResponseData(p arcade.Player) playerResponseData {
 	return playerResponseData{
-		PlayerID:    p.PlayerID(),
+		PlayerID:    p.ID(),
 		Name:        p.Name(),
 		Description: p.Description(),
 		Home:        p.Home(),

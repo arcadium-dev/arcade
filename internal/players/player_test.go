@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	playerID    = "00000000-0000-0000-0000-000000000001"
+	id          = "00000000-0000-0000-0000-000000000001"
 	name        = "Nobody"
 	description = "A person of no importance."
 	home        = "00000000-0000-0000-0000-000000000001"
@@ -34,7 +34,7 @@ var (
 	updated = time.Now()
 
 	p = player{
-		playerID:    playerID,
+		id:          id,
 		name:        name,
 		description: description,
 		home:        home,
@@ -60,7 +60,7 @@ func TestNewPlayer(t *testing.T) {
 		t.Errorf("Unexpected player: %+v", p)
 	}
 
-	if p.PlayerID() != "" ||
+	if p.ID() != "" ||
 		!p.Created().IsZero() ||
 		!p.Updated().IsZero() {
 		t.Errorf("Unexpected player: %+v", p)
@@ -68,7 +68,7 @@ func TestNewPlayer(t *testing.T) {
 }
 
 func TestPlayer(t *testing.T) {
-	if p.PlayerID() != playerID ||
+	if p.ID() != id ||
 		p.Name() != name ||
 		p.Description() != description ||
 		p.Home() != home ||
@@ -82,7 +82,7 @@ func TestPlayer(t *testing.T) {
 func TestNewPlayerResponsData(t *testing.T) {
 	data := newPlayerResponseData(p)
 
-	if data.PlayerID != playerID ||
+	if data.PlayerID != id ||
 		data.Name != name ||
 		data.Description != description ||
 		data.Home != home ||
@@ -96,7 +96,7 @@ func TestNewPlayerResponsData(t *testing.T) {
 func TestNewPlayerResponse(t *testing.T) {
 	r := newPlayerResponse(p)
 
-	if r.Data.PlayerID != playerID ||
+	if r.Data.PlayerID != id ||
 		r.Data.Name != name ||
 		r.Data.Description != description ||
 		r.Data.Home != home ||
@@ -110,7 +110,7 @@ func TestNewPlayerResponse(t *testing.T) {
 func TestNewPlayersReponse(t *testing.T) {
 	r := newPlayersResponse([]arcade.Player{p})
 
-	if r.Data[0].PlayerID != playerID ||
+	if r.Data[0].PlayerID != id ||
 		r.Data[0].Name != name ||
 		r.Data[0].Description != description ||
 		r.Data[0].Home != home ||

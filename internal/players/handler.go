@@ -21,11 +21,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	cerrors "arcadium.dev/core/errors"
 	chttp "arcadium.dev/core/http"
 	"arcadium.dev/core/log"
+	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade/internal/arcade"
 )
@@ -38,8 +37,8 @@ type (
 	service interface {
 		list(ctx context.Context) ([]arcade.Player, error)
 		get(ctx context.Context, playerID string) (arcade.Player, error)
-		create(ctx context.Context, p arcade.Player) error
-		update(ctx context.Context, p arcade.Player) error
+		create(ctx context.Context, p playerRequest) (arcade.Player, error)
+		update(ctx context.Context, playerID string, p playerRequest) (arcade.Player, error)
 		remove(ctx context.Context, playerID string) error
 	}
 )
@@ -119,16 +118,22 @@ func (h handler) create(w http.ResponseWriter, r *http.Request) {
 		))
 		return
 	}
-	p := newPlayer(req)
 
-	logger = logger.With(
-		"playerID", p.PlayerID(),
-		"name", p.Name(),
-	)
+	logger = logger.With("name", req.Name)
 	ctx = log.NewContextWithLogger(ctx, logger)
 
-	if err = h.s.create(ctx, p); err != nil {
+	p, err := h.s.create(ctx, req)
+	if err != nil {
 		chttp.Response(ctx, w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(newPlayerResponse(p))
+	if err != nil {
+		chttp.Response(ctx, w, fmt.Errorf(
+			"%w: unable to write response: %s", cerrors.ErrInternal, err,
+		))
 		return
 	}
 }
@@ -165,10 +170,19 @@ func (h handler) update(w http.ResponseWriter, r *http.Request) {
 		))
 		return
 	}
-	p := newPlayer(req)
 
-	if err = h.s.update(ctx, p); err != nil {
+	p, err := h.s.update(ctx, playerID, req)
+	if err != nil {
 		chttp.Response(ctx, w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(newPlayerResponse(p))
+	if err != nil {
+		chttp.Response(ctx, w, fmt.Errorf(
+			"%w: unable to write response: %s", cerrors.ErrInternal, err,
+		))
 		return
 	}
 }

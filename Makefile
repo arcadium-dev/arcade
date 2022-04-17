@@ -73,23 +73,37 @@ lint: fmt tidy
 
 # ____ test __________________________________________________________________
 
-.PHONY: unit_test test
+.PHONY: unit_test migrate_test integration_test test
 
 unit_test:
 	@printf "\nRunning go test...\n"
 	go test -cover -race ./...
 
+dev_init: containers
+	@bin/dev init networks
+	@bin/dev init certs
+	@bin/dev init db
+
+migrate_test: dev_init
+	@bin/dev init migrate up
+	@bin/dev init migrate down -all
+
+integration_test: migrate_test
+	@bin/dev init migrate up
+	@bin/dev start cockroach assets
+	@bin/dev ps
+	@bin/integration_test; rc=$$?; \
+	  if [ $$rc -ne 0 ]; then bin/dev logs haproxy infra; fi;\
+	  bin/dev stop;\
+	  exit $$rc
+
 test: unit_test
 
 # ____ build _________________________________________________________________
 
-.PHONY: build arcade assets version
+.PHONY: build assets version
 
-build: arcade assets
-
-arcade:
-	@printf "\nBuilding arcade...\n"
-	CGO_ENABLED=0 go build -ldflags "$(ldflags)" -o ./dist/arcade ./cmd/arcade
+build: assets
 
 assets:
 	@printf "\nBuilding assets...\n"
@@ -105,6 +119,9 @@ version:
 containers:
 	 make -C dockerfiles all
 
+migrate_container:
+	make -C dockerfiles migrate_container
+
 push_containers:
 	make -C dockerfiles push_containers
 
@@ -114,4 +131,6 @@ push_containers:
 
 clean:
 	@printf "\nClean...\n"
+		@bin/dev stop
+		@bin/dev clean
 		-rm -rf dist

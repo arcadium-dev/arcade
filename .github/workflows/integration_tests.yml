@@ -1,20 +1,13 @@
-name: Build
+name: Integration Tests
 
 env:
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '**'
+on: pull_request
 
 jobs:
-
-  build:
-    name: Build
+  integration_tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +20,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v2
       with:
+        stable: false
         go-version: '1.18'
 
     - name: Checkout code
@@ -34,13 +28,9 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Lint
+    - name: Integration Tests
       run: |
-        make lint
-
-    - name: Test
-      run: |
-        make test
+        make integration_test
 
     - name: Cleanup SSH
       run: |

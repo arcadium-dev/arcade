@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+
+# Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+source "$(dirname $0)/common.sh"
+
+app="$(basename $0)"
+declare -r app
+
+declare -ar infrastructure=(
+  "cockroach"
+  "prometheus"
+)
+
+declare -ar cockroach_dbs=(
+  "arcade"
+)
+
+declare -ar cockroach_clients=(
+  "root"
+  "arcadium"
+)
+
+declare -ar tls_servers=(
+  "assets"
+)
+
+declare -ar tls_clients=(
+  "curl"
+)
+
+declare -ar networks=(
+  "game_network"
+  "assets_network"
+  "data_network"
+  "metrics_network"
+)
+
+declare -ar services=(
+  "assets"
+)
+
+declare -ar migrations=(
+  "migrate"
+)
+
+#----------------------------------------------------------------------------
+# init
+
+init() {
+  local command="${1:-all}"; shift >/dev/null
+  if ! cmd_check "init_${command}"; then
+    help
+    failed
+  fi
+  "init_${command}" "$@"
+}
+
+init_all() {
+  init_networks && init_certs && init_db && init_migrate
+}
+
+init_networks() {
+  info "Creating networks"
+  local network
+  for network in "${networks[@]}"; do
+    printf "%-20s" "${network}:"
+    docker network create "${network}" 2>&1 | sed "s/Error response from daemon: //"
+  done
+  docker network ls
+}
+
+init_certs() {
+  local -r certs_dir="/etc/certs"
+
+  # Remove the old certs
+  docker volume rm certificates_volume 2>/dev/null
+
+  # Create the cockroach CA cert.
+  info "Installing Cockroach CA certificate"
+  if ! docker-compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+    failed
+  fi
+
+  # Create the cockroach node cert.
+  info "Creating Cockroach node certificate"
+  if ! docker-compose run --rm cockroach cert create-node cockroach --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+    failed
+  fi
+
+  # Create the cockroach client cert.
+  local cockroach_client
+  for cockroach_client in ${cockroach_clients[@]}; do
+    info "Creating Cockroach client certificate for user ${cockroach_client}"
+    if ! docker-compose run --rm cockroach cert create-client "${cockroach_client}" --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+      failed
+    fi
+  done
+
+  docker-compose run --rm cockroach cert list --certs-dir="${certs_dir}"
+
+  # Create the CA cert for TLS communication.
+  info "Installing root CA certificate"
+  if ! docker-compose run --rm mkcert -install; then
+    failed
+  fi
+
+  # Create the server certs for TLS servers.
+  local server_cert
+  for server_cert in ${tls_servers[@]}; do
+    info "Creating ${server_cert} server cert"
+    if ! docker-compose run --rm mkcert -cert-file "${certs_dir}/${server_cert}.pem" -key-file "${certs_dir}/${server_cert}_key.pem" ${server_cert}; then
+      failed
+    fi
+  done
+
+  # Create the client certs for TLS clients.
+  local client_cert
+  for client_cert in ${tls_clients[@]}; do
+    info "Creating ${client_cert} client cert"
+    if ! docker-compose run --rm mkcert -client -cert-file "${certs_dir}/${client_cert}_client.pem" -key-file "${certs_dir}/${client_cert}_client_key.pem" ${client_cert}; then
+      failed
+    fi
+  done
+
+  success
+}
+
+init_db() {
+  info "Database initialization"
+
+  # Remove the db volume.
+  docker-compose down &>/dev/null
+  docker volume rm arcade_database_volume #&>/dev/null
+  docker-compose up -d "cockroach"
+  sleep 1
+  set +x
+
+  local db
+  for db in ${cockroach_dbs[@]}; do
+    create_db "${db}"
+  done
+}
+
+create_db() {
+  local -r db="${1}"
+  local user="arcadium" role="${db}_role" passwd="arcadium"
+
+  info "${db} database initialization"
+  if ! docker-compose run --rm csql --execute="
+    create database ${db};
+    show databases;
+    use ${db};
+    create role ${role};
+    grant create, drop on database ${db} to ${role};
+    alter default privileges grant delete, insert, select, update on tables to ${role};
+    show grants on database ${db};
+    create user ${user} with password ${passwd};
+    grant ${role} to ${user};
+    show roles;
+  "; then
+    failed
+  fi
+}
+
+init_migrate() {
+  local -a args=( "up" )
+  if [[ "$@" != "" ]]; then
+    args=( "$@" )
+  fi
+
+  info "Running database migrations"
+
+  local migrate
+  for migrate in ${migrations[@]}; do
+    info "Running ${migrate} ${args[@]}"
+    if ! docker-compose run --rm "${migrate}" "${args[@]}"; then
+      failed
+    fi
+  done
+}
+
+#----------------------------------------------------------------------------
+# services
+
+start() {
+  info "Services starting"
+  set +o noglob
+  chmod 0644 env/*
+  set -o noglob
+
+  local -a s
+  if [[ $# -gt 1 ]]; then
+    s=("$@")
+  else
+    s=(${infrastructure[@]} ${services[@]})
+  fi
+
+  if ! docker-compose up -d ${s[@]}; then
+    failed
+  fi
+}
+
+up() {
+  start
+}
+
+status() {
+  info "Services status"
+  docker-compose ps
+}
+
+ps() {
+  status
+}
+
+logs() {
+  docker-compose logs "$@"
+}
+
+stop() {
+  info "Services stopping"
+
+  local -a s=()
+  if [[ $# -gt 0 ]]; then
+    s=("$@")
+  fi
+
+  if [[ ${#s[@]} -eq 0 ]]; then
+    docker-compose down
+  else
+    docker-compose stop "${s[@]}"
+  fi
+}
+
+down() {
+  stop
+}
+
+#----------------------------------------------------------------------------
+# clean
+
+clean() {
+  stop
+  yes | docker system prune -a || true
+  yes | docker volume prune || true
+  yes | docker network prune || true
+}
+
+#----------------------------------------------------------------------------
+# run
+
+run() {
+  docker-compose run --rm --name "$1" "$@"
+}
+
+#----------------------------------------------------------------------------
+# completion
+
+completion() {
+  case "${1:-}" in
+    "init")
+      echo "networks certs db migrate";;
+    "dev")
+      echo "init start up status ps logs stop down clean help";;
+  esac
+  exit 0
+}
+
+#----------------------------------------------------------------------------
+# help
+
+help() {
+  cat <<- EOHELP
+	usage: ${app} command command_options
+
+	  commands:
+	    init [networks|certs|db|migrate]
+      start
+      up
+      status
+      ps
+      logs
+      stop
+      down
+      clean
+      help
+	EOHELP
+}
+
+#----------------------------------------------------------------------------
+# main
+
+main() {
+  if [[ ! -x ./bin/dev ]]; then
+    die "Must be in the root directory to run dev."
+  fi
+
+  local command="${1:-help}"
+  if ! cmd_check "${command}"; then
+    help
+    failed
+  fi
+  shift || true
+  if ! "${command}" "$@"; then
+    failed
+  fi
+}
+
+main "$@"

@@ -5,7 +5,7 @@ services:
   # Infrastructure
   #--------------------------------------------------------------------------
   cockroach:
-    image: cockroachdb/cockroach:v21.2.6
+    image: cockroachdb/cockroach:v21.2.8
     container_name: cockroach
     hostname: cockroach
     command: ["start-single-node", "--certs-dir=/etc/certs"]
@@ -30,7 +30,7 @@ services:
     networks:
       - metrics_network
 
-  game:
+  '2048':
     image: marcincuber/2048-game
     container_name: game
     ports:
@@ -40,9 +40,9 @@ services:
 
   # Services
   #--------------------------------------------------------------------------
-  arcade:
-    image: arcade:latest
-    container_name: arcade
+  game:
+    image: game:latest
+    container_name: game
     depends_on:
       - cockroach
     env_file:
@@ -99,7 +99,7 @@ services:
       - assets_network
 
   csql:
-    image: cockroachdb/cockroach:v21.2.6
+    image: cockroachdb/cockroach:v21.2.8
     entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
     env_file:
       - env/csql

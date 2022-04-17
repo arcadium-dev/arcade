@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go_version := 1.18rc1
+go_version := 1.18.1
 migrate_version := v4.15.1
 mkcert_version := v1.4.3
 
@@ -27,23 +27,9 @@ all: containers tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: containers arcade_container assets_container migrate_container
+.PHONY: containers assets_container migrate_container
 
-containers: arcade_container assets_container migrate_container
-
-arcade_container: Dockerfile.arcade
-	DOCKER_BUILDKIT=1 docker build \
-		--file Dockerfile.arcade \
-		--ssh default \
-		--build-arg go_version=$(go_version) \
-		--build-arg version=$(version) \
-		--build-arg branch=$(branch) \
-		--build-arg commit=$(commit) \
-		--build-arg build_date=$(date) \
-		--rm --force-rm \
-		--tag arcade:latest \
-		--tag arcade:$(version) \
-		..
+containers: assets_container migrate_container
 
 assets_container: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -70,16 +56,12 @@ migrate_container: Dockerfile.migrate
 
 # ____ push _________________________________________________________________
 
-.PHONY: push_containers push_login push_arcade push_assets push_migrate
+.PHONY: push_containers push_login push_assets push_migrate
 
 push_containers: push_login push_arcade push_assets push_migrate
 
 push_login:
 	aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(container_registry)
-
-push_arcade:
-	docker tag arcade:$(version) $(container_registry)/arcadium/arcade:$(version)
-	docker push $(container_registry)/arcadium/arcade:$(version)
 
 push_assets:
 	docker tag assets:$(version) $(container_registry)/arcadium/assets:$(version)

@@ -1,8 +1,8 @@
 test_players_create_get_update_delete() {
   title "Players: create, get, update and delete"
 
-  local name="$(tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2)))"
-  local desc="$(for i in {1..10}; do tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2)); echo -n " "; done)"
+  local name="$(tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2))) 2>/dev/null"
+  local desc="$(for i in {1..10}; do tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2)); echo -n " "; done) 2>/dev/null"
   local home="00000000-0000-0000-0000-000000000001"
   local location="00000000-0000-0000-0000-000000000001"
   local resp id actual

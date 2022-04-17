@@ -97,7 +97,7 @@ integration_test: migrate_test
 	  bin/dev stop;\
 	  exit $$rc
 
-test: unit_test integration_test
+test: unit_test
 
 # ____ build _________________________________________________________________
 

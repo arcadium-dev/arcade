@@ -88,7 +88,7 @@ migrate_test: dev_init
 	@bin/dev init migrate up
 	@bin/dev init migrate down -all
 
-integration_test:
+integration_test: migrate_test
 	@bin/dev init migrate up
 	@bin/dev start cockroach assets
 	@bin/dev ps

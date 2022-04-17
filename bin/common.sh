@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=2034
 
@@ -88,15 +88,9 @@ function warn() {(
 #----------------------------------------------------------------------------
 function info() {(
   IFS=$' '
-  if [[ $# -eq 2 ]]; then
-    local heading="${1:-}" body="${2:-}"
-    param_check "${heading}" "${body}"
-    echo -e "\n${YELLOW}${heading}:${CLEAR} ${body}"
-  else
-    local message="$*"
-    param_check "${message}"
-    echo -e "\n${YELLOW}${message}${CLEAR}"
-  fi
+  local message="$*"
+  param_check "${message}"
+  echo -e "\n${YELLOW}${message}${CLEAR}"
 )}
 
 #----------------------------------------------------------------------------
@@ -136,7 +130,7 @@ function msg() {(
 # success
 #----------------------------------------------------------------------------
 function success() {
-  echo -e "${GREEN}Success${CLEAR}"
+  echo -e "\n${GREEN}Success${CLEAR}"
   return "${SUCCESS}"
 }
 
@@ -144,7 +138,7 @@ function success() {
 # failed
 #----------------------------------------------------------------------------
 function failed() {
-  echo -e "${RED}Failed${CLEAR}"
+  echo -e "\n${RED}Failed${CLEAR}"
   exit "${FAILURE}"
 }
 

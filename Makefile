@@ -73,13 +73,31 @@ lint: fmt tidy
 
 # ____ test __________________________________________________________________
 
-.PHONY: unit_test test
+.PHONY: unit_test migrate_test integration_test test
 
 unit_test:
 	@printf "\nRunning go test...\n"
 	go test -cover -race ./...
 
-test: unit_test
+dev_init: containers
+	@bin/dev init networks
+	@bin/dev init certs
+	@bin/dev init db
+
+migrate_test: dev_init
+	@bin/dev init migrate up
+	@bin/dev init migrate down -all
+
+integration_test:
+	@bin/dev init migrate up
+	@bin/dev start cockroach assets
+	@bin/dev ps
+	@bin/integration_test; rc=$$?; \
+	  if [ $$rc -ne 0 ]; then bin/dev logs haproxy infra; fi;\
+	  bin/dev stop;\
+	  exit $$rc
+
+test: unit_test integration_test
 
 # ____ build _________________________________________________________________
 
@@ -113,4 +131,6 @@ push_containers:
 
 clean:
 	@printf "\nClean...\n"
+		@bin/dev stop
+		@bin/dev clean
 		-rm -rf dist

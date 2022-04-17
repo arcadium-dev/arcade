@@ -74,13 +74,15 @@ const (
 	createQuery = `INSERT INTO players (name, description, home, location) ` +
 		`VALUES ($1, $2, $3, $4) ` +
 		`RETURNING player_id, name, description, home, location, created, updated`
-	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5 ` +
-		`WHERE player_id = $1` +
-		`RETURNING player_id, name, home, location, created, updated`
+	updateQuery = `UPDATE players SET name = $2, description = $3, home = $4, location = $5, updated = now() ` +
+		`WHERE player_id = $1 ` +
+		`RETURNING player_id, name, description, home, location, created, updated`
 	removeQuery = `DELETE FROM players WHERE player_id = $1`
 )
 
 func (s Service) list(ctx context.Context) ([]arcade.Player, error) {
+	failMsg := "failed to list players"
+
 	logger := log.LoggerFromContext(ctx)
 	logger.Info("msg", "list players")
 
@@ -88,7 +90,7 @@ func (s Service) list(ctx context.Context) ([]arcade.Player, error) {
 
 	rows, err := s.db.QueryContext(ctx, listQuery)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to list players: %s", cerrors.ErrInternal, err)
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -109,23 +111,25 @@ func (s Service) list(ctx context.Context) ([]arcade.Player, error) {
 			&p.updated,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("%w: failed to list players:  %s", cerrors.ErrInternal, err)
+			return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 		}
 		players = append(players, p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: failed to list players: %s", cerrors.ErrInternal, err)
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 	}
 
 	return players, nil
 }
 
 func (s Service) get(ctx context.Context, pid string) (arcade.Player, error) {
-	log.LoggerFromContext(ctx).Info("msg", "get player")
+	failMsg := "failed to get player"
+
+	log.LoggerFromContext(ctx).With("playerID", pid).Info("msg", "get player")
 
 	playerID, err := uuid.Parse(pid)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid player id: '%s'", cerrors.ErrInvalidArgument, pid)
+		return nil, fmt.Errorf("%s: %w: invalid player id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 
 	var p player
@@ -139,40 +143,41 @@ func (s Service) get(ctx context.Context, pid string) (arcade.Player, error) {
 		&p.updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, cerrors.ErrNotFound
+		return nil, fmt.Errorf("%s: %w", failMsg, cerrors.ErrNotFound)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", cerrors.ErrInternal, err)
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 	}
 
 	return p, nil
 }
 
 func (s Service) create(ctx context.Context, req playerRequest) (arcade.Player, error) {
-	logger := log.LoggerFromContext(ctx)
+	failMsg := "failed to create player"
+
+	logger := log.LoggerFromContext(ctx).With("name", req.Name)
 	logger.Info("msg", "create player")
 
 	// Validate the input.
 	if req.Name == "" {
-		return nil, fmt.Errorf("%w: empty player name", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty player name", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Name) > maxNameLen {
-		return nil, fmt.Errorf("%w: player name exceeds maximum length", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: player name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if req.Description == "" {
-		return nil, fmt.Errorf("%w: empty player description", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty player description", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Description) > maxDescriptionLen {
-		return nil, fmt.Errorf("%w: player description exceeds maximum length ", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: player description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	homeID, err := uuid.Parse(req.Home)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"%w: invalid home: '%s'", cerrors.ErrInvalidArgument, req.Home)
+		return nil, fmt.Errorf("%s: %w: invalid home: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Home)
 	}
 	locationID, err := uuid.Parse(req.Location)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid location: '%s'", cerrors.ErrInvalidArgument, req.Location)
+		return nil, fmt.Errorf("%s: %w: invalid location: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Location)
 	}
 
 	// Query the database.
@@ -198,51 +203,56 @@ func (s Service) create(ctx context.Context, req playerRequest) (arcade.Player, 
 	// in the rooms table, thus we will return an invalid argument error.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%w: the given home or location given does not exist: home '%s', location '%s'",
-			cerrors.ErrInvalidArgument, req.Home, req.Location,
+			"%s: %w: the given home or location given does not exist: home '%s', location '%s'",
+			failMsg, cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}
 
 	// A UniqueViolation means the inserted player violated a uniqueness
-	// constraint, and that the player record already exists in the table.
+	// constraint. The player record already exists in the table or the name
+	// is not unique.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return nil, fmt.Errorf("%w: player already exists", cerrors.ErrAlreadyExists)
+		return nil, fmt.Errorf("%s: %w: player already exists", failMsg, cerrors.ErrAlreadyExists)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("%w: unable to create player:  %s", cerrors.ErrInternal, err.Error())
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err.Error())
 	}
+
+	logger.With("playerID", p.id).Info("msg", "created player")
 	return p, nil
 }
 
 func (s Service) update(ctx context.Context, pid string, req playerRequest) (arcade.Player, error) {
-	logger := log.LoggerFromContext(ctx)
+	failMsg := "failed to update player"
+
+	logger := log.LoggerFromContext(ctx).With("playerID", pid, "name", req.Name)
 	logger.Info("msg", "update player")
 
 	// Validate the input.
 	playerID, err := uuid.Parse(pid)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid player id: '%s'", cerrors.ErrInvalidArgument, pid)
+		return nil, fmt.Errorf("%s: %w: invalid player id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 	if req.Name == "" {
-		return nil, fmt.Errorf("%w: empty player name", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty player name", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Name) > maxNameLen {
-		return nil, fmt.Errorf("%w: player name exceeds maximum length", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: player name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if req.Description == "" {
-		return nil, fmt.Errorf("%w: empty player description", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty player description", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Description) > maxDescriptionLen {
-		return nil, fmt.Errorf("%w: player description exceeds maximum length ", cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: player description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	homeID, err := uuid.Parse(req.Home)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid home: '%s'", cerrors.ErrInvalidArgument, req.Home)
+		return nil, fmt.Errorf("%s: %w: invalid home: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Home)
 	}
 	locationID, err := uuid.Parse(req.Location)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid location: '%s'", cerrors.ErrInvalidArgument, req.Location)
+		return nil, fmt.Errorf("%s: %w: invalid location: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Location)
 	}
 
 	// Query the database.
@@ -265,7 +275,7 @@ func (s Service) update(ctx context.Context, pid string, req playerRequest) (arc
 
 	// Tried to update a player that doesn't exist.
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, cerrors.ErrNotFound
+		return nil, fmt.Errorf("%s: %w", failMsg, cerrors.ErrNotFound)
 	}
 
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
@@ -273,32 +283,40 @@ func (s Service) update(ctx context.Context, pid string, req playerRequest) (arc
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%w: the given home or location given does not exist: home '%s', location '%s'",
-			cerrors.ErrInvalidArgument, req.Home, req.Location,
+			"%s: %w: the given home or location given does not exist: home '%s', location '%s'",
+			failMsg, cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}
 
+	// A UniqueViolation means the inserted player violated a uniqueness
+	// constraint. The player name is not unique.
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		return nil, fmt.Errorf("%s: %w: player name is not unique", failMsg, cerrors.ErrAlreadyExists)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("%w: unable to update player '%s':  %s", cerrors.ErrInternal, pid, err.Error())
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err.Error())
 	}
 
 	return p, nil
 }
 
 func (s Service) remove(ctx context.Context, pid string) error {
-	log.LoggerFromContext(ctx).Info("msg", "remove player")
+	failMsg := "failed to remove player"
+
+	log.LoggerFromContext(ctx).With("playerID", pid).Info("msg", "remove player")
 
 	playerID, err := uuid.Parse(pid)
 	if err != nil {
-		return fmt.Errorf("%w: invalid player id: '%s'", cerrors.ErrInvalidArgument, pid)
+		return fmt.Errorf("%s: %w: invalid player id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 
 	_, err = s.db.ExecContext(ctx, removeQuery, playerID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("%w: player '%s'", cerrors.ErrNotFound, pid)
+		return fmt.Errorf("%s: %w", failMsg, cerrors.ErrNotFound)
 	}
 	if err != nil {
-		return fmt.Errorf("%w: unable to find player '%s': %s", cerrors.ErrInternal, pid, err)
+		return fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 	}
 
 	return nil

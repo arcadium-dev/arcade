@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS players (
   player_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name        TEXT NOT NULL,
+  name        TEXT UNIQUE NOT NULL,
   description TEXT NOT NULL,
 
   created TIMESTAMP NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),

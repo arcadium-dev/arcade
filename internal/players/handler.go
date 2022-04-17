@@ -23,7 +23,6 @@ import (
 
 	cerrors "arcadium.dev/core/errors"
 	chttp "arcadium.dev/core/http"
-	"arcadium.dev/core/log"
 	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade/internal/arcade"
@@ -71,8 +70,6 @@ func (h handler) get(w http.ResponseWriter, r *http.Request) {
 	playerID := params["playerID"]
 
 	ctx := r.Context()
-	logger := log.LoggerFromContext(ctx).With("playerID", playerID)
-	ctx = log.NewContextWithLogger(ctx, logger)
 
 	p, err := h.s.get(ctx, playerID)
 	if err != nil {
@@ -92,7 +89,6 @@ func (h handler) get(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := log.LoggerFromContext(ctx)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -119,9 +115,6 @@ func (h handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger = logger.With("name", req.Name)
-	ctx = log.NewContextWithLogger(ctx, logger)
-
 	p, err := h.s.create(ctx, req)
 	if err != nil {
 		chttp.Response(ctx, w, err)
@@ -139,12 +132,10 @@ func (h handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	params := mux.Vars(r)
 	playerID := params["playerID"]
-
-	ctx := r.Context()
-	logger := log.LoggerFromContext(ctx).With("playerID", playerID)
-	ctx = log.NewContextWithLogger(ctx, logger)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -188,16 +179,14 @@ func (h handler) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) remove(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	params := mux.Vars(r)
 	playerID := params["playerID"]
 
-	ctx := r.Context()
-	logger := log.LoggerFromContext(ctx).With("playerID", playerID)
-	ctx = log.NewContextWithLogger(ctx, logger)
-
 	err := h.s.remove(ctx, playerID)
 	if err != nil {
-		chttp.Response(r.Context(), w, err)
+		chttp.Response(ctx, w, err)
 		return
 	}
 

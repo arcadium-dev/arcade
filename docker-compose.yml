@@ -99,7 +99,7 @@ services:
       - assets_network
 
   csql:
-    image: cockroachdb/cockroach:v21.2.7
+    image: cockroachdb/cockroach:v21.2.8
     entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
     env_file:
       - env/csql

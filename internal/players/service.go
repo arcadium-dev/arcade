@@ -203,7 +203,7 @@ func (s Service) create(ctx context.Context, req playerRequest) (arcade.Player, 
 	// in the rooms table, thus we will return an invalid argument error.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given home or location given does not exist: home '%s', location '%s'",
+			"%s: %w: the given home or location does not exist: home '%s', location '%s'",
 			failMsg, cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}
@@ -283,7 +283,7 @@ func (s Service) update(ctx context.Context, pid string, req playerRequest) (arc
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given home or location given does not exist: home '%s', location '%s'",
+			"%s: %w: the given home or location does not exist: home '%s', location '%s'",
 			failMsg, cerrors.ErrInvalidArgument, req.Home, req.Location,
 		)
 	}

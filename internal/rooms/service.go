@@ -203,7 +203,7 @@ func (s Service) create(ctx context.Context, req roomRequest) (arcade.Room, erro
 	// in the rooms table, thus we will return an invalid argument error.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given owner or parent given does not exist: owner '%s', parent '%s'",
+			"%s: %w: the given owner or parent does not exist: owner '%s', parent '%s'",
 			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Parent,
 		)
 	}
@@ -283,7 +283,7 @@ func (s Service) update(ctx context.Context, pid string, req roomRequest) (arcad
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given owner or parent given does not exist: owner '%s', parent '%s'",
+			"%s: %w: the given owner or parent does not exist: owner '%s', parent '%s'",
 			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Parent,
 		)
 	}

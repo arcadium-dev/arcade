@@ -28,7 +28,6 @@ import (
 	"arcadium.dev/core/http"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/sql"
-	"arcadium.dev/core/test"
 )
 
 func TestServer(t *testing.T) {
@@ -198,11 +197,11 @@ func TestServer(t *testing.T) {
 		}
 
 		s.Start(args)
-		if b.Len() != 4 {
+		if b.Len() != 5 {
 			t.Fatalf("Unexpected error log buffer length: %d", b.Len())
 		}
 		expected := `level=error msg="failed to create telemetry server" error="telemetry server construction failure"`
-		if !strings.Contains(b.Index(3), expected) {
+		if !strings.Contains(b.Index(4), expected) {
 			t.Errorf("\nExpected error log: %s\nActual error log:   %s", expected, b.Index(3))
 		}
 
@@ -236,9 +235,9 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setup() (*Server, *test.StringBuffer) {
+func setup() (*Server, *log.StringBuffer) {
 	s := New("assets", "version", "branch", "commit", "date", "go")
-	b := test.NewStringBuffer()
+	b := log.NewStringBuffer()
 	s.stdout = b
 	s.stderr = b
 

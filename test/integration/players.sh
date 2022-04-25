@@ -1,4 +1,4 @@
-test_players_create_get_update_delete() {
+test_players() {
   title "Players: create, get, update and delete"
 
   local name="$(tr -cd 'A-Za-z' < /dev/urandom 2>/dev/null | head -c $(( $RANDOM % 7  + 2)))"
@@ -9,7 +9,9 @@ test_players_create_get_update_delete() {
 
   # Create a player
   resp="$(players_create "${name}" "${desc}" "${home}" "${location}")"
-  if is_error "${resp}"; then
+  if [[ $? -ne $SUCCESS ]]; then
+    fatal "Fail: ${resp}"
+  elif is_error "${resp}"; then
     fatal "$(error_detail "${resp}")"
   fi
   id="$(data_field "playerID" "${resp}")"
@@ -17,7 +19,9 @@ test_players_create_get_update_delete() {
 
   # Get the player
   resp="$(players_get "${id}")"
-  if is_error "${resp}"; then
+  if [[ $? -ne $SUCCESS ]]; then
+    fail "Fail: ${resp}"
+  elif is_error "${resp}"; then
     fail "$(error_detail "${resp}")"
   fi
 
@@ -31,7 +35,7 @@ test_players_create_get_update_delete() {
 
   actual="$(data_field "description" "${resp}")"
   if [[ "${actual}" != "${desc}" ]]; then
-    fail "Expected description '${token}', actual '${actual}'"
+    fail "Expected description '${desc}', actual '${actual}'"
   else
     pass "description matches"
   fi
@@ -53,7 +57,9 @@ test_players_create_get_update_delete() {
   # Update the player name
   name="$(tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2)))"
   resp="$(players_update "${id}" "${name}" "${desc}" "${home}" "${location}")"
-  if is_error "${resp}"; then
+  if [[ $? -ne $SUCCESS ]]; then
+    fatal "Fail: ${resp}"
+  elif is_error "${resp}"; then
     fatal "$(error_detail "${resp}")"
   fi
 
@@ -66,7 +72,7 @@ test_players_create_get_update_delete() {
 
   actual="$(data_field "description" "${resp}")"
   if [[ "${actual}" != "${desc}" ]]; then
-    fail "Expected description '${token}', actual '${actual}'"
+    fail "Expected description '${desc}', actual '${actual}'"
   else
     pass "description matches"
   fi
@@ -87,7 +93,9 @@ test_players_create_get_update_delete() {
 
   # Remove the player
   resp="$(players_remove "${id}")"
-  if is_error "${resp}"; then
+  if [[ $? -ne $SUCCESS ]]; then
+    fatal "Fail: ${resp}"
+  elif is_error "${resp}"; then
     fail "$(error_detail "${resp}")"
   fi
 

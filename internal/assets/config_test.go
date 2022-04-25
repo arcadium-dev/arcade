@@ -16,29 +16,24 @@ package assets
 
 import (
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 func TestConfig(t *testing.T) {
-	e := test.Env(map[string]string{
-		// Log config
-		"LOG_LEVEL":  "Debug",
-		"LOG_FORMAT": "JSON",
+	// Log config
+	t.Setenv("LOG_LEVEL", "Debug")
+	t.Setenv("LOG_FORMAT", "JSON")
 
-		// DB confing
-		"SQL_URL": "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full",
+	// DB confing
+	t.Setenv("SQL_URL", "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full")
 
-		// TLS config
-		"TLS_CERT":   "/etc/certs/cert.pem",
-		"TLS_KEY":    "/etc/certs/key.pem",
-		"TLS_CACERT": "/etc/certs/rootCA.pem",
+	// TLS config
+	t.Setenv("TLS_CERT", "/etc/certs/cert.pem")
+	t.Setenv("TLS_KEY", "/etc/certs/key.pem")
+	t.Setenv("TLS_CACERT", "/etc/certs/rootCA.pem")
 
-		// Server config
-		"API_SERVER_ADDR":       ":4201",
-		"TELEMETRY_SERVER_ADDR": ":4202",
-	})
-	e.Set(t)
+	// Server config
+	t.Setenv("API_SERVER_ADDR", ":4201")
+	t.Setenv("TELEMETRY_SERVER_ADDR", ":4202")
 
 	cfg, err := newConfig()
 	if err != nil {

@@ -95,7 +95,7 @@ players_list() {
   result="$(bin/dev run curl --request GET "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
 
-  if [[ "${result}" != "" ]]; then
+  if [[ "${result:-}" != "" ]]; then
     msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
     echo "${result}" >&1
   fi
@@ -113,7 +113,7 @@ players_get() {
   result="$(bin/dev run curl --request GET "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
-  if [[ "${result}" != "" ]]; then
+  if [[ "${result:-}" != "" ]]; then
     msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
     echo "${result}" >&1
   fi
@@ -134,7 +134,7 @@ players_create() {
   result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","home":"'"${_home}"'","location":"'"${_loc}"'"}' "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
 
-  if [[ "${result}" != "" ]]; then
+  if [[ "${result:-}" != "" ]]; then
     msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
     echo "${result}" >&1
   fi
@@ -143,7 +143,7 @@ players_create() {
 
 players_update() {
   local _id="$1" _name="$2" _desc="$3" _home="$4" _loc="$5"
-  param_check "${id}" "${_name}" "${_desc}" "${_home}" "${_loc}"
+  param_check "${_id}" "${_name}" "${_desc}" "${_home}" "${_loc}"
 
   info "Updating player" >&2
   msg "id:          ${_id}" >&2
@@ -156,7 +156,7 @@ players_update() {
   result="$(bin/dev run curl --request PUT --data '{"playerID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","home":"'"${_home}"'","location":"'"${_loc}"'"}' "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
-  if [[ "${result}" != "" ]]; then
+  if [[ "${result:-}" != "" ]]; then
     msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
     echo "${result}" >&1
   fi
@@ -168,13 +168,92 @@ players_remove() {
   param_check "${_id}"
 
   info "Removing player" >&2
-  msg "orchestrator id: ${_id}" >&2
+  msg "player id: ${_id}" >&2
 
   local result
   result="$(bin/dev run curl --request DELETE "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
-  if [[ "${result}" != "" ]]; then
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+rooms_get() {
+  local _id="$1"
+  param_check "${_id}"
+
+  info "Getting room" >&2
+  msg "id: ${_id}" >&2
+
+  local result
+  result="$(bin/dev run curl --request GET "https://assets:4201/rooms/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+rooms_create() {
+  local _name="$1" _desc="$2" _owner="$3" _parent="$4"
+  param_check "${_name}" "${_desc}" "${_owner}" "${_parent}"
+
+  info "Creating room" >&2
+  msg "name:        ${_name}" >&2
+  msg "description: ${_desc}" >&2
+  msg "owner:       ${_owner}" >&2
+  msg "parent:      ${_parent}" >&2
+
+  local result
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","parent":"'"${_parent}"'"}' "https://assets:4201/rooms" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+rooms_update() {
+  local _id="$1" _name="$2" _desc="$3" _owner="$4" _parent="$5"
+  param_check "${_id}" "${_name}" "${_desc}" "${_owner}" "${_parent}"
+
+  info "Updating room" >&2
+  msg "id:          ${_id}" >&2
+  msg "name:        ${_name}" >&2
+  msg "description: ${_desc}" >&2
+  msg "owner:       ${_owner}" >&2
+  msg "parent:      ${_parent}" >&2
+
+  local result
+  result="$(bin/dev run curl --request PUT --data '{"roomID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","parent":"'"${_parent}"'"}' "https://assets:4201/rooms/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+rooms_remove() {
+  local _id="$1"
+  param_check "${_id}"
+
+  info "Removing room" >&2
+  msg "room id: ${_id}" >&2
+
+  local result
+  result="$(bin/dev run curl --request DELETE "https://assets:4201/rooms/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
     msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
     echo "${result}" >&1
   fi

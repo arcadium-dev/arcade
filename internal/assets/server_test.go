@@ -197,11 +197,11 @@ func TestServer(t *testing.T) {
 		}
 
 		s.Start(args)
-		if b.Len() != 5 {
+		if b.Len() != 6 {
 			t.Fatalf("Unexpected error log buffer length: %d", b.Len())
 		}
 		expected := `level=error msg="failed to create telemetry server" error="telemetry server construction failure"`
-		if !strings.Contains(b.Index(4), expected) {
+		if !strings.Contains(b.Index(5), expected) {
 			t.Errorf("\nExpected error log: %s\nActual error log:   %s", expected, b.Index(3))
 		}
 

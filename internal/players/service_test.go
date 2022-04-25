@@ -347,7 +347,7 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create player: invalid argument: the given home or location given does not exist: " +
+		expected := "failed to create player: invalid argument: the given home or location does not exist: " +
 			"home '00000000-0000-0000-0000-000000000001', location '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
@@ -606,7 +606,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update player: invalid argument: the given home or location given does not exist: " +
+		expected := "failed to update player: invalid argument: the given home or location does not exist: " +
 			"home '00000000-0000-0000-0000-000000000001', location '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)

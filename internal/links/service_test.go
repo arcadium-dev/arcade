@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package rooms
+package links
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func TestServiceNew(t *testing.T) {
 
 func TestServiceName(t *testing.T) {
 	s := Service{}
-	if s.Name() != "rooms" {
+	if s.Name() != "links" {
 		t.Error("Unexpected service name")
 	}
 }
@@ -56,7 +56,7 @@ func TestServiceShutdown(t *testing.T) {
 
 func TestServiceList(t *testing.T) {
 	const (
-		listQ = "^SELECT room_id, name, description, owner, parent, created, updated FROM rooms$"
+		listQ = "^SELECT link_id, name, description, owner, location, destination, created, updated FROM links$"
 	)
 
 	t.Run("sql query error", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestServiceList(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to list rooms: internal error: unknown error"
+		expected := "failed to list links: internal error: unknown error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -81,9 +81,9 @@ func TestServiceList(t *testing.T) {
 
 	t.Run("sql scan error", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{
-			"room_id", "name", "description", "owner", "parent", "created", "updated",
+			"link_id", "name", "description", "owner", "location", "destination", "created", "updated",
 		}).
-			AddRow(id, name, description, owner, parent, created, updated).
+			AddRow(id, name, description, owner, location, destination, created, updated).
 			RowError(0, errors.New("scan error"))
 
 		s, mock := setupService(t)
@@ -96,7 +96,7 @@ func TestServiceList(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to list rooms: internal error: scan error"
+		expected := "failed to list links: internal error: scan error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -107,28 +107,29 @@ func TestServiceList(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		rows := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(listQ).
 			WillReturnRows(rows).
 			RowsWillBeClosed()
 
-		rooms, err := s.list(context.Background())
+		links, err := s.list(context.Background())
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
-		if len(rooms) != 1 {
-			t.Fatalf("Unexpected length of room list")
+		if len(links) != 1 {
+			t.Fatalf("Unexpected length of link list")
 		}
-		if rooms[0].ID() != id ||
-			rooms[0].Name() != name ||
-			rooms[0].Description() != description ||
-			rooms[0].Owner() != owner ||
-			rooms[0].Parent() != parent {
-			t.Errorf("\nExpected room: %+v", rooms[0])
+		if links[0].ID() != id ||
+			links[0].Name() != name ||
+			links[0].Description() != description ||
+			links[0].Owner() != owner ||
+			links[0].Location() != location ||
+			links[0].Destination() != destination {
+			t.Errorf("\nExpected link: %+v", links[0])
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -139,10 +140,10 @@ func TestServiceList(t *testing.T) {
 
 func TestServiceGet(t *testing.T) {
 	const (
-		getQ = "^SELECT room_id, name, description, owner, parent, created, updated FROM rooms WHERE room_id = (.+)$"
+		getQ = "^SELECT link_id, name, description, owner, location, destination, created, updated FROM links WHERE link_id = (.+)$"
 	)
 
-	t.Run("invalid roomID", func(t *testing.T) {
+	t.Run("invalid linkID", func(t *testing.T) {
 		s, _ := setupService(t)
 
 		_, err := s.get(context.Background(), "42")
@@ -150,7 +151,7 @@ func TestServiceGet(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to get room: invalid argument: invalid room id: '42'"
+		expected := "failed to get link: invalid argument: invalid link id: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -165,7 +166,7 @@ func TestServiceGet(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to get room: not found"
+		expected := "failed to get link: not found"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -184,7 +185,7 @@ func TestServiceGet(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to get room: internal error: unknown error"
+		expected := "failed to get link: internal error: unknown error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -195,8 +196,8 @@ func TestServiceGet(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		rows := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(getQ).WillReturnRows(rows)
@@ -210,8 +211,9 @@ func TestServiceGet(t *testing.T) {
 			p.Name() != name ||
 			p.Description() != description ||
 			p.Owner() != owner ||
-			p.Parent() != parent {
-			t.Errorf("\nExpected room: %+v", p)
+			p.Location() != location ||
+			p.Destination() != destination {
+			t.Errorf("\nExpected link: %+v", p)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -222,13 +224,13 @@ func TestServiceGet(t *testing.T) {
 
 func TestServiceCreate(t *testing.T) {
 	const (
-		createQ = `^INSERT INTO rooms \(name, description, owner, parent\) ` +
-			`VALUES \((.+), (.+), (.+), (.+)\) ` +
-			`RETURNING room_id, name, description, owner, parent, created, updated$`
+		createQ = `^INSERT INTO links \(name, description, owner, location, destination\) ` +
+			`VALUES \((.+), (.+), (.+), (.+) (.+)\) ` +
+			`RETURNING link_id, name, description, owner, location, destination, created, updated$`
 	)
 
 	t.Run("empty name", func(t *testing.T) {
-		req := roomRequest{Description: description, Owner: owner, Parent: parent}
+		req := linkRequest{Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -237,7 +239,7 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: empty room name"
+		expected := "failed to create link: invalid argument: empty link name"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -248,7 +250,7 @@ func TestServiceCreate(t *testing.T) {
 		for i := 0; i <= maxNameLen; i++ {
 			n += "a"
 		}
-		req := roomRequest{Name: n, Description: description, Owner: owner, Parent: parent}
+		req := linkRequest{Name: n, Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -257,14 +259,14 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: room name exceeds maximum length"
+		expected := "failed to create link: invalid argument: link name exceeds maximum length"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("empty description", func(t *testing.T) {
-		req := roomRequest{Name: name, Owner: owner, Parent: parent}
+		req := linkRequest{Name: name, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -273,7 +275,7 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: empty room description"
+		expected := "failed to create link: invalid argument: empty link description"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -284,7 +286,7 @@ func TestServiceCreate(t *testing.T) {
 		for i := 0; i <= maxDescriptionLen; i++ {
 			d += "a"
 		}
-		req := roomRequest{Name: name, Description: d, Owner: owner, Parent: parent}
+		req := linkRequest{Name: name, Description: d, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -293,14 +295,14 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: room description exceeds maximum length"
+		expected := "failed to create link: invalid argument: link description exceeds maximum length"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("invalid owner", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: "42", Parent: parent}
+		req := linkRequest{Name: name, Description: description, Owner: "42", Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -309,14 +311,14 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: invalid owner: '42'"
+		expected := "failed to create link: invalid argument: invalid owner: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
-	t.Run("invalid parent", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: "42"}
+	t.Run("invalid location", func(t *testing.T) {
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: "42", Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -325,20 +327,36 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: invalid parent: '42'"
+		expected := "failed to create link: invalid argument: invalid location: '42'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("invalid destination", func(t *testing.T) {
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: "42"}
+
+		s, _ := setupService(t)
+
+		_, err := s.create(context.Background(), req)
+
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "failed to create link: invalid argument: invalid destination: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("foreign key voilation", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, owner, parent).
+			WithArgs(name, description, owner, location, destination).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 
@@ -347,8 +365,10 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: invalid argument: the given owner or parent does not exist: " +
-			"owner '00000000-0000-0000-0000-000000000001', parent '00000000-0000-0000-0000-000000000001'"
+		expected := "failed to create link: invalid argument: the given owner, location, or destination does not exist: " +
+			"owner '00000000-0000-0000-0000-000000000001', " +
+			"location '00000000-0000-0000-0000-000000000001', " +
+			"destination '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -359,13 +379,13 @@ func TestServiceCreate(t *testing.T) {
 	})
 
 	t.Run("unique violation", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, owner, parent).
+			WithArgs(name, description, owner, location, destination).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
@@ -374,7 +394,7 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: already exists: room already exists"
+		expected := "failed to create link: already exists: link already exists"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -385,14 +405,14 @@ func TestServiceCreate(t *testing.T) {
 	})
 
 	t.Run("scan error", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated).
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated).
 			RowError(0, errors.New("scan error"))
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, owner, parent).
+			WithArgs(name, description, owner, location, destination).
 			WillReturnRows(row)
 
 		_, err := s.create(context.Background(), req)
@@ -400,7 +420,7 @@ func TestServiceCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create room: internal error: scan error"
+		expected := "failed to create link: internal error: scan error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -411,13 +431,13 @@ func TestServiceCreate(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, owner, parent).
+			WithArgs(name, description, owner, location, destination).
 			WillReturnRows(row)
 
 		_, err := s.create(context.Background(), req)
@@ -429,8 +449,9 @@ func TestServiceCreate(t *testing.T) {
 			p.Name() != name ||
 			p.Description() != description ||
 			p.Owner() != owner ||
-			p.Parent() != parent {
-			t.Errorf("\nExpected room: %+v", p)
+			p.Location() != location ||
+			p.Destination() != destination {
+			t.Errorf("\nExpected link: %+v", p)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -441,14 +462,14 @@ func TestServiceCreate(t *testing.T) {
 
 func TestServiceUpdate(t *testing.T) {
 	const (
-		// updateQ = `^UPDATE rooms SET (.+) WHERE (.+) RETURNING (.+)$`
-		updateQ = `^UPDATE rooms SET name = (.+), description = (.+), owner = (.+), parent = (.+) ` +
-			`WHERE room_id = (.+) ` +
-			`RETURNING room_id, name, description, owner, parent, created, updated$`
+		// updateQ = `^UPDATE links SET (.+) WHERE (.+) RETURNING (.+)$`
+		updateQ = `^UPDATE links SET name = (.+), description = (.+), owner = (.+), location = (.+), destination = (.+) ` +
+			`WHERE link_id = (.+) ` +
+			`RETURNING link_id, name, description, owner, location, destination, created, updated$`
 	)
 
-	t.Run("invalid room id", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
+	t.Run("invalid link id", func(t *testing.T) {
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -457,14 +478,14 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: invalid room id: '42'"
+		expected := "failed to update link: invalid argument: invalid link id: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("empty name", func(t *testing.T) {
-		req := roomRequest{Description: description, Owner: owner, Parent: parent}
+		req := linkRequest{Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -473,7 +494,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: empty room name"
+		expected := "failed to update link: invalid argument: empty link name"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -484,7 +505,7 @@ func TestServiceUpdate(t *testing.T) {
 		for i := 0; i <= maxNameLen; i++ {
 			n += "a"
 		}
-		req := roomRequest{Name: n, Description: description, Owner: owner, Parent: parent}
+		req := linkRequest{Name: n, Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -493,14 +514,14 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: room name exceeds maximum length"
+		expected := "failed to update link: invalid argument: link name exceeds maximum length"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("empty description", func(t *testing.T) {
-		req := roomRequest{Name: name, Owner: owner, Parent: parent}
+		req := linkRequest{Name: name, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -509,7 +530,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: empty room description"
+		expected := "failed to update link: invalid argument: empty link description"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -520,7 +541,7 @@ func TestServiceUpdate(t *testing.T) {
 		for i := 0; i <= maxDescriptionLen; i++ {
 			d += "a"
 		}
-		req := roomRequest{Name: name, Description: d, Owner: owner, Parent: parent}
+		req := linkRequest{Name: name, Description: d, Owner: owner, Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -529,14 +550,14 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: room description exceeds maximum length"
+		expected := "failed to update link: invalid argument: link description exceeds maximum length"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("invalid owner", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: "42", Parent: parent}
+		req := linkRequest{Name: name, Description: description, Owner: "42", Location: location, Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -545,14 +566,14 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: invalid owner: '42'"
+		expected := "failed to update link: invalid argument: invalid owner: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
-	t.Run("invalid parent", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: "42"}
+	t.Run("invalid location", func(t *testing.T) {
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: "42", Destination: destination}
 
 		s, _ := setupService(t)
 
@@ -561,18 +582,34 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: invalid parent: '42'"
+		expected := "failed to update link: invalid argument: invalid location: '42'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("invalid destination", func(t *testing.T) {
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: "42"}
+
+		s, _ := setupService(t)
+
+		_, err := s.update(context.Background(), id, req)
+
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "failed to update link: invalid argument: invalid destination: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, owner, parent).
+			WithArgs(id, name, description, owner, location, destination).
 			WillReturnError(sql.ErrNoRows)
 
 		_, err := s.update(context.Background(), id, req)
@@ -580,7 +617,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: not found"
+		expected := "failed to update link: not found"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -591,13 +628,13 @@ func TestServiceUpdate(t *testing.T) {
 	})
 
 	t.Run("foreign key voilation", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, owner, parent).
+			WithArgs(id, name, description, owner, location, destination).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 
@@ -606,8 +643,10 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: invalid argument: the given owner or parent does not exist: " +
-			"owner '00000000-0000-0000-0000-000000000001', parent '00000000-0000-0000-0000-000000000001'"
+		expected := "failed to update link: invalid argument: the given owner, location, or destination does not exist: " +
+			"owner '00000000-0000-0000-0000-000000000001', " +
+			"location '00000000-0000-0000-0000-000000000001', " +
+			"destination '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -618,13 +657,13 @@ func TestServiceUpdate(t *testing.T) {
 	})
 
 	t.Run("unique violation", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, owner, parent).
+			WithArgs(id, name, description, owner, location, destination).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
@@ -633,7 +672,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: already exists: room name is not unique"
+		expected := "failed to update link: already exists: link name is not unique"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -644,14 +683,14 @@ func TestServiceUpdate(t *testing.T) {
 	})
 
 	t.Run("scan error", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated).
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated).
 			RowError(0, errors.New("scan error"))
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, owner, parent).
+			WithArgs(id, name, description, owner, location, destination).
 			WillReturnRows(row)
 
 		_, err := s.update(context.Background(), id, req)
@@ -659,7 +698,7 @@ func TestServiceUpdate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update room: internal error: scan error"
+		expected := "failed to update link: internal error: scan error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -670,13 +709,13 @@ func TestServiceUpdate(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := roomRequest{Name: name, Description: description, Owner: owner, Parent: parent}
-		row := sqlmock.NewRows([]string{"room_id", "name", "description", "owner", "parent", "created", "updated"}).
-			AddRow(id, name, description, owner, parent, created, updated)
+		req := linkRequest{Name: name, Description: description, Owner: owner, Location: location, Destination: destination}
+		row := sqlmock.NewRows([]string{"link_id", "name", "description", "owner", "location", "destination", "created", "updated"}).
+			AddRow(id, name, description, owner, location, destination, created, updated)
 
 		s, mock := setupService(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, owner, parent).
+			WithArgs(id, name, description, owner, location, destination).
 			WillReturnRows(row)
 
 		p, err := s.update(context.Background(), id, req)
@@ -688,8 +727,9 @@ func TestServiceUpdate(t *testing.T) {
 			p.Name() != name ||
 			p.Description() != description ||
 			p.Owner() != owner ||
-			p.Parent() != parent {
-			t.Errorf("\nExpected room: %+v", p)
+			p.Location() != location ||
+			p.Destination() != destination {
+			t.Errorf("\nExpected link: %+v", p)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -700,10 +740,10 @@ func TestServiceUpdate(t *testing.T) {
 
 func TestServiceRemove(t *testing.T) {
 	const (
-		removeQ = `^DELETE FROM rooms WHERE room_id = (.+)$`
+		removeQ = `^DELETE FROM links WHERE link_id = (.+)$`
 	)
 
-	t.Run("invalid room id", func(t *testing.T) {
+	t.Run("invalid link id", func(t *testing.T) {
 		s, _ := setupService(t)
 
 		err := s.remove(context.Background(), "42")
@@ -711,7 +751,7 @@ func TestServiceRemove(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to remove room: invalid argument: invalid room id: '42'"
+		expected := "failed to remove link: invalid argument: invalid link id: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -728,7 +768,7 @@ func TestServiceRemove(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to remove room: not found"
+		expected := "failed to remove link: not found"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -749,7 +789,7 @@ func TestServiceRemove(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to remove room: internal error: unknown error"
+		expected := "failed to remove link: internal error: unknown error"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}

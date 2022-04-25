@@ -33,6 +33,7 @@ import (
 	"arcadium.dev/arcade/internal/health"
 	"arcadium.dev/arcade/internal/metrics"
 	"arcadium.dev/arcade/internal/players"
+	"arcadium.dev/arcade/internal/rooms"
 )
 
 // Build information.
@@ -198,7 +199,7 @@ func (s *Server) Start(args []string) {
 	// Setup API services.
 	s.apiServices = []http.Service{
 		players.New(s.db.DB),
-		// rooms.New(s.db.DB),
+		rooms.New(s.db.DB),
 		// links.New(s.db.DB),
 		// items.New(s.db.DB)
 	}

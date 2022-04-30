@@ -58,7 +58,7 @@ migrate_container: Dockerfile.migrate
 
 .PHONY: push_containers push_login push_assets push_migrate
 
-push_containers: push_login push_arcade push_assets push_migrate
+push_containers: push_login push_assets push_migrate
 
 push_login:
 	aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(container_registry)

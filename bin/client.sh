@@ -340,3 +340,84 @@ links_remove() {
   fi
   return ${rc}
 }
+
+items_get() {
+  local _id="$1"
+  param_check "${_id}"
+
+  info "Getting item" >&2
+  msg "id: ${_id}" >&2
+
+  local result
+  result="$(bin/dev run curl --request GET "https://assets:4201/items/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+items_create() {
+  local _name="$1" _desc="$2" _owner="$3" _location="$4" _inventory="$5"
+  param_check "${_name}" "${_desc}" "${_owner}" "${_location}" "${_inventory}"
+
+  info "Creating item" >&2
+  msg "name:        ${_name}" >&2
+  msg "description: ${_desc}" >&2
+  msg "owner:       ${_owner}" >&2
+  msg "location:    ${_location}" >&2
+  msg "inventory: ${_inventory}" >&2
+
+  local result
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","inventory":"'"${_inventory}"'"}' "https://assets:4201/items" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+items_update() {
+  local _id="$1" _name="$2" _desc="$3" _owner="$4" _location="$5" _inventory="$6"
+  param_check "${_id}" "${_name}" "${_desc}" "${_owner}" "${_location}" "${_inventory}"
+
+  info "Updating item" >&2
+  msg "id:          ${_id}" >&2
+  msg "name:        ${_name}" >&2
+  msg "description: ${_desc}" >&2
+  msg "owner:       ${_owner}" >&2
+  msg "location:    ${_location}" >&2
+  msg "inventory: ${_inventory}" >&2
+
+  local result
+  result="$(bin/dev run curl --request PUT --data '{"itemID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","inventory":"'"${_inventory}"'"}' "https://assets:4201/items/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}
+
+items_remove() {
+  local _id="$1"
+  param_check "${_id}"
+
+  info "Removing item" >&2
+  msg "item id: ${_id}" >&2
+
+  local result
+  result="$(bin/dev run curl --request DELETE "https://assets:4201/items/${_id}" 2>/dev/null)"
+  local rc=$?
+
+  if [[ "${result:-}" != "" ]]; then
+    msg "\nResponse\n$(jq . <(echo "${result}"))" >&2
+    echo "${result}" >&1
+  fi
+  return ${rc}
+}

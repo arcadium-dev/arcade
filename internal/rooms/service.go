@@ -37,7 +37,7 @@ const (
 )
 
 type (
-	// Service reports on the health of the service as a whole.
+	// Service is used to managed the room assets.
 	Service struct {
 		db *sql.DB
 		h  handler

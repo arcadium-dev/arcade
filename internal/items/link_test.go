@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package links
+package items
 
 import (
 	"testing"
@@ -23,106 +23,106 @@ import (
 
 const (
 	id          = "00000000-0000-0000-0000-000000000001"
-	name        = "To Nowhere"
-	description = "An exit of no importance."
+	name        = "Nothing"
+	description = "An item of no importance."
 	owner       = "00000000-0000-0000-0000-000000000001"
 	location    = "00000000-0000-0000-0000-000000000001"
-	destination = "00000000-0000-0000-0000-000000000001"
+	inventory   = "00000000-0000-0000-0000-000000000001"
 )
 
 var (
 	created = time.Now()
 	updated = time.Now()
 
-	p = link{
+	p = item{
 		id:          id,
 		name:        name,
 		description: description,
 		owner:       owner,
 		location:    location,
-		destination: destination,
+		inventory:   inventory,
 		created:     created,
 		updated:     updated,
 	}
 
-	req = linkRequest{
+	req = itemRequest{
 		Name:        name,
 		Description: description,
 		Owner:       owner,
 		Location:    location,
-		Destination: destination,
+		Inventory:   inventory,
 	}
 )
 
-func TestNewLink(t *testing.T) {
-	p := newLink(req)
+func TestNewItem(t *testing.T) {
+	p := newItem(req)
 	if p.Name() != name ||
 		p.Description() != description ||
 		p.Owner() != owner ||
 		p.Location() != location ||
-		p.Destination() != destination {
-		t.Errorf("Unexpected link: %+v", p)
+		p.Inventory() != inventory {
+		t.Errorf("Unexpected item: %+v", p)
 	}
 
 	if p.ID() != "" ||
 		!p.Created().IsZero() ||
 		!p.Updated().IsZero() {
-		t.Errorf("Unexpected link: %+v", p)
+		t.Errorf("Unexpected item: %+v", p)
 	}
 }
 
-func TestLink(t *testing.T) {
+func TestItem(t *testing.T) {
 	if p.ID() != id ||
 		p.Name() != name ||
 		p.Description() != description ||
 		p.Owner() != owner ||
 		p.Location() != location ||
-		p.Destination() != destination ||
+		p.Inventory() != inventory ||
 		!created.Equal(p.Created()) ||
 		!updated.Equal(p.Updated()) {
-		t.Errorf("Unexpected link: %+v", p)
+		t.Errorf("Unexpected item: %+v", p)
 	}
 }
 
-func TestNewLinkResponsData(t *testing.T) {
-	data := newLinkResponseData(p)
+func TestNewItemResponsData(t *testing.T) {
+	data := newItemResponseData(p)
 
-	if data.LinkID != id ||
+	if data.ItemID != id ||
 		data.Name != name ||
 		data.Description != description ||
 		data.Owner != owner ||
 		data.Location != location ||
-		data.Destination != destination ||
+		data.Inventory != inventory ||
 		!created.Equal(data.Created) ||
 		!updated.Equal(data.Updated) {
 		t.Errorf("Unexpected data: %+v", data)
 	}
 }
 
-func TestNewLinkResponse(t *testing.T) {
-	r := newLinkResponse(p)
+func TestNewItemResponse(t *testing.T) {
+	r := newItemResponse(p)
 
-	if r.Data.LinkID != id ||
+	if r.Data.ItemID != id ||
 		r.Data.Name != name ||
 		r.Data.Description != description ||
 		r.Data.Owner != owner ||
 		r.Data.Location != location ||
-		r.Data.Destination != destination ||
+		r.Data.Inventory != inventory ||
 		!created.Equal(r.Data.Created) ||
 		!updated.Equal(r.Data.Updated) {
 		t.Errorf("Unexpected response: %+v", r)
 	}
 }
 
-func TestNewLinksReponse(t *testing.T) {
-	r := newLinksResponse([]arcade.Link{p})
+func TestNewItemsReponse(t *testing.T) {
+	r := newItemsResponse([]arcade.Item{p})
 
-	if r.Data[0].LinkID != id ||
+	if r.Data[0].ItemID != id ||
 		r.Data[0].Name != name ||
 		r.Data[0].Description != description ||
 		r.Data[0].Owner != owner ||
 		r.Data[0].Location != location ||
-		r.Data[0].Destination != destination ||
+		r.Data[0].Inventory != inventory ||
 		!created.Equal(r.Data[0].Created) ||
 		!updated.Equal(r.Data[0].Updated) {
 		t.Errorf("Unexpected response: %+v", r)

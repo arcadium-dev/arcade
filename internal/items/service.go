@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package links
+package items
 
 import (
 	"context"
@@ -33,11 +33,11 @@ import (
 )
 
 const (
-	route string = "/links"
+	route string = "/items"
 )
 
 type (
-	// Service is used to manage the link assets.
+	// Service is used to manage the item assets.
 	Service struct {
 		db *sql.DB
 		h  handler
@@ -54,37 +54,37 @@ func New(db *sql.DB) Service {
 func (s Service) Register(router *mux.Router) {
 	r := router.PathPrefix(route).Subrouter()
 	r.HandleFunc("", s.h.list).Methods(http.MethodGet)
-	r.HandleFunc("/{linkID}", s.h.get).Methods(http.MethodGet)
+	r.HandleFunc("/{itemID}", s.h.get).Methods(http.MethodGet)
 	r.HandleFunc("", s.h.create).Methods(http.MethodPost)
-	r.HandleFunc("/{linkID}", s.h.update).Methods(http.MethodPut)
-	r.HandleFunc("/{linkID}", s.h.remove).Methods(http.MethodDelete)
+	r.HandleFunc("/{itemID}", s.h.update).Methods(http.MethodPut)
+	r.HandleFunc("/{itemID}", s.h.remove).Methods(http.MethodDelete)
 }
 
 // Name returns the name of the service.
 func (Service) Name() string {
-	return "links"
+	return "items"
 }
 
 // Shutdown is a no-op since there no long running processes for this service... yet.
 func (Service) Shutdown() {}
 
 const (
-	listQuery   = `SELECT link_id, name, description, owner, location, destination, created, updated FROM links`
-	getQuery    = `SELECT link_id, name, description, owner, location, destination, created, updated FROM links WHERE link_id = $1`
-	createQuery = `INSERT INTO links (name, description, owner, location, destination) ` +
+	listQuery   = `SELECT item_id, name, description, owner, location, inventory, created, updated FROM items`
+	getQuery    = `SELECT item_id, name, description, owner, location, inventory, created, updated FROM items WHERE item_id = $1`
+	createQuery = `INSERT INTO items (name, description, owner, location, inventory) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
-		`RETURNING link_id, name, description, owner, location, destination, created, updated`
-	updateQuery = `UPDATE links SET name = $2, description = $3, owner = $4, location = $5, destination = $6,  updated = now() ` +
-		`WHERE link_id = $1 ` +
-		`RETURNING link_id, name, description, owner, location, destination, created, updated`
-	removeQuery = `DELETE FROM links WHERE link_id = $1`
+		`RETURNING item_id, name, description, owner, location, inventory, created, updated`
+	updateQuery = `UPDATE items SET name = $2, description = $3, owner = $4, location = $5, inventory = $6,  updated = now() ` +
+		`WHERE item_id = $1 ` +
+		`RETURNING item_id, name, description, owner, location, inventory, created, updated`
+	removeQuery = `DELETE FROM items WHERE item_id = $1`
 )
 
-func (s Service) list(ctx context.Context) ([]arcade.Link, error) {
-	failMsg := "failed to list links"
+func (s Service) list(ctx context.Context) ([]arcade.Item, error) {
+	failMsg := "failed to list items"
 
 	logger := log.LoggerFromContext(ctx)
-	logger.Info("msg", "list links")
+	logger.Info("msg", "list items")
 
 	// TODO: build query based on query params.
 
@@ -98,49 +98,49 @@ func (s Service) list(ctx context.Context) ([]arcade.Link, error) {
 		}
 	}()
 
-	links := make([]arcade.Link, 0)
+	items := make([]arcade.Item, 0)
 	for rows.Next() {
-		var p link
+		var p item
 		err := rows.Scan(
 			&p.id,
 			&p.name,
 			&p.description,
 			&p.owner,
 			&p.location,
-			&p.destination,
+			&p.inventory,
 			&p.created,
 			&p.updated,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 		}
-		links = append(links, p)
+		items = append(items, p)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err)
 	}
 
-	return links, nil
+	return items, nil
 }
 
-func (s Service) get(ctx context.Context, pid string) (arcade.Link, error) {
-	failMsg := "failed to get link"
+func (s Service) get(ctx context.Context, pid string) (arcade.Item, error) {
+	failMsg := "failed to get item"
 
-	log.LoggerFromContext(ctx).With("linkID", pid).Info("msg", "get link")
+	log.LoggerFromContext(ctx).With("itemID", pid).Info("msg", "get item")
 
-	linkID, err := uuid.Parse(pid)
+	itemID, err := uuid.Parse(pid)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: invalid link id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
+		return nil, fmt.Errorf("%s: %w: invalid item id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 
-	var p link
-	err = s.db.QueryRowContext(ctx, getQuery, linkID).Scan(
+	var p item
+	err = s.db.QueryRowContext(ctx, getQuery, itemID).Scan(
 		&p.id,
 		&p.name,
 		&p.description,
 		&p.owner,
 		&p.location,
-		&p.destination,
+		&p.inventory,
 		&p.created,
 		&p.updated,
 	)
@@ -154,24 +154,24 @@ func (s Service) get(ctx context.Context, pid string) (arcade.Link, error) {
 	return p, nil
 }
 
-func (s Service) create(ctx context.Context, req linkRequest) (arcade.Link, error) {
-	failMsg := "failed to create link"
+func (s Service) create(ctx context.Context, req itemRequest) (arcade.Item, error) {
+	failMsg := "failed to create item"
 
 	logger := log.LoggerFromContext(ctx).With("name", req.Name)
-	logger.Info("msg", "create link")
+	logger.Info("msg", "create item")
 
 	// Validate the input.
 	if req.Name == "" {
-		return nil, fmt.Errorf("%s: %w: empty link name", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty item name", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Name) > maxNameLen {
-		return nil, fmt.Errorf("%s: %w: link name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: item name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if req.Description == "" {
-		return nil, fmt.Errorf("%s: %w: empty link description", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty item description", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Description) > maxDescriptionLen {
-		return nil, fmt.Errorf("%s: %w: link description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: item description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	ownerID, err := uuid.Parse(req.Owner)
 	if err != nil {
@@ -181,78 +181,78 @@ func (s Service) create(ctx context.Context, req linkRequest) (arcade.Link, erro
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: invalid location: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Location)
 	}
-	destinationID, err := uuid.Parse(req.Destination)
+	inventoryID, err := uuid.Parse(req.Inventory)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: invalid destination: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Destination)
+		return nil, fmt.Errorf("%s: %w: invalid inventory: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Inventory)
 	}
 
 	// Query the database.
-	var p link
+	var p item
 	err = s.db.QueryRowContext(ctx, createQuery,
 		req.Name,
 		req.Description,
 		ownerID,
 		locationID,
-		destinationID,
+		inventoryID,
 	).Scan(
 		&p.id,
 		&p.name,
 		&p.description,
 		&p.owner,
 		&p.location,
-		&p.destination,
+		&p.inventory,
 		&p.created,
 		&p.updated,
 	)
 
 	var pgErr *pgconn.PgError
 
-	// A ForeignKeyViolation means the referenced ownerID, locationID or destinationID does not exist
-	// in the links table, thus we will return an invalid argument error.
+	// A ForeignKeyViolation means the referenced ownerID, locationID or inventoryID does not exist
+	// in the items table, thus we will return an invalid argument error.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given owner, location, or destination does not exist: owner '%s', location '%s', destination '%s'",
-			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Location, req.Destination,
+			"%s: %w: the given owner, location, or inventory does not exist: owner '%s', location '%s', inventory '%s'",
+			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Location, req.Inventory,
 		)
 	}
 
-	// A UniqueViolation means the inserted link violated a uniqueness
-	// constraint. The link record already exists in the table or the name
+	// A UniqueViolation means the inserted item violated a uniqueness
+	// constraint. The item record already exists in the table or the name
 	// is not unique.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return nil, fmt.Errorf("%s: %w: link already exists", failMsg, cerrors.ErrAlreadyExists)
+		return nil, fmt.Errorf("%s: %w: item already exists", failMsg, cerrors.ErrAlreadyExists)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, cerrors.ErrInternal, err.Error())
 	}
 
-	logger.With("linkID", p.id).Info("msg", "created link")
+	logger.With("itemID", p.id).Info("msg", "created item")
 	return p, nil
 }
 
-func (s Service) update(ctx context.Context, pid string, req linkRequest) (arcade.Link, error) {
-	failMsg := "failed to update link"
+func (s Service) update(ctx context.Context, pid string, req itemRequest) (arcade.Item, error) {
+	failMsg := "failed to update item"
 
-	logger := log.LoggerFromContext(ctx).With("linkID", pid, "name", req.Name)
-	logger.Info("msg", "update link")
+	logger := log.LoggerFromContext(ctx).With("itemID", pid, "name", req.Name)
+	logger.Info("msg", "update item")
 
 	// Validate the input.
-	linkID, err := uuid.Parse(pid)
+	itemID, err := uuid.Parse(pid)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: invalid link id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
+		return nil, fmt.Errorf("%s: %w: invalid item id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 	if req.Name == "" {
-		return nil, fmt.Errorf("%s: %w: empty link name", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty item name", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Name) > maxNameLen {
-		return nil, fmt.Errorf("%s: %w: link name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: item name exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if req.Description == "" {
-		return nil, fmt.Errorf("%s: %w: empty link description", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: empty item description", failMsg, cerrors.ErrInvalidArgument)
 	}
 	if len(req.Description) > maxDescriptionLen {
-		return nil, fmt.Errorf("%s: %w: link description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
+		return nil, fmt.Errorf("%s: %w: item description exceeds maximum length", failMsg, cerrors.ErrInvalidArgument)
 	}
 	ownerID, err := uuid.Parse(req.Owner)
 	if err != nil {
@@ -262,50 +262,50 @@ func (s Service) update(ctx context.Context, pid string, req linkRequest) (arcad
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: invalid location: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Location)
 	}
-	destinationID, err := uuid.Parse(req.Destination)
+	inventoryID, err := uuid.Parse(req.Inventory)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w: invalid destination: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Destination)
+		return nil, fmt.Errorf("%s: %w: invalid inventory: '%s'", failMsg, cerrors.ErrInvalidArgument, req.Inventory)
 	}
 
 	// Query the database.
-	var p link
+	var p item
 	err = s.db.QueryRowContext(ctx, updateQuery,
-		linkID,
+		itemID,
 		req.Name,
 		req.Description,
 		ownerID,
 		locationID,
-		destinationID,
+		inventoryID,
 	).Scan(
 		&p.id,
 		&p.name,
 		&p.description,
 		&p.owner,
 		&p.location,
-		&p.destination,
+		&p.inventory,
 		&p.created,
 		&p.updated,
 	)
 
-	// Tried to update a link that doesn't exist.
+	// Tried to update a item that doesn't exist.
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("%s: %w", failMsg, cerrors.ErrNotFound)
 	}
 
-	// A ForeignKeyViolation means the referenced ownerID, locationID, or destinationID does not exist
-	// in the links table, thus we will return an invalid argument error.
+	// A ForeignKeyViolation means the referenced ownerID, locationID, or inventoryID does not exist
+	// in the items table, thus we will return an invalid argument error.
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return nil, fmt.Errorf(
-			"%s: %w: the given owner, location, or destination does not exist: owner '%s', location '%s', destination '%s'",
-			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Location, req.Destination,
+			"%s: %w: the given owner, location, or inventory does not exist: owner '%s', location '%s', inventory '%s'",
+			failMsg, cerrors.ErrInvalidArgument, req.Owner, req.Location, req.Inventory,
 		)
 	}
 
-	// A UniqueViolation means the inserted link violated a uniqueness
-	// constraint. The link name is not unique.
+	// A UniqueViolation means the inserted item violated a uniqueness
+	// constraint. The item name is not unique.
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return nil, fmt.Errorf("%s: %w: link name is not unique", failMsg, cerrors.ErrAlreadyExists)
+		return nil, fmt.Errorf("%s: %w: item name is not unique", failMsg, cerrors.ErrAlreadyExists)
 	}
 
 	if err != nil {
@@ -316,16 +316,16 @@ func (s Service) update(ctx context.Context, pid string, req linkRequest) (arcad
 }
 
 func (s Service) remove(ctx context.Context, pid string) error {
-	failMsg := "failed to remove link"
+	failMsg := "failed to remove item"
 
-	log.LoggerFromContext(ctx).With("linkID", pid).Info("msg", "remove link")
+	log.LoggerFromContext(ctx).With("itemID", pid).Info("msg", "remove item")
 
-	linkID, err := uuid.Parse(pid)
+	itemID, err := uuid.Parse(pid)
 	if err != nil {
-		return fmt.Errorf("%s: %w: invalid link id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
+		return fmt.Errorf("%s: %w: invalid item id: '%s'", failMsg, cerrors.ErrInvalidArgument, pid)
 	}
 
-	_, err = s.db.ExecContext(ctx, removeQuery, linkID)
+	_, err = s.db.ExecContext(ctx, removeQuery, itemID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("%s: %w", failMsg, cerrors.ErrNotFound)
 	}

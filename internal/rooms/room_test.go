@@ -23,8 +23,8 @@ import (
 
 const (
 	id          = "00000000-0000-0000-0000-000000000001"
-	name        = "Nobody"
-	description = "A person of no importance."
+	name        = "Nowhere"
+	description = "A room of no importance."
 	owner       = "00000000-0000-0000-0000-000000000001"
 	parent      = "00000000-0000-0000-0000-000000000001"
 )

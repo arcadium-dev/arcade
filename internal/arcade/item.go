@@ -17,14 +17,14 @@ package arcade
 import "time"
 
 type (
-	// Link defines the behavior common to a link.
-	Link interface {
+	// Item defines the behavior common to an item..
+	Item interface {
 		ID() string
 		Name() string
 		Description() string
 		Owner() string
 		Location() string
-		Destination() string
+		Inventory() string
 		Created() time.Time
 		Updated() time.Time
 	}

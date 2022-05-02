@@ -12,30 +12,46 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package storage
+package storage_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+
+	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/storage"
+	"arcadium.dev/arcade/storage/cockroach"
 )
 
 func TestPlayersList(t *testing.T) {
 	const (
-		listQ = "^SELECT player_id, name, description, home, location, created, updated FROM players$"
+		listQ = "^SELECT player_id, name, description, home_id, location_id, created, updated FROM players$"
+	)
+
+	var (
+		id          = uuid.NewString()
+		name        = "Nobody"
+		description = "No one of importance."
+		homeID      = uuid.NewString()
+		locationID  = uuid.NewString()
+		created     = time.Now()
+		updated     = time.Now()
 	)
 
 	t.Run("sql query error", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(listQ).
 			WillReturnError(errors.New("unknown error"))
 
-		_, err := s.List(context.Background())
+		_, err := p.List(context.Background(), arcade.PlayersFilter{})
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -52,17 +68,17 @@ func TestPlayersList(t *testing.T) {
 
 	t.Run("sql scan error", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{
-			"player_id", "name", "description", "home", "location", "created", "updated",
+			"player_id", "name", "description", "home_id", "location_id", "created", "updated",
 		}).
-			AddRow(id, name, description, home, location, created, updated).
+			AddRow(id, name, description, homeID, locationID, created, updated).
 			RowError(0, errors.New("scan error"))
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(listQ).
 			WillReturnRows(rows).
 			RowsWillBeClosed()
 
-		_, err := s.List(context.Background())
+		_, err := p.List(context.Background(), arcade.PlayersFilter{})
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -78,15 +94,15 @@ func TestPlayersList(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		rows := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(listQ).
 			WillReturnRows(rows).
 			RowsWillBeClosed()
 
-		players, err := s.list(context.Background())
+		players, err := p.List(context.Background(), arcade.PlayersFilter{})
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
@@ -94,11 +110,11 @@ func TestPlayersList(t *testing.T) {
 		if len(players) != 1 {
 			t.Fatalf("Unexpected length of player list")
 		}
-		if players[0].ID() != id ||
-			players[0].Name() != name ||
-			players[0].Description() != description ||
-			players[0].Home() != home ||
-			players[0].Location() != location {
+		if players[0].ID != id ||
+			players[0].Name != name ||
+			players[0].Description != description ||
+			players[0].HomeID != homeID ||
+			players[0].LocationID != locationID {
 			t.Errorf("\nExpected player: %+v", players[0])
 		}
 
@@ -110,13 +126,23 @@ func TestPlayersList(t *testing.T) {
 
 func TestPlayersGet(t *testing.T) {
 	const (
-		getQ = "^SELECT player_id, name, description, home, location, created, updated FROM players WHERE player_id = (.+)$"
+		getQ = "^SELECT player_id, name, description, home_id, location_id, created, updated FROM players WHERE player_id = (.+)$"
+	)
+
+	var (
+		id          = uuid.NewString()
+		name        = "Nobody"
+		description = "No one of importance."
+		homeID      = uuid.NewString()
+		locationID  = uuid.NewString()
+		created     = time.Now()
+		updated     = time.Now()
 	)
 
 	t.Run("invalid playerID", func(t *testing.T) {
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.get(context.Background(), "42")
+		_, err := p.Get(context.Background(), "42")
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -128,10 +154,10 @@ func TestPlayersGet(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(getQ).WithArgs(id).WillReturnError(sql.ErrNoRows)
 
-		_, err := s.get(context.Background(), id)
+		_, err := p.Get(context.Background(), id)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -147,10 +173,10 @@ func TestPlayersGet(t *testing.T) {
 	})
 
 	t.Run("unknown error", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(getQ).WithArgs(id).WillReturnError(errors.New("unknown error"))
 
-		_, err := s.get(context.Background(), id)
+		_, err := p.Get(context.Background(), id)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -166,23 +192,23 @@ func TestPlayersGet(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		rows := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(getQ).WillReturnRows(rows)
 
-		p, err := s.get(context.Background(), id)
+		player, err := p.Get(context.Background(), id)
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
-		if p.ID() != id ||
-			p.Name() != name ||
-			p.Description() != description ||
-			p.Home() != home ||
-			p.Location() != location {
-			t.Errorf("\nExpected player: %+v", p)
+		if player.ID != id ||
+			player.Name != name ||
+			player.Description != description ||
+			player.HomeID != homeID ||
+			player.LocationID != locationID {
+			t.Errorf("\nExpected player: %+v", player)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -193,17 +219,27 @@ func TestPlayersGet(t *testing.T) {
 
 func TestPlayersCreate(t *testing.T) {
 	const (
-		createQ = `^INSERT INTO players \(name, description, home, location\) ` +
+		createQ = `^INSERT INTO players \(name, description, home_id, location_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
-			`RETURNING player_id, name, description, home, location, created, updated$`
+			`RETURNING player_id, name, description, home_id, location_id, created, updated$`
+	)
+
+	var (
+		id          = uuid.NewString()
+		name        = "Nobody"
+		description = "No one of importance."
+		homeID      = "00000000-0000-0000-0000-000000000001"
+		locationID  = "00000000-0000-0000-0000-000000000001"
+		created     = time.Now()
+		updated     = time.Now()
 	)
 
 	t.Run("empty name", func(t *testing.T) {
-		req := playerRequest{Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -216,14 +252,14 @@ func TestPlayersCreate(t *testing.T) {
 
 	t.Run("long name", func(t *testing.T) {
 		n := ""
-		for i := 0; i <= maxNameLen; i++ {
+		for i := 0; i <= arcade.MaxPlayerNameLen; i++ {
 			n += "a"
 		}
-		req := playerRequest{Name: n, Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: n, Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -235,11 +271,11 @@ func TestPlayersCreate(t *testing.T) {
 	})
 
 	t.Run("empty description", func(t *testing.T) {
-		req := playerRequest{Name: name, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -252,14 +288,14 @@ func TestPlayersCreate(t *testing.T) {
 
 	t.Run("long description", func(t *testing.T) {
 		d := ""
-		for i := 0; i <= maxDescriptionLen; i++ {
+		for i := 0; i <= arcade.MaxPlayerDescriptionLen; i++ {
 			d += "a"
 		}
-		req := playerRequest{Name: name, Description: d, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, Description: d, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -270,56 +306,56 @@ func TestPlayersCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid home", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: "42", Location: location}
+	t.Run("invalid homeID", func(t *testing.T) {
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: "42", LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create player: invalid argument: invalid home: '42'"
+		expected := "failed to create player: invalid argument: invalid homeID: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("invalid location", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: "42"}
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: "42"}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create player: invalid argument: invalid location: '42'"
+		expected := "failed to create player: invalid argument: invalid locationID: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("foreign key voilation", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, home, location).
+			WithArgs(name, description, homeID, locationID).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to create player: invalid argument: the given home or location does not exist: " +
-			"home '00000000-0000-0000-0000-000000000001', location '00000000-0000-0000-0000-000000000001'"
+		expected := "failed to create player: invalid argument: the given homeID or locationID does not exist: " +
+			"homeID '00000000-0000-0000-0000-000000000001', locationID '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -330,17 +366,17 @@ func TestPlayersCreate(t *testing.T) {
 	})
 
 	t.Run("unique violation", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, home, location).
+			WithArgs(name, description, homeID, locationID).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -356,17 +392,17 @@ func TestPlayersCreate(t *testing.T) {
 	})
 
 	t.Run("scan error", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated).
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated).
 			RowError(0, errors.New("scan error"))
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, home, location).
+			WithArgs(name, description, homeID, locationID).
 			WillReturnRows(row)
 
-		_, err := s.create(context.Background(), req)
+		_, err := p.Create(context.Background(), req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -382,26 +418,26 @@ func TestPlayersCreate(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(createQ).
-			WithArgs(name, description, home, location).
+			WithArgs(name, description, homeID, locationID).
 			WillReturnRows(row)
 
-		_, err := s.create(context.Background(), req)
+		player, err := p.Create(context.Background(), req)
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
-		if p.ID() != id ||
-			p.Name() != name ||
-			p.Description() != description ||
-			p.Home() != home ||
-			p.Location() != location {
-			t.Errorf("\nExpected player: %+v", p)
+		if player.ID != id ||
+			player.Name != name ||
+			player.Description != description ||
+			player.HomeID != homeID ||
+			player.LocationID != locationID {
+			t.Errorf("\nExpected player: %+v", player)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -413,17 +449,27 @@ func TestPlayersCreate(t *testing.T) {
 func TestPlayersUpdate(t *testing.T) {
 	const (
 		// updateQ = `^UPDATE players SET (.+) WHERE (.+) RETURNING (.+)$`
-		updateQ = `^UPDATE players SET name = (.+), description = (.+), home = (.+), location = (.+) ` +
+		updateQ = `^UPDATE players SET name = (.+), description = (.+), home_id = (.+), location_id = (.+) ` +
 			`WHERE player_id = (.+) ` +
-			`RETURNING player_id, name, description, home, location, created, updated$`
+			`RETURNING player_id, name, description, home_id, location_id, created, updated$`
+	)
+
+	var (
+		id          = uuid.NewString()
+		name        = "Nobody"
+		description = "No one of importance."
+		homeID      = "00000000-0000-0000-0000-000000000001"
+		locationID  = "00000000-0000-0000-0000-000000000001"
+		created     = time.Now()
+		updated     = time.Now()
 	)
 
 	t.Run("invalid player id", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), "42", req)
+		_, err := p.Update(context.Background(), "42", req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -435,11 +481,11 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("empty name", func(t *testing.T) {
-		req := playerRequest{Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -452,14 +498,14 @@ func TestPlayersUpdate(t *testing.T) {
 
 	t.Run("long name", func(t *testing.T) {
 		n := ""
-		for i := 0; i <= maxNameLen; i++ {
+		for i := 0; i <= arcade.MaxPlayerNameLen; i++ {
 			n += "a"
 		}
-		req := playerRequest{Name: n, Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: n, Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -471,11 +517,11 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("empty description", func(t *testing.T) {
-		req := playerRequest{Name: name, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -488,14 +534,14 @@ func TestPlayersUpdate(t *testing.T) {
 
 	t.Run("long description", func(t *testing.T) {
 		d := ""
-		for i := 0; i <= maxDescriptionLen; i++ {
+		for i := 0; i <= arcade.MaxPlayerDescriptionLen; i++ {
 			d += "a"
 		}
-		req := playerRequest{Name: name, Description: d, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, Description: d, HomeID: homeID, LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -507,46 +553,46 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("invalid home", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: "42", Location: location}
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: "42", LocationID: locationID}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update player: invalid argument: invalid home: '42'"
+		expected := "failed to update player: invalid argument: invalid homeID: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("invalid location", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: "42"}
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: "42"}
 
-		s, _ := setupPlayers(t)
+		p, _ := setupPlayers(t)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update player: invalid argument: invalid location: '42'"
+		expected := "failed to update player: invalid argument: invalid locationID: '42'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, home, location).
+			WithArgs(id, name, description, homeID, locationID).
 			WillReturnError(sql.ErrNoRows)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -562,23 +608,23 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("foreign key voilation", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, home, location).
+			WithArgs(id, name, description, homeID, locationID).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
 		}
-		expected := "failed to update player: invalid argument: the given home or location does not exist: " +
-			"home '00000000-0000-0000-0000-000000000001', location '00000000-0000-0000-0000-000000000001'"
+		expected := "failed to update player: invalid argument: the given homeID or locationID does not exist: " +
+			"homeID '00000000-0000-0000-0000-000000000001', locationID '00000000-0000-0000-0000-000000000001'"
 		if err.Error() != expected {
 			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
@@ -589,17 +635,17 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("unique violation", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, home, location).
+			WithArgs(id, name, description, homeID, locationID).
 			WillReturnRows(row).
 			WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -615,17 +661,17 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("scan error", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated).
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated).
 			RowError(0, errors.New("scan error"))
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, home, location).
+			WithArgs(id, name, description, homeID, locationID).
 			WillReturnRows(row)
 
-		_, err := s.update(context.Background(), id, req)
+		_, err := p.Update(context.Background(), id, req)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -641,26 +687,26 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := playerRequest{Name: name, Description: description, Home: home, Location: location}
-		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home", "location", "created", "updated"}).
-			AddRow(id, name, description, home, location, created, updated)
+		req := arcade.PlayerRequest{Name: name, Description: description, HomeID: homeID, LocationID: locationID}
+		row := sqlmock.NewRows([]string{"player_id", "name", "description", "home_id", "location_id", "created", "updated"}).
+			AddRow(id, name, description, homeID, locationID, created, updated)
 
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectQuery(updateQ).
-			WithArgs(id, name, description, home, location).
+			WithArgs(id, name, description, homeID, locationID).
 			WillReturnRows(row)
 
-		p, err := s.update(context.Background(), id, req)
+		player, err := p.Update(context.Background(), id, req)
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
-		if p.ID() != id ||
-			p.Name() != name ||
-			p.Description() != description ||
-			p.Home() != home ||
-			p.Location() != location {
-			t.Errorf("\nExpected player: %+v", p)
+		if player.ID != id ||
+			player.Name != name ||
+			player.Description != description ||
+			player.HomeID != homeID ||
+			player.LocationID != locationID {
+			t.Errorf("\nExpected player: %+v", player)
 		}
 
 		if err := mock.ExpectationsWereMet(); err != nil {
@@ -674,10 +720,14 @@ func TestPlayersRemove(t *testing.T) {
 		removeQ = `^DELETE FROM players WHERE player_id = (.+)$`
 	)
 
-	t.Run("invalid player id", func(t *testing.T) {
-		s, _ := setupPlayers(t)
+	var (
+		id = uuid.NewString()
+	)
 
-		err := s.remove(context.Background(), "42")
+	t.Run("invalid player id", func(t *testing.T) {
+		p, _ := setupPlayers(t)
+
+		err := p.Remove(context.Background(), "42")
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -689,12 +739,12 @@ func TestPlayersRemove(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectExec(removeQ).
 			WithArgs(id).
 			WillReturnError(sql.ErrNoRows)
 
-		err := s.remove(context.Background(), id)
+		err := p.Remove(context.Background(), id)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -710,12 +760,12 @@ func TestPlayersRemove(t *testing.T) {
 	})
 
 	t.Run("unknown error", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectExec(removeQ).
 			WithArgs(id).
 			WillReturnError(errors.New("unknown error"))
 
-		err := s.remove(context.Background(), id)
+		err := p.Remove(context.Background(), id)
 
 		if err == nil {
 			t.Fatal("Expected an error")
@@ -731,12 +781,12 @@ func TestPlayersRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		s, mock := setupPlayers(t)
+		p, mock := setupPlayers(t)
 		mock.ExpectExec(removeQ).
 			WithArgs(id).
 			WillReturnResult(sqlmock.NewResult(0, 1))
 
-		err := s.remove(context.Background(), id)
+		err := p.Remove(context.Background(), id)
 
 		if err != nil {
 			t.Fatalf("Unexpected err: %s", err)
@@ -748,7 +798,7 @@ func TestPlayersRemove(t *testing.T) {
 	})
 }
 
-func setupPlayers(t *testing.T) (Players, sqlmock.Sqlmock) {
+func setupPlayers(t *testing.T) (storage.Players, sqlmock.Sqlmock) {
 	t.Helper()
 
 	db, mock, err := sqlmock.New()
@@ -756,5 +806,5 @@ func setupPlayers(t *testing.T) (Players, sqlmock.Sqlmock) {
 		t.Fatal("Failed to create sqlmock db")
 	}
 
-	return Players{DB: db}, mock
+	return storage.Players{DB: db, Driver: cockroach.Driver{}}, mock
 }

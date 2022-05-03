@@ -3,12 +3,12 @@ test_players() {
 
   local name="$(tr -cd 'A-Za-z' < /dev/urandom 2>/dev/null | head -c $(( $RANDOM % 7  + 2)))"
   local desc="$(for i in {1..10}; do tr -cd 'A-Za-z' < /dev/urandom 2>/dev/null | head -c $(( $RANDOM % 7  + 2)); echo -n " "; done)"
-  local home="00000000-0000-0000-0000-000000000001"
-  local location="00000000-0000-0000-0000-000000000001"
+  local homeID="00000000-0000-0000-0000-000000000001"
+  local locationID="00000000-0000-0000-0000-000000000001"
   local resp id actual
 
   # Create a player
-  resp="$(players_create "${name}" "${desc}" "${home}" "${location}")"
+  resp="$(players_create "${name}" "${desc}" "${homeID}" "${locationID}")"
   if [[ $? -ne $SUCCESS ]]; then
     fatal "Fail: ${resp}"
   elif is_error "${resp}"; then
@@ -25,7 +25,7 @@ test_players() {
     fail "$(error_detail "${resp}")"
   fi
 
-  # Check that the returned name, description, home and location
+  # Check that the returned name, description, homeID and locationID
   actual="$(data_field "name" "${resp}")"
   if [[ "${actual}" != "${name}" ]]; then
     fail "Expected name ${name}, actual ${actual}"
@@ -40,23 +40,23 @@ test_players() {
     pass "description matches"
   fi
 
-  actual="$(data_field "home" "${resp}")"
-  if [[ "${actual}" != "${home}" ]]; then
-    fail "Expected home ${home}, actual ${actual}"
+  actual="$(data_field "homeID" "${resp}")"
+  if [[ "${actual}" != "${homeID}" ]]; then
+    fail "Expected homeID ${homeID}, actual ${actual}"
   else
-    pass "home matches"
+    pass "homeID matches"
   fi
 
-  actual="$(data_field "location" "${resp}")"
-  if [[ "${actual}" != "${location}" ]]; then
-    fail "Expected location ${location}, actual ${actual}"
+  actual="$(data_field "locationID" "${resp}")"
+  if [[ "${actual}" != "${locationID}" ]]; then
+    fail "Expected locationID ${locationID}, actual ${actual}"
   else
-    pass "location matches"
+    pass "locationID matches"
   fi
 
   # Update the player name
   name="$(tr -cd 'A-Za-z' < /dev/urandom | head -c $(( $RANDOM % 7  + 2)))"
-  resp="$(players_update "${id}" "${name}" "${desc}" "${home}" "${location}")"
+  resp="$(players_update "${id}" "${name}" "${desc}" "${homeID}" "${locationID}")"
   if [[ $? -ne $SUCCESS ]]; then
     fatal "Fail: ${resp}"
   elif is_error "${resp}"; then
@@ -77,18 +77,18 @@ test_players() {
     pass "description matches"
   fi
 
-  actual="$(data_field "home" "${resp}")"
-  if [[ "${actual}" != "${home}" ]]; then
-    fail "Expected home ${home}, actual ${actual}" 
+  actual="$(data_field "homeID" "${resp}")"
+  if [[ "${actual}" != "${homeID}" ]]; then
+    fail "Expected homeID ${homeID}, actual ${actual}" 
   else
-    pass "home matches"
+    pass "homeID matches"
   fi
 
-  actual="$(data_field "location" "${resp}")"
-  if [[ "${actual}" != "${location}" ]]; then
-    fail "Expected location ${location}, actual ${actual}"
+  actual="$(data_field "locationID" "${resp}")"
+  if [[ "${actual}" != "${locationID}" ]]; then
+    fail "Expected locationID ${locationID}, actual ${actual}"
   else
-    pass "location matches"
+    pass "locationID matches"
   fi
 
   # Remove the player

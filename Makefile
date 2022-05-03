@@ -131,6 +131,6 @@ push_containers:
 
 clean:
 	@printf "\nClean...\n"
-		@bin/dev stop
-		@bin/dev clean
+		@-bin/dev stop
+		@-bin/dev clean
 		-rm -rf dist

@@ -26,16 +26,16 @@ import (
 
 	"arcadium.dev/core/build"
 	cconfig "arcadium.dev/core/config"
-	"arcadium.dev/core/http"
+	chttp "arcadium.dev/core/http"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/sql"
 
+	"arcadium.dev/arcade/http"
+	"arcadium.dev/arcade/storage"
+	"arcadium.dev/arcade/storage/cockroach"
+
 	"arcadium.dev/arcade/internal/health"
-	"arcadium.dev/arcade/internal/items"
-	"arcadium.dev/arcade/internal/links"
 	"arcadium.dev/arcade/internal/metrics"
-	"arcadium.dev/arcade/internal/players"
-	"arcadium.dev/arcade/internal/rooms"
 )
 
 // Build information.
@@ -58,12 +58,12 @@ type (
 		db     *sql.DB
 
 		apiWG       sync.WaitGroup // To ensure stop isn't called before Start is ready.
-		apiServices []http.Service
-		apiServer   *http.Server
+		apiServices []chttp.Service
+		apiServer   *chttp.Server
 
 		telemetryWG       sync.WaitGroup // To ensure stop isn't called before Start is ready.
-		telemetryServices []http.Service
-		telemetryServer   *http.Server
+		telemetryServices []chttp.Service
+		telemetryServer   *chttp.Server
 
 		ctors          constructors // Provides a way for unit tests to inject different object constructors.
 		stdout, stderr io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
@@ -74,8 +74,8 @@ type (
 		newConfig          func(...cconfig.Option) (config, error)
 		newLogger          func(loggerConfig) (log.Logger, error)
 		newDB              func(sqlConfig, log.Logger) (*sql.DB, error)
-		newAPIServer       func(serverConfig, tlsConfig, log.Logger, ...http.ServerOption) (*http.Server, error)
-		newTelemetryServer func(serverConfig, tlsConfig, log.Logger, ...http.ServerOption) (*http.Server, error)
+		newAPIServer       func(serverConfig, tlsConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
+		newTelemetryServer func(serverConfig, tlsConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
 	}
 )
 
@@ -107,32 +107,32 @@ func New(name, version, branch, commit, date, gover string) *Server {
 				return sql.Open(cfg.Driver(), cfg.URL(), logger)
 			},
 
-			newAPIServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...http.ServerOption) (*http.Server, error) {
+			newAPIServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
 				tlsConfig, err := tls.TLSConfig(cconfig.WithMTLS())
 				if err != nil {
 					return nil, err
 				}
 
 				opts = append(opts,
-					http.WithServerAddr(cfg.Addr()),
-					http.WithServerTLS(tlsConfig),
-					http.WithServerLogger(logger),
+					chttp.WithServerAddr(cfg.Addr()),
+					chttp.WithServerTLS(tlsConfig),
+					chttp.WithServerLogger(logger),
 				)
-				return http.NewServer(opts...), nil
+				return chttp.NewServer(opts...), nil
 			},
 
-			newTelemetryServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...http.ServerOption) (*http.Server, error) {
+			newTelemetryServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
 				tlsConfig, err := tls.TLSConfig()
 				if err != nil {
 					return nil, err
 				}
 
 				opts = append(opts,
-					http.WithServerAddr(cfg.Addr()),
-					http.WithServerTLS(tlsConfig),
-					http.WithServerLogger(logger),
+					chttp.WithServerAddr(cfg.Addr()),
+					chttp.WithServerTLS(tlsConfig),
+					chttp.WithServerLogger(logger),
 				)
-				return http.NewServer(opts...), nil
+				return chttp.NewServer(opts...), nil
 			},
 		},
 		stdout: os.Stdout,
@@ -199,15 +199,15 @@ func (s *Server) Start(args []string) {
 	defer s.db.Close()
 
 	// Setup API services.
-	s.apiServices = []http.Service{
-		players.New(s.db.DB),
-		rooms.New(s.db.DB),
-		links.New(s.db.DB),
-		items.New(s.db.DB),
+	s.apiServices = []chttp.Service{
+		http.PlayersService{Storage: storage.Players{DB: s.db.DB, Driver: cockroach.Driver{}}},
+		http.RoomsService{Storage: storage.Rooms{DB: s.db.DB, Driver: cockroach.Driver{}}},
+		http.LinksService{Storage: storage.Links{DB: s.db.DB, Driver: cockroach.Driver{}}},
+		http.ItemsService{Storage: storage.Items{DB: s.db.DB, Driver: cockroach.Driver{}}},
 	}
 
 	// Setup telemetry services.
-	s.telemetryServices = []http.Service{
+	s.telemetryServices = []chttp.Service{
 		health.Service{},
 		metrics.Service{},
 	}
@@ -217,7 +217,7 @@ func (s *Server) Start(args []string) {
 		s.config.apiServer,
 		s.config.tls,
 		s.logger,
-		http.WithMiddleware(http.Metrics),
+		chttp.WithMiddleware(chttp.Metrics),
 	)
 	if err != nil {
 		s.logger.Error("msg", "failed to create api server", "error", err)

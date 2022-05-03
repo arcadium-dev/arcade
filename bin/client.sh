@@ -59,7 +59,7 @@ error_field() {
 
 is_error() {
   local err
-  err="$(jq .error <(echo "${@:-}"))" 
+  err="$(jq .error <(echo "${@:-}"))"
   if [[ "${err}" == "null" || "${err}" == "" ]]; then
     return ${FAILURE}
   fi
@@ -90,7 +90,7 @@ contains() {
 
 players_list() {
   info "Listing players" >&2
-  
+
   local result
   result="$(bin/dev run curl --request GET "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
@@ -121,17 +121,17 @@ players_get() {
 }
 
 players_create() {
-  local _name="$1" _desc="$2" _home="$3" _location="$4"
-  param_check "${_name}" "${_desc}" "${_home}" "${_location}"
+  local _name="$1" _desc="$2" _homeID="$3" _locationID="$4"
+  param_check "${_name}" "${_desc}" "${_homeID}" "${_locationID}"
 
   info "Creating player" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "home:        ${_home}" >&2
-  msg "location:    ${_location}" >&2
+  msg "homeID:      ${_homeID}" >&2
+  msg "locationID:  ${_locationID}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","home":"'"${_home}"'","location":"'"${_location}"'"}' "https://assets:4201/players" 2>/dev/null)"
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","homeID":"'"${_homeID}"'","locationID":"'"${_locationID}"'"}' "https://assets:4201/players" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -142,18 +142,18 @@ players_create() {
 }
 
 players_update() {
-  local _id="$1" _name="$2" _desc="$3" _home="$4" _location="$5"
-  param_check "${_id}" "${_name}" "${_desc}" "${_home}" "${_location}"
+  local _id="$1" _name="$2" _desc="$3" _homeID="$4" _locationID="$5"
+  param_check "${_id}" "${_name}" "${_desc}" "${_homeID}" "${_locationID}"
 
   info "Updating player" >&2
   msg "id:          ${_id}" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "home:        ${_home}" >&2
-  msg "location:    ${_location}" >&2
+  msg "homeID:      ${_homeID}" >&2
+  msg "locationID:  ${_locationID}" >&2
 
   local result
-  result="$(bin/dev run curl --request PUT --data '{"playerID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","home":"'"${_home}"'","location":"'"${_location}"'"}' "https://assets:4201/players/${_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request PUT --data '{"playerID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","homeID":"'"${_homeID}"'","locationID":"'"${_locationID}"'"}' "https://assets:4201/players/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -200,17 +200,17 @@ rooms_get() {
 }
 
 rooms_create() {
-  local _name="$1" _desc="$2" _owner="$3" _parent="$4"
-  param_check "${_name}" "${_desc}" "${_owner}" "${_parent}"
+  local _name="$1" _desc="$2" _ownerID="$3" _parentID="$4"
+  param_check "${_name}" "${_desc}" "${_ownerID}" "${_parentID}"
 
   info "Creating room" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "parent:      ${_parent}" >&2
+  msg "ownerID:     ${_ownerID}" >&2
+  msg "parentID:    ${_parentID}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","parent":"'"${_parent}"'"}' "https://assets:4201/rooms" 2>/dev/null)"
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","parentID":"'"${_parentID}"'"}' "https://assets:4201/rooms" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -221,18 +221,18 @@ rooms_create() {
 }
 
 rooms_update() {
-  local _id="$1" _name="$2" _desc="$3" _owner="$4" _parent="$5"
-  param_check "${_id}" "${_name}" "${_desc}" "${_owner}" "${_parent}"
+  local _id="$1" _name="$2" _desc="$3" _ownerID="$4" _parentID="$5"
+  param_check "${_id}" "${_name}" "${_desc}" "${_ownerID}" "${_parentID}"
 
   info "Updating room" >&2
   msg "id:          ${_id}" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "parent:      ${_parent}" >&2
+  msg "ownerID:     ${_ownerID}" >&2
+  msg "parentID:    ${_parentID}" >&2
 
   local result
-  result="$(bin/dev run curl --request PUT --data '{"roomID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","parent":"'"${_parent}"'"}' "https://assets:4201/rooms/${_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request PUT --data '{"roomID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","parentID":"'"${_parentID}"'"}' "https://assets:4201/rooms/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -279,18 +279,18 @@ links_get() {
 }
 
 links_create() {
-  local _name="$1" _desc="$2" _owner="$3" _location="$4" _destination="$5"
-  param_check "${_name}" "${_desc}" "${_owner}" "${_location}" "${_destination}"
+  local _name="$1" _desc="$2" _ownerID="$3" _locationID="$4" _destinationID="$5"
+  param_check "${_name}" "${_desc}" "${_ownerID}" "${_locationID}" "${_destinationID}"
 
   info "Creating link" >&2
-  msg "name:        ${_name}" >&2
-  msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "location:    ${_location}" >&2
-  msg "destination: ${_destination}" >&2
+  msg "name:          ${_name}" >&2
+  msg "description:   ${_desc}" >&2
+  msg "ownerID:       ${_ownerID}" >&2
+  msg "locationID:    ${_locationID}" >&2
+  msg "destinationID: ${_destinationID}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","destination":"'"${_destination}"'"}' "https://assets:4201/links" 2>/dev/null)"
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","locationID":"'"${_locationID}"'","destinationID":"'"${_destinationID}"'"}' "https://assets:4201/links" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -301,19 +301,19 @@ links_create() {
 }
 
 links_update() {
-  local _id="$1" _name="$2" _desc="$3" _owner="$4" _location="$5" _destination="$6"
-  param_check "${_id}" "${_name}" "${_desc}" "${_owner}" "${_location}" "${_destination}"
+  local _id="$1" _name="$2" _desc="$3" _ownerID="$4" _locationID="$5" _destinationID="$6"
+  param_check "${_id}" "${_name}" "${_desc}" "${_ownerID}" "${_locationID}" "${_destinationID}"
 
   info "Updating link" >&2
-  msg "id:          ${_id}" >&2
-  msg "name:        ${_name}" >&2
-  msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "location:    ${_location}" >&2
-  msg "destination: ${_destination}" >&2
+  msg "id:            ${_id}" >&2
+  msg "name:          ${_name}" >&2
+  msg "description:   ${_desc}" >&2
+  msg "ownerID:       ${_ownerID}" >&2
+  msg "locationID:    ${_locationID}" >&2
+  msg "destinationID: ${_destinationID}" >&2
 
   local result
-  result="$(bin/dev run curl --request PUT --data '{"linkID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","destination":"'"${_destination}"'"}' "https://assets:4201/links/${_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request PUT --data '{"linkID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","locationID":"'"${_locationID}"'","destinationID":"'"${_destinationID}"'"}' "https://assets:4201/links/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -360,18 +360,18 @@ items_get() {
 }
 
 items_create() {
-  local _name="$1" _desc="$2" _owner="$3" _location="$4" _inventory="$5"
-  param_check "${_name}" "${_desc}" "${_owner}" "${_location}" "${_inventory}"
+  local _name="$1" _desc="$2" _ownerID="$3" _locationID="$4" _inventoryID="$5"
+  param_check "${_name}" "${_desc}" "${_ownerID}" "${_locationID}" "${_inventoryID}"
 
   info "Creating item" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "location:    ${_location}" >&2
-  msg "inventory: ${_inventory}" >&2
+  msg "ownerID:     ${_ownerID}" >&2
+  msg "locationID:  ${_locationID}" >&2
+  msg "inventoryID: ${_inventoryID}" >&2
 
   local result
-  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","inventory":"'"${_inventory}"'"}' "https://assets:4201/items" 2>/dev/null)"
+  result="$(bin/dev run curl --request POST --data '{"name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","locationID":"'"${_locationID}"'","inventoryID":"'"${_inventoryID}"'"}' "https://assets:4201/items" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then
@@ -382,19 +382,19 @@ items_create() {
 }
 
 items_update() {
-  local _id="$1" _name="$2" _desc="$3" _owner="$4" _location="$5" _inventory="$6"
-  param_check "${_id}" "${_name}" "${_desc}" "${_owner}" "${_location}" "${_inventory}"
+  local _id="$1" _name="$2" _desc="$3" _ownerID="$4" _locationID="$5" _inventoryID="$6"
+  param_check "${_id}" "${_name}" "${_desc}" "${_ownerID}" "${_locationID}" "${_inventoryID}"
 
   info "Updating item" >&2
   msg "id:          ${_id}" >&2
   msg "name:        ${_name}" >&2
   msg "description: ${_desc}" >&2
-  msg "owner:       ${_owner}" >&2
-  msg "location:    ${_location}" >&2
-  msg "inventory: ${_inventory}" >&2
+  msg "ownerID:     ${_ownerID}" >&2
+  msg "locationID:  ${_locationID}" >&2
+  msg "inventoryID: ${_inventoryID}" >&2
 
   local result
-  result="$(bin/dev run curl --request PUT --data '{"itemID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","owner":"'"${_owner}"'","location":"'"${_location}"'","inventory":"'"${_inventory}"'"}' "https://assets:4201/items/${_id}" 2>/dev/null)"
+  result="$(bin/dev run curl --request PUT --data '{"itemID":"'"${_id}"'","name":"'"${_name}"'","description":"'"${_desc}"'","ownerID":"'"${_ownerID}"'","locationID":"'"${_locationID}"'","inventoryID":"'"${_inventoryID}"'"}' "https://assets:4201/items/${_id}" 2>/dev/null)"
   local rc=$?
 
   if [[ "${result:-}" != "" ]]; then

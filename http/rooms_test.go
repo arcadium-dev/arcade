@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package http
+package http_test
 
 import (
 	"bytes"
@@ -28,10 +28,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade"
+	ahttp "arcadium.dev/arcade/http"
 )
 
 func TestRoomsServiceName(t *testing.T) {
-	s := RoomsService{}
+	s := ahttp.RoomsService{}
 	if s.Name() != "rooms" {
 		t.Error("Unexpected service name")
 	}
@@ -39,7 +40,7 @@ func TestRoomsServiceName(t *testing.T) {
 
 func TestRoomsServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := RoomsService{}
+	s := ahttp.RoomsService{}
 	s.Shutdown()
 }
 
@@ -49,7 +50,7 @@ func TestRoomsServiceList(t *testing.T) {
 		m := &mockRoomsStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokeRoomsService(t, m, http.MethodGet, roomsRoute, nil),
+			t, invokeRoomsService(t, m, http.MethodGet, ahttp.RoomsRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -70,7 +71,7 @@ func TestRoomsServiceList(t *testing.T) {
 		}
 		m := &mockRoomsStorage{t: t, rooms: rooms}
 
-		w := invokeRoomsService(t, m, http.MethodGet, roomsRoute, nil)
+		w := invokeRoomsService(t, m, http.MethodGet, ahttp.RoomsRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -120,7 +121,7 @@ func TestRoomsServiceGet(t *testing.T) {
 		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeRoomsService(t, m, http.MethodGet, roomsRoute+"/"+id, nil),
+			t, invokeRoomsService(t, m, http.MethodGet, ahttp.RoomsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -139,7 +140,7 @@ func TestRoomsServiceGet(t *testing.T) {
 		}
 		m := &mockRoomsStorage{t: t, roomID: id, room: room}
 
-		w := invokeRoomsService(t, m, http.MethodGet, roomsRoute+"/"+id, nil)
+		w := invokeRoomsService(t, m, http.MethodGet, ahttp.RoomsRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -183,14 +184,14 @@ func TestRoomsServiceCreate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeRoomsService(t, nil, http.MethodPost, roomsRoute, nil),
+			t, invokeRoomsService(t, nil, http.MethodPost, ahttp.RoomsRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeRoomsService(t, nil, http.MethodPost, roomsRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokeRoomsService(t, nil, http.MethodPost, ahttp.RoomsRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -202,7 +203,7 @@ func TestRoomsServiceCreate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeRoomsService(t, m, http.MethodPost, roomsRoute, body),
+			t, invokeRoomsService(t, m, http.MethodPost, ahttp.RoomsRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -233,7 +234,7 @@ func TestRoomsServiceCreate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
-		w := invokeRoomsService(t, m, http.MethodPost, roomsRoute, body)
+		w := invokeRoomsService(t, m, http.MethodPost, ahttp.RoomsRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -277,14 +278,14 @@ func TestRoomsServiceUpdate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeRoomsService(t, nil, http.MethodPut, roomsRoute+"/"+id, nil),
+			t, invokeRoomsService(t, nil, http.MethodPut, ahttp.RoomsRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeRoomsService(t, nil, http.MethodPut, roomsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokeRoomsService(t, nil, http.MethodPut, ahttp.RoomsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -296,7 +297,7 @@ func TestRoomsServiceUpdate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeRoomsService(t, m, http.MethodPut, roomsRoute+"/"+id, body),
+			t, invokeRoomsService(t, m, http.MethodPut, ahttp.RoomsRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -327,7 +328,7 @@ func TestRoomsServiceUpdate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
-		w := invokeRoomsService(t, m, http.MethodPut, roomsRoute+"/"+id, body)
+		w := invokeRoomsService(t, m, http.MethodPut, ahttp.RoomsRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -369,7 +370,7 @@ func TestRoomsServiceRemove(t *testing.T) {
 		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeRoomsService(t, m, http.MethodDelete, roomsRoute+"/"+id, nil),
+			t, invokeRoomsService(t, m, http.MethodDelete, ahttp.RoomsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -381,7 +382,7 @@ func TestRoomsServiceRemove(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := &mockRoomsStorage{t: t, roomID: id}
 
-		w := invokeRoomsService(t, m, http.MethodDelete, roomsRoute+"/"+id, nil)
+		w := invokeRoomsService(t, m, http.MethodDelete, ahttp.RoomsRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -397,7 +398,7 @@ func invokeRoomsService(t *testing.T, m *mockRoomsStorage, method, target string
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &RoomsService{Storage: m}
+	s := ahttp.RoomsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)

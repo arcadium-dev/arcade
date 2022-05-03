@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package http
+package http_test
 
 import (
 	"bytes"
@@ -28,10 +28,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade"
+	ahttp "arcadium.dev/arcade/http"
 )
 
 func TestLinksServiceName(t *testing.T) {
-	s := LinksService{}
+	s := ahttp.LinksService{}
 	if s.Name() != "links" {
 		t.Error("Unexpected service name")
 	}
@@ -39,7 +40,7 @@ func TestLinksServiceName(t *testing.T) {
 
 func TestLinksServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := LinksService{}
+	s := ahttp.LinksService{}
 	s.Shutdown()
 }
 
@@ -49,7 +50,7 @@ func TestLinksServiceList(t *testing.T) {
 		m := &mockLinksStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokeLinksService(t, m, http.MethodGet, linksRoute, nil),
+			t, invokeLinksService(t, m, http.MethodGet, ahttp.LinksRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -71,7 +72,7 @@ func TestLinksServiceList(t *testing.T) {
 		}
 		m := &mockLinksStorage{t: t, links: links}
 
-		w := invokeLinksService(t, m, http.MethodGet, linksRoute, nil)
+		w := invokeLinksService(t, m, http.MethodGet, ahttp.LinksRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -123,7 +124,7 @@ func TestLinksServiceGet(t *testing.T) {
 		m := &mockLinksStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeLinksService(t, m, http.MethodGet, linksRoute+"/"+id, nil),
+			t, invokeLinksService(t, m, http.MethodGet, ahttp.LinksRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -143,7 +144,7 @@ func TestLinksServiceGet(t *testing.T) {
 		}
 		m := &mockLinksStorage{t: t, linkID: id, link: link}
 
-		w := invokeLinksService(t, m, http.MethodGet, linksRoute+"/"+id, nil)
+		w := invokeLinksService(t, m, http.MethodGet, ahttp.LinksRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -189,14 +190,14 @@ func TestLinksServiceCreate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeLinksService(t, nil, http.MethodPost, linksRoute, nil),
+			t, invokeLinksService(t, nil, http.MethodPost, ahttp.LinksRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeLinksService(t, nil, http.MethodPost, linksRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokeLinksService(t, nil, http.MethodPost, ahttp.LinksRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -208,7 +209,7 @@ func TestLinksServiceCreate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeLinksService(t, m, http.MethodPost, linksRoute, body),
+			t, invokeLinksService(t, m, http.MethodPost, ahttp.LinksRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -241,7 +242,7 @@ func TestLinksServiceCreate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","destinationID":"` + destinationID + `"}`,
 		)
 
-		w := invokeLinksService(t, m, http.MethodPost, linksRoute, body)
+		w := invokeLinksService(t, m, http.MethodPost, ahttp.LinksRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -287,14 +288,14 @@ func TestLinksServiceUpdate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeLinksService(t, nil, http.MethodPut, linksRoute+"/"+id, nil),
+			t, invokeLinksService(t, nil, http.MethodPut, ahttp.LinksRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeLinksService(t, nil, http.MethodPut, linksRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokeLinksService(t, nil, http.MethodPut, ahttp.LinksRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -306,7 +307,7 @@ func TestLinksServiceUpdate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeLinksService(t, m, http.MethodPut, linksRoute+"/"+id, body),
+			t, invokeLinksService(t, m, http.MethodPut, ahttp.LinksRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -339,7 +340,7 @@ func TestLinksServiceUpdate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","destinationID":"` + destinationID + `"}`,
 		)
 
-		w := invokeLinksService(t, m, http.MethodPut, linksRoute+"/"+id, body)
+		w := invokeLinksService(t, m, http.MethodPut, ahttp.LinksRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -382,7 +383,7 @@ func TestLinksServiceRemove(t *testing.T) {
 		m := &mockLinksStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeLinksService(t, m, http.MethodDelete, linksRoute+"/"+id, nil),
+			t, invokeLinksService(t, m, http.MethodDelete, ahttp.LinksRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -394,7 +395,7 @@ func TestLinksServiceRemove(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := &mockLinksStorage{t: t, linkID: id}
 
-		w := invokeLinksService(t, m, http.MethodDelete, linksRoute+"/"+id, nil)
+		w := invokeLinksService(t, m, http.MethodDelete, ahttp.LinksRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -410,7 +411,7 @@ func invokeLinksService(t *testing.T, m *mockLinksStorage, method, target string
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &LinksService{Storage: m}
+	s := ahttp.LinksService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)

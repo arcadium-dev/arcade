@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	linksRoute string = "/links"
+	LinksRoute string = "/links"
 )
 
 type (
@@ -41,7 +41,7 @@ type (
 
 // Register sets up the http handler for this service with the given router.
 func (s LinksService) Register(router *mux.Router) {
-	r := router.PathPrefix(linksRoute).Subrouter()
+	r := router.PathPrefix(LinksRoute).Subrouter()
 	r.HandleFunc("", s.List).Methods(http.MethodGet)
 	r.HandleFunc("/{linkID}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)

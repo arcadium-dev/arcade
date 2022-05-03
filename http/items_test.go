@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package http
+package http_test
 
 import (
 	"bytes"
@@ -28,10 +28,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade"
+	ahttp "arcadium.dev/arcade/http"
 )
 
 func TestItemsServiceName(t *testing.T) {
-	s := ItemsService{}
+	s := ahttp.ItemsService{}
 	if s.Name() != "items" {
 		t.Error("Unexpected service name")
 	}
@@ -39,7 +40,7 @@ func TestItemsServiceName(t *testing.T) {
 
 func TestItemsServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := ItemsService{}
+	s := ahttp.ItemsService{}
 	s.Shutdown()
 }
 
@@ -49,7 +50,7 @@ func TestItemsServiceList(t *testing.T) {
 		m := &mockItemsStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokeItemsService(t, m, http.MethodGet, itemsRoute, nil),
+			t, invokeItemsService(t, m, http.MethodGet, ahttp.ItemsRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -71,7 +72,7 @@ func TestItemsServiceList(t *testing.T) {
 		}
 		m := &mockItemsStorage{t: t, items: items}
 
-		w := invokeItemsService(t, m, http.MethodGet, itemsRoute, nil)
+		w := invokeItemsService(t, m, http.MethodGet, ahttp.ItemsRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -123,7 +124,7 @@ func TestItemsServiceGet(t *testing.T) {
 		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeItemsService(t, m, http.MethodGet, itemsRoute+"/"+id, nil),
+			t, invokeItemsService(t, m, http.MethodGet, ahttp.ItemsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -143,7 +144,7 @@ func TestItemsServiceGet(t *testing.T) {
 		}
 		m := &mockItemsStorage{t: t, itemID: id, item: item}
 
-		w := invokeItemsService(t, m, http.MethodGet, itemsRoute+"/"+id, nil)
+		w := invokeItemsService(t, m, http.MethodGet, ahttp.ItemsRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -189,14 +190,14 @@ func TestItemsServiceCreate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeItemsService(t, nil, http.MethodPost, itemsRoute, nil),
+			t, invokeItemsService(t, nil, http.MethodPost, ahttp.ItemsRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeItemsService(t, nil, http.MethodPost, itemsRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokeItemsService(t, nil, http.MethodPost, ahttp.ItemsRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -208,7 +209,7 @@ func TestItemsServiceCreate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeItemsService(t, m, http.MethodPost, itemsRoute, body),
+			t, invokeItemsService(t, m, http.MethodPost, ahttp.ItemsRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -241,7 +242,7 @@ func TestItemsServiceCreate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
-		w := invokeItemsService(t, m, http.MethodPost, itemsRoute, body)
+		w := invokeItemsService(t, m, http.MethodPost, ahttp.ItemsRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -287,14 +288,14 @@ func TestItemsServiceUpdate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokeItemsService(t, nil, http.MethodPut, itemsRoute+"/"+id, nil),
+			t, invokeItemsService(t, nil, http.MethodPut, ahttp.ItemsRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokeItemsService(t, nil, http.MethodPut, itemsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokeItemsService(t, nil, http.MethodPut, ahttp.ItemsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -306,7 +307,7 @@ func TestItemsServiceUpdate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokeItemsService(t, m, http.MethodPut, itemsRoute+"/"+id, body),
+			t, invokeItemsService(t, m, http.MethodPut, ahttp.ItemsRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -339,7 +340,7 @@ func TestItemsServiceUpdate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
-		w := invokeItemsService(t, m, http.MethodPut, itemsRoute+"/"+id, body)
+		w := invokeItemsService(t, m, http.MethodPut, ahttp.ItemsRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -382,7 +383,7 @@ func TestItemsServiceRemove(t *testing.T) {
 		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokeItemsService(t, m, http.MethodDelete, itemsRoute+"/"+id, nil),
+			t, invokeItemsService(t, m, http.MethodDelete, ahttp.ItemsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -394,7 +395,7 @@ func TestItemsServiceRemove(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := &mockItemsStorage{t: t, itemID: id}
 
-		w := invokeItemsService(t, m, http.MethodDelete, itemsRoute+"/"+id, nil)
+		w := invokeItemsService(t, m, http.MethodDelete, ahttp.ItemsRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -410,7 +411,7 @@ func invokeItemsService(t *testing.T, m *mockItemsStorage, method, target string
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &ItemsService{Storage: m}
+	s := ahttp.ItemsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)

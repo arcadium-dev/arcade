@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package http
+package http_test
 
 import (
 	"bytes"
@@ -28,10 +28,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade"
+	ahttp "arcadium.dev/arcade/http"
 )
 
 func TestPlayersServiceName(t *testing.T) {
-	s := PlayersService{}
+	s := ahttp.PlayersService{}
 	if s.Name() != "players" {
 		t.Error("Unexpected service name")
 	}
@@ -39,7 +40,7 @@ func TestPlayersServiceName(t *testing.T) {
 
 func TestPlayersServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := PlayersService{}
+	s := ahttp.PlayersService{}
 	s.Shutdown()
 }
 
@@ -49,7 +50,7 @@ func TestPlayersServiceList(t *testing.T) {
 		m := &mockPlayersStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute, nil),
+			t, invokePlayersService(t, m, http.MethodGet, ahttp.PlayersRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -70,7 +71,7 @@ func TestPlayersServiceList(t *testing.T) {
 		}
 		m := &mockPlayersStorage{t: t, players: players}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute, nil)
+		w := invokePlayersService(t, m, http.MethodGet, ahttp.PlayersRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -120,7 +121,7 @@ func TestPlayersServiceGet(t *testing.T) {
 		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil),
+			t, invokePlayersService(t, m, http.MethodGet, ahttp.PlayersRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -139,7 +140,7 @@ func TestPlayersServiceGet(t *testing.T) {
 		}
 		m := &mockPlayersStorage{t: t, playerID: id, player: player}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil)
+		w := invokePlayersService(t, m, http.MethodGet, ahttp.PlayersRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -183,14 +184,14 @@ func TestPlayersServiceCreate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, nil),
+			t, invokePlayersService(t, nil, http.MethodPost, ahttp.PlayersRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokePlayersService(t, nil, http.MethodPost, ahttp.PlayersRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -202,7 +203,7 @@ func TestPlayersServiceCreate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPost, playersRoute, body),
+			t, invokePlayersService(t, m, http.MethodPost, ahttp.PlayersRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -233,7 +234,7 @@ func TestPlayersServiceCreate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPost, playersRoute, body)
+		w := invokePlayersService(t, m, http.MethodPost, ahttp.PlayersRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -277,14 +278,14 @@ func TestPlayersServiceUpdate(t *testing.T) {
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, nil),
+			t, invokePlayersService(t, nil, http.MethodPut, ahttp.PlayersRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokePlayersService(t, nil, http.MethodPut, ahttp.PlayersRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
@@ -296,7 +297,7 @@ func TestPlayersServiceUpdate(t *testing.T) {
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body),
+			t, invokePlayersService(t, m, http.MethodPut, ahttp.PlayersRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -327,7 +328,7 @@ func TestPlayersServiceUpdate(t *testing.T) {
 			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body)
+		w := invokePlayersService(t, m, http.MethodPut, ahttp.PlayersRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -369,7 +370,7 @@ func TestPlayersServiceRemove(t *testing.T) {
 		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil),
+			t, invokePlayersService(t, m, http.MethodDelete, ahttp.PlayersRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -381,7 +382,7 @@ func TestPlayersServiceRemove(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		m := &mockPlayersStorage{t: t, playerID: id}
 
-		w := invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil)
+		w := invokePlayersService(t, m, http.MethodDelete, ahttp.PlayersRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -397,7 +398,7 @@ func invokePlayersService(t *testing.T, m *mockPlayersStorage, method, target st
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &PlayersService{Storage: m}
+	s := ahttp.PlayersService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)

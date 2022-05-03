@@ -15,6 +15,7 @@
 package arcade_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -22,6 +23,71 @@ import (
 
 	"arcadium.dev/arcade"
 )
+
+func TestItemJSONEncoding(t *testing.T) {
+	var (
+		id          = uuid.NewString()
+		name        = randString(21)
+		description = randString(49)
+		ownerID     = uuid.NewString()
+		locationID  = uuid.NewString()
+		inventoryID = uuid.NewString()
+		created     = time.Now()
+		updated     = time.Now()
+	)
+
+	t.Run("test item json encoding", func(t *testing.T) {
+		p := arcade.Item{
+			ID:          id,
+			Name:        name,
+			Description: description,
+			OwnerID:     ownerID,
+			LocationID:  locationID,
+			InventoryID: inventoryID,
+			Created:     created,
+			Updated:     updated,
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var item arcade.Item
+		if err := json.Unmarshal(b, &item); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if item.ID != id ||
+			item.Name != name ||
+			item.Description != description ||
+			item.OwnerID != ownerID ||
+			item.LocationID != locationID ||
+			item.InventoryID != inventoryID {
+			t.Errorf("\n%+v\n%+v", p, item)
+		}
+	})
+
+	t.Run("test item request json encoding", func(t *testing.T) {
+		r := arcade.ItemRequest{
+			Name:        randString(73),
+			Description: randString(256),
+			OwnerID:     uuid.NewString(),
+			LocationID:  uuid.NewString(),
+			InventoryID: uuid.NewString(),
+		}
+
+		b, err := json.Marshal(r)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var req arcade.ItemRequest
+		if err := json.Unmarshal(b, &req); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if r != req {
+			t.Error("bummer")
+		}
+	})
+}
 
 func TestItemRequestValidate(t *testing.T) {
 	t.Run("test empty name", func(t *testing.T) {

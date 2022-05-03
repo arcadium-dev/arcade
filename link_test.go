@@ -15,6 +15,7 @@
 package arcade_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -22,6 +23,71 @@ import (
 
 	"arcadium.dev/arcade"
 )
+
+func TestLinkJSONEncoding(t *testing.T) {
+	var (
+		id            = uuid.NewString()
+		name          = randString(21)
+		description   = randString(49)
+		ownerID       = uuid.NewString()
+		locationID    = uuid.NewString()
+		destinationID = uuid.NewString()
+		created       = time.Now()
+		updated       = time.Now()
+	)
+
+	t.Run("test link json encoding", func(t *testing.T) {
+		p := arcade.Link{
+			ID:            id,
+			Name:          name,
+			Description:   description,
+			OwnerID:       ownerID,
+			LocationID:    locationID,
+			DestinationID: destinationID,
+			Created:       created,
+			Updated:       updated,
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var link arcade.Link
+		if err := json.Unmarshal(b, &link); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if link.ID != id ||
+			link.Name != name ||
+			link.Description != description ||
+			link.OwnerID != ownerID ||
+			link.LocationID != locationID ||
+			link.DestinationID != destinationID {
+			t.Errorf("\n%+v\n%+v", p, link)
+		}
+	})
+
+	t.Run("test link request json encoding", func(t *testing.T) {
+		r := arcade.LinkRequest{
+			Name:          randString(73),
+			Description:   randString(256),
+			OwnerID:       uuid.NewString(),
+			LocationID:    uuid.NewString(),
+			DestinationID: uuid.NewString(),
+		}
+
+		b, err := json.Marshal(r)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var req arcade.LinkRequest
+		if err := json.Unmarshal(b, &req); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if r != req {
+			t.Error("bummer")
+		}
+	})
+}
 
 func TestLinkRequestValidate(t *testing.T) {
 	t.Run("test empty name", func(t *testing.T) {

@@ -15,6 +15,7 @@
 package arcade_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -22,6 +23,67 @@ import (
 
 	"arcadium.dev/arcade"
 )
+
+func TestRoomJSONEncoding(t *testing.T) {
+	var (
+		id          = uuid.NewString()
+		name        = randString(21)
+		description = randString(49)
+		ownerID     = uuid.NewString()
+		parentID    = uuid.NewString()
+		created     = time.Now()
+		updated     = time.Now()
+	)
+
+	t.Run("test room json encoding", func(t *testing.T) {
+		p := arcade.Room{
+			ID:          id,
+			Name:        name,
+			Description: description,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
+			Created:     created,
+			Updated:     updated,
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var room arcade.Room
+		if err := json.Unmarshal(b, &room); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if room.ID != id ||
+			room.Name != name ||
+			room.Description != description ||
+			room.OwnerID != ownerID ||
+			room.ParentID != parentID {
+			t.Errorf("\n%+v\n%+v", p, room)
+		}
+	})
+
+	t.Run("test room request json encoding", func(t *testing.T) {
+		r := arcade.RoomRequest{
+			Name:        randString(73),
+			Description: randString(256),
+			OwnerID:     uuid.NewString(),
+			ParentID:    uuid.NewString(),
+		}
+
+		b, err := json.Marshal(r)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var req arcade.RoomRequest
+		if err := json.Unmarshal(b, &req); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if r != req {
+			t.Error("bummer")
+		}
+	})
+}
 
 func TestRoomRequestValidate(t *testing.T) {
 	t.Run("test empty name", func(t *testing.T) {

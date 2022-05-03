@@ -30,26 +30,26 @@ import (
 	"arcadium.dev/arcade"
 )
 
-func TestPlayersServiceName(t *testing.T) {
-	s := PlayersService{}
-	if s.Name() != "players" {
+func TestItemsServiceName(t *testing.T) {
+	s := ItemsService{}
+	if s.Name() != "items" {
 		t.Error("Unexpected service name")
 	}
 }
 
-func TestPlayersServiceShutdown(t *testing.T) {
+func TestItemsServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := PlayersService{}
+	s := ItemsService{}
 	s.Shutdown()
 }
 
-func TestPlayersServiceList(t *testing.T) {
+func TestItemsServiceList(t *testing.T) {
 	t.Run("service error", func(t *testing.T) {
 		err := errors.New("unknown error")
-		m := &mockPlayersStorage{t: t, err: err}
+		m := &mockItemsStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute, nil),
+			t, invokeItemsService(t, m, http.MethodGet, itemsRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -59,18 +59,19 @@ func TestPlayersServiceList(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		players := []arcade.Player{
+		items := []arcade.Item{
 			{
 				ID:          "c39761fc-5096-4b1c-9d02-c75730b7b8bf",
 				Name:        "Drunen",
 				Description: "Son of Martin",
-				HomeID:      "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
+				OwnerID:     "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
 				LocationID:  "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
+				InventoryID: "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
 			},
 		}
-		m := &mockPlayersStorage{t: t, players: players}
+		m := &mockItemsStorage{t: t, items: items}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute, nil)
+		w := invokeItemsService(t, m, http.MethodGet, itemsRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -86,41 +87,43 @@ func TestPlayersServiceList(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playersResp arcade.PlayersResponse
-		err = json.Unmarshal(body, &playersResp)
+		var itemsResp arcade.ItemsResponse
+		err = json.Unmarshal(body, &itemsResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		if len(playersResp.Data) != len(players) {
-			t.Fatalf("Unexpected players response data length: %d", len(playersResp.Data))
+		if len(itemsResp.Data) != len(items) {
+			t.Fatalf("Unexpected items response data length: %d", len(itemsResp.Data))
 		}
 
-		player := playersResp.Data[0]
-		if player.ID != players[0].ID ||
-			player.Name != players[0].Name ||
-			player.Description != players[0].Description ||
-			player.HomeID != players[0].HomeID ||
-			player.LocationID != players[0].LocationID {
+		item := itemsResp.Data[0]
+		if item.ID != items[0].ID ||
+			item.Name != items[0].Name ||
+			item.Description != items[0].Description ||
+			item.OwnerID != items[0].OwnerID ||
+			item.LocationID != items[0].LocationID ||
+			item.InventoryID != items[0].InventoryID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceGet(t *testing.T) {
+func TestItemsServiceGet(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		inventoryID = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil),
+			t, invokeItemsService(t, m, http.MethodGet, itemsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -130,16 +133,17 @@ func TestPlayersServiceGet(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		player := arcade.Player{
+		item := arcade.Item{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
+			OwnerID:     ownerID,
 			LocationID:  locationID,
+			InventoryID: inventoryID,
 		}
-		m := &mockPlayersStorage{t: t, playerID: id, player: player}
+		m := &mockItemsStorage{t: t, itemID: id, item: item}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil)
+		w := invokeItemsService(t, m, http.MethodGet, itemsRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -155,54 +159,56 @@ func TestPlayersServiceGet(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(body, &playerResp)
+		var itemResp arcade.ItemResponse
+		err = json.Unmarshal(body, &itemResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := itemResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.LocationID != locationID ||
+			r.InventoryID != inventoryID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceCreate(t *testing.T) {
+func TestItemsServiceCreate(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		inventoryID = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, nil),
+			t, invokeItemsService(t, nil, http.MethodPost, itemsRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokeItemsService(t, nil, http.MethodPost, itemsRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPost, playersRoute, body),
+			t, invokeItemsService(t, m, http.MethodPost, itemsRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -213,27 +219,29 @@ func TestPlayersServiceCreate(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		now := time.Now()
-		req := arcade.PlayerRequest{
+		req := arcade.ItemRequest{
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
+			OwnerID:     ownerID,
 			LocationID:  locationID,
+			InventoryID: inventoryID,
 		}
-		player := arcade.Player{
+		item := arcade.Item{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
+			OwnerID:     ownerID,
 			LocationID:  locationID,
+			InventoryID: inventoryID,
 			Created:     now,
 			Updated:     now,
 		}
-		m := &mockPlayersStorage{t: t, req: req, player: player}
+		m := &mockItemsStorage{t: t, req: req, item: item}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPost, playersRoute, body)
+		w := invokeItemsService(t, m, http.MethodPost, itemsRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -249,54 +257,56 @@ func TestPlayersServiceCreate(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(b, &playerResp)
+		var itemResp arcade.ItemResponse
+		err = json.Unmarshal(b, &itemResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := itemResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.LocationID != locationID ||
+			r.InventoryID != inventoryID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceUpdate(t *testing.T) {
+func TestItemsServiceUpdate(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		inventoryID = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, nil),
+			t, invokeItemsService(t, nil, http.MethodPut, itemsRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokeItemsService(t, nil, http.MethodPut, itemsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body),
+			t, invokeItemsService(t, m, http.MethodPut, itemsRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -307,27 +317,29 @@ func TestPlayersServiceUpdate(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		now := time.Now()
-		req := arcade.PlayerRequest{
+		req := arcade.ItemRequest{
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
+			OwnerID:     ownerID,
 			LocationID:  locationID,
+			InventoryID: inventoryID,
 		}
-		player := arcade.Player{
+		item := arcade.Item{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
+			OwnerID:     ownerID,
 			LocationID:  locationID,
+			InventoryID: inventoryID,
 			Created:     now,
 			Updated:     now,
 		}
-		m := &mockPlayersStorage{t: t, req: req, playerID: id, player: player}
+		m := &mockItemsStorage{t: t, req: req, itemID: id, item: item}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","locationID":"` + locationID + `","inventoryID":"` + inventoryID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body)
+		w := invokeItemsService(t, m, http.MethodPut, itemsRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -343,33 +355,34 @@ func TestPlayersServiceUpdate(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(b, &playerResp)
+		var itemResp arcade.ItemResponse
+		err = json.Unmarshal(b, &itemResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := itemResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.LocationID != locationID ||
+			r.InventoryID != inventoryID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceRemove(t *testing.T) {
+func TestItemsServiceRemove(t *testing.T) {
 	const (
 		id = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 	)
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockItemsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil),
+			t, invokeItemsService(t, m, http.MethodDelete, itemsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -379,9 +392,9 @@ func TestPlayersServiceRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, playerID: id}
+		m := &mockItemsStorage{t: t, itemID: id}
 
-		w := invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil)
+		w := invokeItemsService(t, m, http.MethodDelete, itemsRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -393,11 +406,11 @@ func TestPlayersServiceRemove(t *testing.T) {
 	})
 }
 
-func invokePlayersService(t *testing.T, m *mockPlayersStorage, method, target string, body io.Reader) *httptest.ResponseRecorder {
+func invokeItemsService(t *testing.T, m *mockItemsStorage, method, target string, body io.Reader) *httptest.ResponseRecorder {
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &PlayersService{Storage: m}
+	s := &ItemsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)
@@ -408,71 +421,71 @@ func invokePlayersService(t *testing.T, m *mockPlayersStorage, method, target st
 }
 
 type (
-	mockPlayersStorage struct {
+	mockItemsStorage struct {
 		t   *testing.T
 		err error
 
-		playerID string
-		req      arcade.PlayerRequest
+		itemID string
+		req    arcade.ItemRequest
 
-		player  arcade.Player
-		players []arcade.Player
+		item  arcade.Item
+		items []arcade.Item
 
 		listCalled, getCalled, createCalled, updateCalled, removeCalled bool
 	}
 )
 
-func (m *mockPlayersStorage) List(context.Context, arcade.PlayersFilter) ([]arcade.Player, error) {
+func (m *mockItemsStorage) List(context.Context, arcade.ItemsFilter) ([]arcade.Item, error) {
 	m.listCalled = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return m.players, nil
+	return m.items, nil
 }
 
-func (m *mockPlayersStorage) Get(ctx context.Context, playerID string) (arcade.Player, error) {
+func (m *mockItemsStorage) Get(ctx context.Context, itemID string) (arcade.Item, error) {
 	m.getCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Item{}, m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("get: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.itemID != itemID {
+		m.t.Fatalf("get: expected itemID %s, actual itemID %s", m.itemID, itemID)
 	}
-	return m.player, nil
+	return m.item, nil
 }
 
-func (m *mockPlayersStorage) Create(ctx context.Context, req arcade.PlayerRequest) (arcade.Player, error) {
+func (m *mockItemsStorage) Create(ctx context.Context, req arcade.ItemRequest) (arcade.Item, error) {
 	m.createCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Item{}, m.err
 	}
 	if m.req != req {
-		m.t.Fatalf("create: expected player request %+v, actual player requset %+v", m.req, req)
+		m.t.Fatalf("create: expected item request %+v, actual item requset %+v", m.req, req)
 	}
-	return m.player, nil
+	return m.item, nil
 }
 
-func (m *mockPlayersStorage) Update(ctx context.Context, playerID string, req arcade.PlayerRequest) (arcade.Player, error) {
+func (m *mockItemsStorage) Update(ctx context.Context, itemID string, req arcade.ItemRequest) (arcade.Item, error) {
 	m.updateCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Item{}, m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("get: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.itemID != itemID {
+		m.t.Fatalf("get: expected itemID %s, actual itemID %s", m.itemID, itemID)
 	}
 	if m.req != req {
-		m.t.Fatalf("update: expected player request %+v, actual player requset %+v", m.req, req)
+		m.t.Fatalf("update: expected item request %+v, actual item requset %+v", m.req, req)
 	}
-	return m.player, nil
+	return m.item, nil
 }
 
-func (m *mockPlayersStorage) Remove(ctx context.Context, playerID string) error {
+func (m *mockItemsStorage) Remove(ctx context.Context, itemID string) error {
 	m.removeCalled = true
 	if m.err != nil {
 		return m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("remove: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.itemID != itemID {
+		m.t.Fatalf("remove: expected itemID %s, actual itemID %s", m.itemID, itemID)
 	}
 	return nil
 }

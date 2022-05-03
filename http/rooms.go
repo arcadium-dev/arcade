@@ -29,41 +29,41 @@ import (
 )
 
 const (
-	playersRoute string = "/players"
+	roomsRoute string = "/rooms"
 )
 
 type (
-	// Players is used to manage the player assets.
-	PlayersService struct {
-		Storage arcade.PlayerStorage
+	// Rooms is used to manage the room assets.
+	RoomsService struct {
+		Storage arcade.RoomStorage
 	}
 )
 
 // Register sets up the http handler for this service with the given router.
-func (s PlayersService) Register(router *mux.Router) {
-	r := router.PathPrefix(playersRoute).Subrouter()
+func (s RoomsService) Register(router *mux.Router) {
+	r := router.PathPrefix(roomsRoute).Subrouter()
 	r.HandleFunc("", s.List).Methods(http.MethodGet)
-	r.HandleFunc("/{playerID}", s.Get).Methods(http.MethodGet)
+	r.HandleFunc("/{roomID}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)
-	r.HandleFunc("/{playerID}", s.Update).Methods(http.MethodPut)
-	r.HandleFunc("/{playerID}", s.Remove).Methods(http.MethodDelete)
+	r.HandleFunc("/{roomID}", s.Update).Methods(http.MethodPut)
+	r.HandleFunc("/{roomID}", s.Remove).Methods(http.MethodDelete)
 }
 
 // Name returns the name of the service.
-func (PlayersService) Name() string {
-	return "players"
+func (RoomsService) Name() string {
+	return "rooms"
 }
 
 // Shutdown is a no-op since there no long running processes for this service... yet.
-func (PlayersService) Shutdown() {}
+func (RoomsService) Shutdown() {}
 
-func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
+func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// TODO: parse query params
 
-	// Read list of players.
-	players, err := s.Storage.List(ctx, arcade.PlayersFilter{})
+	// Read list of rooms.
+	rooms, err := s.Storage.List(ctx, arcade.RoomsFilter{})
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return
@@ -71,7 +71,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 
 	// Return list as body.
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(arcade.NewPlayersResponse(players))
+	err = json.NewEncoder(w).Encode(arcade.NewRoomsResponse(rooms))
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", cerrors.ErrInternal, err,
@@ -80,20 +80,20 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
+func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	playerID := params["playerID"]
+	roomID := params["roomID"]
 
 	ctx := r.Context()
 
-	player, err := s.Storage.Get(ctx, playerID)
+	room, err := s.Storage.Get(ctx, roomID)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(arcade.PlayerResponse{Data: player})
+	err = json.NewEncoder(w).Encode(arcade.RoomResponse{Data: room})
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", cerrors.ErrInternal, err,
@@ -102,7 +102,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
+func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	body, err := io.ReadAll(r.Body)
@@ -121,7 +121,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req arcade.PlayerRequest
+	var req arcade.RoomRequest
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
@@ -130,14 +130,14 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := s.Storage.Create(ctx, req)
+	room, err := s.Storage.Create(ctx, req)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(arcade.PlayerResponse{Data: player})
+	err = json.NewEncoder(w).Encode(arcade.RoomResponse{Data: room})
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", cerrors.ErrInternal, err,
@@ -146,11 +146,11 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
+func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	params := mux.Vars(r)
-	playerID := params["playerID"]
+	roomID := params["roomID"]
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -168,7 +168,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req arcade.PlayerRequest
+	var req arcade.RoomRequest
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
@@ -177,14 +177,14 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := s.Storage.Update(ctx, playerID, req)
+	room, err := s.Storage.Update(ctx, roomID, req)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(arcade.PlayerResponse{Data: player})
+	err = json.NewEncoder(w).Encode(arcade.RoomResponse{Data: room})
 	if err != nil {
 		chttp.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", cerrors.ErrInternal, err,
@@ -193,13 +193,13 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
+func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	params := mux.Vars(r)
-	playerID := params["playerID"]
+	roomID := params["roomID"]
 
-	err := s.Storage.Remove(ctx, playerID)
+	err := s.Storage.Remove(ctx, roomID)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return

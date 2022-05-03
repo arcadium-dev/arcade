@@ -30,26 +30,26 @@ import (
 	"arcadium.dev/arcade"
 )
 
-func TestPlayersServiceName(t *testing.T) {
-	s := PlayersService{}
-	if s.Name() != "players" {
+func TestRoomsServiceName(t *testing.T) {
+	s := RoomsService{}
+	if s.Name() != "rooms" {
 		t.Error("Unexpected service name")
 	}
 }
 
-func TestPlayersServiceShutdown(t *testing.T) {
+func TestRoomsServiceShutdown(t *testing.T) {
 	// This is a placeholder for when we have a background monitor service running.
-	s := PlayersService{}
+	s := RoomsService{}
 	s.Shutdown()
 }
 
-func TestPlayersServiceList(t *testing.T) {
+func TestRoomsServiceList(t *testing.T) {
 	t.Run("service error", func(t *testing.T) {
 		err := errors.New("unknown error")
-		m := &mockPlayersStorage{t: t, err: err}
+		m := &mockRoomsStorage{t: t, err: err}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute, nil),
+			t, invokeRoomsService(t, m, http.MethodGet, roomsRoute, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -59,18 +59,18 @@ func TestPlayersServiceList(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		players := []arcade.Player{
+		rooms := []arcade.Room{
 			{
 				ID:          "c39761fc-5096-4b1c-9d02-c75730b7b8bf",
 				Name:        "Drunen",
 				Description: "Son of Martin",
-				HomeID:      "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
-				LocationID:  "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
+				OwnerID:     "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
+				ParentID:    "2564cd4e-ae30-42a9-aaea-a1203ef0414b",
 			},
 		}
-		m := &mockPlayersStorage{t: t, players: players}
+		m := &mockRoomsStorage{t: t, rooms: rooms}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute, nil)
+		w := invokeRoomsService(t, m, http.MethodGet, roomsRoute, nil)
 
 		if !m.listCalled {
 			t.Error("expected list to be called")
@@ -86,41 +86,41 @@ func TestPlayersServiceList(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playersResp arcade.PlayersResponse
-		err = json.Unmarshal(body, &playersResp)
+		var roomsResp arcade.RoomsResponse
+		err = json.Unmarshal(body, &roomsResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		if len(playersResp.Data) != len(players) {
-			t.Fatalf("Unexpected players response data length: %d", len(playersResp.Data))
+		if len(roomsResp.Data) != len(rooms) {
+			t.Fatalf("Unexpected rooms response data length: %d", len(roomsResp.Data))
 		}
 
-		player := playersResp.Data[0]
-		if player.ID != players[0].ID ||
-			player.Name != players[0].Name ||
-			player.Description != players[0].Description ||
-			player.HomeID != players[0].HomeID ||
-			player.LocationID != players[0].LocationID {
+		room := roomsResp.Data[0]
+		if room.ID != rooms[0].ID ||
+			room.Name != rooms[0].Name ||
+			room.Description != rooms[0].Description ||
+			room.OwnerID != rooms[0].OwnerID ||
+			room.ParentID != rooms[0].ParentID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceGet(t *testing.T) {
+func TestRoomsServiceGet(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
-		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		parentID    = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil),
+			t, invokeRoomsService(t, m, http.MethodGet, roomsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -130,16 +130,16 @@ func TestPlayersServiceGet(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		player := arcade.Player{
+		room := arcade.Room{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
-			LocationID:  locationID,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
 		}
-		m := &mockPlayersStorage{t: t, playerID: id, player: player}
+		m := &mockRoomsStorage{t: t, roomID: id, room: room}
 
-		w := invokePlayersService(t, m, http.MethodGet, playersRoute+"/"+id, nil)
+		w := invokeRoomsService(t, m, http.MethodGet, roomsRoute+"/"+id, nil)
 
 		if !m.getCalled {
 			t.Error("expected get to be called")
@@ -155,54 +155,54 @@ func TestPlayersServiceGet(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(body, &playerResp)
+		var roomResp arcade.RoomResponse
+		err = json.Unmarshal(body, &roomResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := roomResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.ParentID != parentID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceCreate(t *testing.T) {
+func TestRoomsServiceCreate(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
-		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		parentID    = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, nil),
+			t, invokeRoomsService(t, nil, http.MethodPost, roomsRoute, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPost, playersRoute, bytes.NewBufferString(`invalid json`)),
+			t, invokeRoomsService(t, nil, http.MethodPost, roomsRoute, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPost, playersRoute, body),
+			t, invokeRoomsService(t, m, http.MethodPost, roomsRoute, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -213,27 +213,27 @@ func TestPlayersServiceCreate(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		now := time.Now()
-		req := arcade.PlayerRequest{
+		req := arcade.RoomRequest{
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
-			LocationID:  locationID,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
 		}
-		player := arcade.Player{
+		room := arcade.Room{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
-			LocationID:  locationID,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
 			Created:     now,
 			Updated:     now,
 		}
-		m := &mockPlayersStorage{t: t, req: req, player: player}
+		m := &mockRoomsStorage{t: t, req: req, room: room}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPost, playersRoute, body)
+		w := invokeRoomsService(t, m, http.MethodPost, roomsRoute, body)
 
 		if !m.createCalled {
 			t.Errorf("expected create to be called")
@@ -249,54 +249,54 @@ func TestPlayersServiceCreate(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(b, &playerResp)
+		var roomResp arcade.RoomResponse
+		err = json.Unmarshal(b, &roomResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := roomResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.ParentID != parentID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceUpdate(t *testing.T) {
+func TestRoomsServiceUpdate(t *testing.T) {
 	const (
 		id          = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 		name        = "Drunen"
 		description = "Son of Martin"
-		homeID      = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
-		locationID  = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		ownerID     = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
+		parentID    = "2564cd4e-ae30-42a9-aaea-a1203ef0414b"
 	)
 
 	t.Run("missing body", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, nil),
+			t, invokeRoomsService(t, nil, http.MethodPut, roomsRoute+"/"+id, nil),
 			http.StatusBadRequest, "invalid argument: invalid json: a json encoded body is required",
 		)
 	})
 
 	t.Run("invalid json", func(t *testing.T) {
 		checkRespError(
-			t, invokePlayersService(t, nil, http.MethodPut, playersRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
+			t, invokeRoomsService(t, nil, http.MethodPut, roomsRoute+"/"+id, bytes.NewBufferString(`invalid json`)),
 			http.StatusBadRequest, "invalid argument: invalid body: ",
 		)
 	})
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body),
+			t, invokeRoomsService(t, m, http.MethodPut, roomsRoute+"/"+id, body),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -307,27 +307,27 @@ func TestPlayersServiceUpdate(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		now := time.Now()
-		req := arcade.PlayerRequest{
+		req := arcade.RoomRequest{
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
-			LocationID:  locationID,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
 		}
-		player := arcade.Player{
+		room := arcade.Room{
 			ID:          id,
 			Name:        name,
 			Description: description,
-			HomeID:      homeID,
-			LocationID:  locationID,
+			OwnerID:     ownerID,
+			ParentID:    parentID,
 			Created:     now,
 			Updated:     now,
 		}
-		m := &mockPlayersStorage{t: t, req: req, playerID: id, player: player}
+		m := &mockRoomsStorage{t: t, req: req, roomID: id, room: room}
 		body := bytes.NewBufferString(
-			`{"name":"` + name + `","description":"` + description + `","homeID": "` + homeID + `","locationID":"` + locationID + `"}`,
+			`{"name":"` + name + `","description":"` + description + `","ownerID": "` + ownerID + `","parentID":"` + parentID + `"}`,
 		)
 
-		w := invokePlayersService(t, m, http.MethodPut, playersRoute+"/"+id, body)
+		w := invokeRoomsService(t, m, http.MethodPut, roomsRoute+"/"+id, body)
 
 		if !m.updateCalled {
 			t.Errorf("expected update to be called")
@@ -343,33 +343,33 @@ func TestPlayersServiceUpdate(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var playerResp arcade.PlayerResponse
-		err = json.Unmarshal(b, &playerResp)
+		var roomResp arcade.RoomResponse
+		err = json.Unmarshal(b, &roomResp)
 		if err != nil {
 			t.Errorf("Failed to json unmarshal response: %s", err)
 		}
 
-		p := playerResp.Data
-		if p.ID != id ||
-			p.Name != name ||
-			p.Description != description ||
-			p.HomeID != homeID ||
-			p.LocationID != locationID {
+		r := roomResp.Data
+		if r.ID != id ||
+			r.Name != name ||
+			r.Description != description ||
+			r.OwnerID != ownerID ||
+			r.ParentID != parentID {
 			t.Errorf("Unexpected response data")
 		}
 	})
 }
 
-func TestPlayersServiceRemove(t *testing.T) {
+func TestRoomsServiceRemove(t *testing.T) {
 	const (
 		id = "c39761fc-5096-4b1c-9d02-c75730b7b8bf"
 	)
 
 	t.Run("service error", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, err: errors.New("unknown error")}
+		m := &mockRoomsStorage{t: t, err: errors.New("unknown error")}
 
 		checkRespError(
-			t, invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil),
+			t, invokeRoomsService(t, m, http.MethodDelete, roomsRoute+"/"+id, nil),
 			http.StatusInternalServerError, "unknown error",
 		)
 
@@ -379,9 +379,9 @@ func TestPlayersServiceRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := &mockPlayersStorage{t: t, playerID: id}
+		m := &mockRoomsStorage{t: t, roomID: id}
 
-		w := invokePlayersService(t, m, http.MethodDelete, playersRoute+"/"+id, nil)
+		w := invokeRoomsService(t, m, http.MethodDelete, roomsRoute+"/"+id, nil)
 
 		if !m.removeCalled {
 			t.Error("expected remove to be called")
@@ -393,11 +393,11 @@ func TestPlayersServiceRemove(t *testing.T) {
 	})
 }
 
-func invokePlayersService(t *testing.T, m *mockPlayersStorage, method, target string, body io.Reader) *httptest.ResponseRecorder {
+func invokeRoomsService(t *testing.T, m *mockRoomsStorage, method, target string, body io.Reader) *httptest.ResponseRecorder {
 	t.Helper()
 
 	router := mux.NewRouter()
-	s := &PlayersService{Storage: m}
+	s := &RoomsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, body)
@@ -408,71 +408,71 @@ func invokePlayersService(t *testing.T, m *mockPlayersStorage, method, target st
 }
 
 type (
-	mockPlayersStorage struct {
+	mockRoomsStorage struct {
 		t   *testing.T
 		err error
 
-		playerID string
-		req      arcade.PlayerRequest
+		roomID string
+		req    arcade.RoomRequest
 
-		player  arcade.Player
-		players []arcade.Player
+		room  arcade.Room
+		rooms []arcade.Room
 
 		listCalled, getCalled, createCalled, updateCalled, removeCalled bool
 	}
 )
 
-func (m *mockPlayersStorage) List(context.Context, arcade.PlayersFilter) ([]arcade.Player, error) {
+func (m *mockRoomsStorage) List(context.Context, arcade.RoomsFilter) ([]arcade.Room, error) {
 	m.listCalled = true
 	if m.err != nil {
 		return nil, m.err
 	}
-	return m.players, nil
+	return m.rooms, nil
 }
 
-func (m *mockPlayersStorage) Get(ctx context.Context, playerID string) (arcade.Player, error) {
+func (m *mockRoomsStorage) Get(ctx context.Context, roomID string) (arcade.Room, error) {
 	m.getCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Room{}, m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("get: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.roomID != roomID {
+		m.t.Fatalf("get: expected roomID %s, actual roomID %s", m.roomID, roomID)
 	}
-	return m.player, nil
+	return m.room, nil
 }
 
-func (m *mockPlayersStorage) Create(ctx context.Context, req arcade.PlayerRequest) (arcade.Player, error) {
+func (m *mockRoomsStorage) Create(ctx context.Context, req arcade.RoomRequest) (arcade.Room, error) {
 	m.createCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Room{}, m.err
 	}
 	if m.req != req {
-		m.t.Fatalf("create: expected player request %+v, actual player requset %+v", m.req, req)
+		m.t.Fatalf("create: expected room request %+v, actual room requset %+v", m.req, req)
 	}
-	return m.player, nil
+	return m.room, nil
 }
 
-func (m *mockPlayersStorage) Update(ctx context.Context, playerID string, req arcade.PlayerRequest) (arcade.Player, error) {
+func (m *mockRoomsStorage) Update(ctx context.Context, roomID string, req arcade.RoomRequest) (arcade.Room, error) {
 	m.updateCalled = true
 	if m.err != nil {
-		return arcade.Player{}, m.err
+		return arcade.Room{}, m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("get: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.roomID != roomID {
+		m.t.Fatalf("get: expected roomID %s, actual roomID %s", m.roomID, roomID)
 	}
 	if m.req != req {
-		m.t.Fatalf("update: expected player request %+v, actual player requset %+v", m.req, req)
+		m.t.Fatalf("update: expected room request %+v, actual room requset %+v", m.req, req)
 	}
-	return m.player, nil
+	return m.room, nil
 }
 
-func (m *mockPlayersStorage) Remove(ctx context.Context, playerID string) error {
+func (m *mockRoomsStorage) Remove(ctx context.Context, roomID string) error {
 	m.removeCalled = true
 	if m.err != nil {
 		return m.err
 	}
-	if m.playerID != playerID {
-		m.t.Fatalf("remove: expected playerID %s, actual playerID %s", m.playerID, playerID)
+	if m.roomID != roomID {
+		m.t.Fatalf("remove: expected roomID %s, actual roomID %s", m.roomID, roomID)
 	}
 	return nil
 }

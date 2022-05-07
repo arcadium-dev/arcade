@@ -87,6 +87,77 @@ func TestItemJSONEncoding(t *testing.T) {
 			t.Error("bummer")
 		}
 	})
+
+	t.Run("test item response json encoding", func(t *testing.T) {
+		p := arcade.ItemResponse{
+			Data: arcade.Item{
+				ID:          id,
+				Name:        name,
+				Description: description,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+				InventoryID: inventoryID,
+				Created:     created,
+				Updated:     updated,
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.ItemResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		item := resp.Data
+		if item.ID != id ||
+			item.Name != name ||
+			item.Description != description ||
+			item.OwnerID != ownerID ||
+			item.LocationID != locationID ||
+			item.InventoryID != inventoryID {
+			t.Errorf("\n%+v\n%+v", p, item)
+		}
+	})
+
+	t.Run("test items response json encoding", func(t *testing.T) {
+		p := arcade.ItemsResponse{
+			Data: []arcade.Item{
+				{
+					ID:          id,
+					Name:        name,
+					Description: description,
+					OwnerID:     ownerID,
+					LocationID:  locationID,
+					InventoryID: inventoryID,
+					Created:     created,
+					Updated:     updated,
+				},
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.ItemsResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if len(resp.Data) != 1 {
+			t.Fatal("sigh")
+		}
+		item := resp.Data[0]
+		if item.ID != id ||
+			item.Name != name ||
+			item.Description != description ||
+			item.OwnerID != ownerID ||
+			item.LocationID != locationID ||
+			item.InventoryID != inventoryID {
+			t.Errorf("\n%+v\n%+v", p, item)
+		}
+	})
 }
 
 func TestItemRequestValidate(t *testing.T) {

@@ -87,6 +87,77 @@ func TestLinkJSONEncoding(t *testing.T) {
 			t.Error("bummer")
 		}
 	})
+
+	t.Run("test link response json encoding", func(t *testing.T) {
+		p := arcade.LinkResponse{
+			Data: arcade.Link{
+				ID:            id,
+				Name:          name,
+				Description:   description,
+				OwnerID:       ownerID,
+				LocationID:    locationID,
+				DestinationID: destinationID,
+				Created:       created,
+				Updated:       updated,
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.LinkResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		link := resp.Data
+		if link.ID != id ||
+			link.Name != name ||
+			link.Description != description ||
+			link.OwnerID != ownerID ||
+			link.LocationID != locationID ||
+			link.DestinationID != destinationID {
+			t.Errorf("\n%+v\n%+v", p, link)
+		}
+	})
+
+	t.Run("test links response json encoding", func(t *testing.T) {
+		p := arcade.LinksResponse{
+			Data: []arcade.Link{
+				{
+					ID:            id,
+					Name:          name,
+					Description:   description,
+					OwnerID:       ownerID,
+					LocationID:    locationID,
+					DestinationID: destinationID,
+					Created:       created,
+					Updated:       updated,
+				},
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.LinksResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if len(resp.Data) != 1 {
+			t.Fatal("sigh")
+		}
+		link := resp.Data[0]
+		if link.ID != id ||
+			link.Name != name ||
+			link.Description != description ||
+			link.OwnerID != ownerID ||
+			link.LocationID != locationID ||
+			link.DestinationID != destinationID {
+			t.Errorf("\n%+v\n%+v", p, link)
+		}
+	})
 }
 
 func TestLinkRequestValidate(t *testing.T) {

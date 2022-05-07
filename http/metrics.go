@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package metrics
+package http // import "arcadium.dev/arcade/http"
 
 import (
 	"net/http"
@@ -22,17 +22,17 @@ import (
 )
 
 type (
-	// Service that reports the metrics of the service.
-	Service struct{}
+	// MetricsService that reports the metrics of the service.
+	MetricsService struct{}
 )
 
 // Register sets up the http handler for this service with the given router.
-func (Service) Register(router *mux.Router) {
+func (MetricsService) Register(router *mux.Router) {
 	router.Handle("/metrics", promhttp.Handler()).Methods(http.MethodGet)
 }
 
 // Name returns the name of the service.
-func (Service) Name() string { return "metrics" }
+func (MetricsService) Name() string { return "metrics" }
 
 // Shutdown is a no-op since there are no long running processes.
-func (Service) Shutdown() {}
+func (MetricsService) Shutdown() {}

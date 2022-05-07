@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package assets
+package main
 
 import (
 	"crypto/tls"
@@ -21,57 +21,57 @@ import (
 )
 
 type (
-	// config contains the configuration of the server.
-	config struct {
-		logger          loggerConfig
-		sql             sqlConfig
-		tls             tlsConfig
-		apiServer       serverConfig
-		telemetryServer serverConfig
+	// Config contains the configuration of the server.
+	Config struct {
+		Logger          LoggerConfig
+		SQL             SQLConfig
+		TLS             TLSConfig
+		APIServer       ServerConfig
+		TelemetryServer ServerConfig
 	}
 
-	loggerConfig interface {
+	LoggerConfig interface {
 		Level() string
 		Format() string
 	}
 
-	sqlConfig interface {
+	SQLConfig interface {
 		Driver() string
 		URL() string
 	}
 
-	tlsConfig interface {
+	TLSConfig interface {
 		Cert() string
 		Key() string
 		CACert() string
 		TLSConfig(...cconfig.TLSOption) (*tls.Config, error)
 	}
 
-	serverConfig interface {
+	ServerConfig interface {
 		Addr() string
 	}
 )
 
-// newConfig returns the configuration of the server.
-func newConfig(opts ...cconfig.Option) (config, error) {
+// NewConfig returns the configuration of the server.
+func NewConfig(opts ...cconfig.Option) (Config, error) {
 	var err error
-	c := config{}
-	if c.logger, err = cconfig.NewLogger(opts...); err != nil {
-		return config{}, err
+	c := Config{}
+	if c.Logger, err = cconfig.NewLogger(opts...); err != nil {
+		return Config{}, err
 	}
-	if c.sql, err = cconfig.NewSQL(opts...); err != nil {
-		return config{}, err
+	if c.SQL, err = cconfig.NewSQL(opts...); err != nil {
+		return Config{}, err
 	}
-	if c.tls, err = cconfig.NewTLS(opts...); err != nil {
-		return config{}, err
+	if c.TLS, err = cconfig.NewTLS(opts...); err != nil {
+		return Config{}, err
 	}
 	apiOpts := append(opts, cconfig.WithPrefix("api"))
-	if c.apiServer, err = cconfig.NewServer(apiOpts...); err != nil {
-		return config{}, err
+	if c.APIServer, err = cconfig.NewServer(apiOpts...); err != nil {
+		return Config{}, err
 	}
 	telemertyOpts := append(opts, cconfig.WithPrefix("telemetry"))
-	if c.telemetryServer, err = cconfig.NewServer(telemertyOpts...); err != nil {
-		return config{}, err
+	if c.TelemetryServer, err = cconfig.NewServer(telemertyOpts...); err != nil {
+		return Config{}, err
 	}
 	return c, nil
 }

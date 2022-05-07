@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package assets
+package main
 
 import (
 	"context"
@@ -20,6 +20,8 @@ import (
 	"io"
 	l "log"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 
 	"os"
 	"sync"
@@ -33,9 +35,6 @@ import (
 	"arcadium.dev/arcade/http"
 	"arcadium.dev/arcade/storage"
 	"arcadium.dev/arcade/storage/cockroach"
-
-	"arcadium.dev/arcade/internal/health"
-	"arcadium.dev/arcade/internal/metrics"
 )
 
 // Build information.
@@ -53,7 +52,7 @@ type (
 	Server struct {
 		interrupt chan os.Signal
 
-		config config
+		config Config
 		logger log.Logger
 		db     *sql.DB
 
@@ -65,37 +64,33 @@ type (
 		telemetryServices []chttp.Service
 		telemetryServer   *chttp.Server
 
-		ctors          constructors // Provides a way for unit tests to inject different object constructors.
-		stdout, stderr io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
+		Stdout, Stderr io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
+		Constructors   Constructors // Provides a way for unit tests to inject different object constructors.
 	}
 
-	// constructors provide a way to inject different functions to create server components.
-	constructors struct {
-		newConfig          func(...cconfig.Option) (config, error)
-		newLogger          func(loggerConfig) (log.Logger, error)
-		newDB              func(sqlConfig, log.Logger) (*sql.DB, error)
-		newAPIServer       func(serverConfig, tlsConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
-		newTelemetryServer func(serverConfig, tlsConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
+	// Constructors provide a way to inject different functions to create server components.
+	Constructors struct {
+		NewConfig          func(...cconfig.Option) (Config, error)
+		NewLogger          func(LoggerConfig) (log.Logger, error)
+		NewDB              func(SQLConfig, log.Logger) (*sql.DB, error)
+		NewAPIServer       func(ServerConfig, TLSConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
+		NewTelemetryServer func(ServerConfig, TLSConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
 	}
 )
 
-// New returns a new assets server.
-func New(name, version, branch, commit, date, gover string) *Server {
-	Name = name
-	Version = version
-	Branch = branch
-	Commit = commit
-	Date = date
-	Go = gover
+// NewServer returns a new assets server.
+func NewServer() *Server {
+	Name = filepath.Base(os.Args[0])
+	Go = runtime.Version()
 
 	s := &Server{
 		interrupt: make(chan os.Signal, 1),
-		ctors: constructors{
-			newConfig: func(opts ...cconfig.Option) (config, error) {
-				return newConfig(opts...)
+		Constructors: Constructors{
+			NewConfig: func(opts ...cconfig.Option) (Config, error) {
+				return NewConfig(opts...)
 			},
 
-			newLogger: func(cfg loggerConfig) (log.Logger, error) {
+			NewLogger: func(cfg LoggerConfig) (log.Logger, error) {
 				return log.New(
 					log.WithLevel(log.ToLevel(cfg.Level())),
 					log.WithFormat(log.ToFormat(cfg.Format())),
@@ -103,11 +98,11 @@ func New(name, version, branch, commit, date, gover string) *Server {
 				)
 			},
 
-			newDB: func(cfg sqlConfig, logger log.Logger) (*sql.DB, error) {
+			NewDB: func(cfg SQLConfig, logger log.Logger) (*sql.DB, error) {
 				return sql.Open(cfg.Driver(), cfg.URL(), logger)
 			},
 
-			newAPIServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
+			NewAPIServer: func(cfg ServerConfig, tls TLSConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
 				tlsConfig, err := tls.TLSConfig(cconfig.WithMTLS())
 				if err != nil {
 					return nil, err
@@ -121,7 +116,7 @@ func New(name, version, branch, commit, date, gover string) *Server {
 				return chttp.NewServer(opts...), nil
 			},
 
-			newTelemetryServer: func(cfg serverConfig, tls tlsConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
+			NewTelemetryServer: func(cfg ServerConfig, tls TLSConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
 				tlsConfig, err := tls.TLSConfig()
 				if err != nil {
 					return nil, err
@@ -135,8 +130,8 @@ func New(name, version, branch, commit, date, gover string) *Server {
 				return chttp.NewServer(opts...), nil
 			},
 		},
-		stdout: os.Stdout,
-		stderr: os.Stderr,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 	s.apiWG.Add(1)
 	s.telemetryWG.Add(1)
@@ -158,8 +153,8 @@ func (s *Server) Start(args []string) {
 	info := build.Info(Name, Version, Branch, Commit, Date)
 
 	// Return the version when given a "version" argument.
-	if len(args) == 2 && args[1] == "version" {
-		fmt.Fprintln(s.stdout, info)
+	if len(args) == 1 && args[0] == "version" {
+		fmt.Fprintln(s.Stdout, info)
 		return
 	}
 
@@ -170,17 +165,17 @@ func (s *Server) Start(args []string) {
 
 	// Setup a temporary logger.
 	lg := l.Default()
-	lg.SetOutput(s.stderr)
+	lg.SetOutput(s.Stderr)
 
 	// Load the config.
-	s.config, err = s.ctors.newConfig()
+	s.config, err = s.Constructors.NewConfig()
 	if err != nil {
 		lg.Printf("error: failed to load config: %s", err)
 		return
 	}
 
 	// Create a logger.
-	s.logger, err = s.ctors.newLogger(s.config.logger)
+	s.logger, err = s.Constructors.NewLogger(s.config.Logger)
 	if err != nil {
 		lg.Printf("error: failed to create logger: %s", err)
 		return
@@ -191,7 +186,7 @@ func (s *Server) Start(args []string) {
 	s.logger.Info(start...)
 
 	// Setup database.
-	s.db, err = s.ctors.newDB(s.config.sql, s.logger)
+	s.db, err = s.Constructors.NewDB(s.config.SQL, s.logger)
 	if err != nil {
 		s.logger.Error("msg", "failed to open db", "error", err)
 		return
@@ -208,14 +203,14 @@ func (s *Server) Start(args []string) {
 
 	// Setup telemetry services.
 	s.telemetryServices = []chttp.Service{
-		health.Service{},
-		metrics.Service{},
+		http.HealthService{},
+		http.MetricsService{},
 	}
 
 	// Create ths API server.
-	s.apiServer, err = s.ctors.newAPIServer(
-		s.config.apiServer,
-		s.config.tls,
+	s.apiServer, err = s.Constructors.NewAPIServer(
+		s.config.APIServer,
+		s.config.TLS,
 		s.logger,
 		chttp.WithMiddleware(chttp.Metrics),
 	)
@@ -226,9 +221,9 @@ func (s *Server) Start(args []string) {
 	s.apiServer.Register(s.apiServices...)
 
 	// Create the telemetry server.
-	s.telemetryServer, err = s.ctors.newTelemetryServer(
-		s.config.telemetryServer,
-		s.config.tls,
+	s.telemetryServer, err = s.Constructors.NewTelemetryServer(
+		s.config.TelemetryServer,
+		s.config.TLS,
 		s.logger,
 	)
 	if err != nil {

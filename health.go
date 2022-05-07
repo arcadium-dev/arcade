@@ -1,4 +1,4 @@
-//  Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,14 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package main
+package arcade // import "arcadium.dev/arcade"
 
-import (
-	"os"
+type (
+	// Health is the internal representation of the health of the system.
+	Health struct {
+		Status string `json:"status"`
+	}
 
-	_ "arcadium.dev/core/sql/postgres"
+	// HealthResponse is used to json encoded a health response.
+	HealthResponse struct {
+		Data Health `json:"data"`
+	}
 )
-
-func main() {
-	NewServer().Start(os.Args[0:])
-}

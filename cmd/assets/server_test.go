@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package assets
+package main_test
 
 import (
 	"crypto/tls"
@@ -28,10 +28,12 @@ import (
 	"arcadium.dev/core/http"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/sql"
+
+	assets "arcadium.dev/arcade/cmd/assets"
 )
 
 func TestServer(t *testing.T) {
-	args := []string{"assets"}
+	args := []string{}
 
 	t.Run("version", func(t *testing.T) {
 		s, b := setup()
@@ -49,8 +51,8 @@ func TestServer(t *testing.T) {
 
 	t.Run("config construction failure", func(t *testing.T) {
 		s, b := setup()
-		s.ctors.newConfig = func(...cconfig.Option) (config, error) {
-			return config{}, errors.New("config construction failure")
+		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
+			return assets.Config{}, errors.New("config construction failure")
 		}
 
 		s.Start(args)
@@ -65,12 +67,12 @@ func TestServer(t *testing.T) {
 
 	t.Run("log construction failure", func(t *testing.T) {
 		s, b := setup()
-		s.ctors.newConfig = func(...cconfig.Option) (config, error) {
-			return config{
-				logger: cconfig.Logger{},
+		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
+			return assets.Config{
+				Logger: cconfig.Logger{},
 			}, nil
 		}
-		s.ctors.newLogger = func(loggerConfig) (log.Logger, error) {
+		s.Constructors.NewLogger = func(assets.LoggerConfig) (log.Logger, error) {
 			return log.Logger{}, errors.New("log construction failure")
 		}
 
@@ -86,14 +88,14 @@ func TestServer(t *testing.T) {
 
 	t.Run("db construction failure", func(t *testing.T) {
 		s, b := setup()
-		s.ctors.newConfig = func(...cconfig.Option) (config, error) {
-			return config{
-				logger: mockLoggerConfig{level: "debug", format: "logfmt"},
-				sql:    mockSQLConfig{driver: "pgx", url: "pgx://cockroach:26257/assets"},
+		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
+			return assets.Config{
+				Logger: mockLoggerConfig{level: "debug", format: "logfmt"},
+				SQL:    mockSQLConfig{driver: "pgx", url: "pgx://cockroach:26257/assets"},
 			}, nil
 		}
 
-		s.ctors.newLogger = func(cfg loggerConfig) (log.Logger, error) {
+		s.Constructors.NewLogger = func(cfg assets.LoggerConfig) (log.Logger, error) {
 			return log.New(
 				log.WithLevel(log.ToLevel(cfg.Level())),
 				log.WithFormat(log.ToFormat(cfg.Format())),
@@ -101,7 +103,7 @@ func TestServer(t *testing.T) {
 				log.WithoutTimestamp(),
 			)
 		}
-		s.ctors.newDB = func(cfg sqlConfig, logger log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(cfg assets.SQLConfig, logger log.Logger) (*sql.DB, error) {
 			return nil, errors.New("db construction failure")
 		}
 
@@ -117,13 +119,13 @@ func TestServer(t *testing.T) {
 
 	t.Run("api server construction failure", func(t *testing.T) {
 		s, b := setup()
-		s.ctors.newConfig = func(...cconfig.Option) (config, error) {
-			return config{
-				logger: mockLoggerConfig{level: "debug", format: "logfmt"},
+		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
+			return assets.Config{
+				Logger: mockLoggerConfig{level: "debug", format: "logfmt"},
 			}, nil
 		}
 
-		s.ctors.newLogger = func(cfg loggerConfig) (log.Logger, error) {
+		s.Constructors.NewLogger = func(cfg assets.LoggerConfig) (log.Logger, error) {
 			return log.New(
 				log.WithLevel(log.ToLevel(cfg.Level())),
 				log.WithFormat(log.ToFormat(cfg.Format())),
@@ -133,7 +135,7 @@ func TestServer(t *testing.T) {
 		}
 
 		var m sqlmock.Sqlmock
-		s.ctors.newDB = func(cfg sqlConfig, logger log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(cfg assets.SQLConfig, logger log.Logger) (*sql.DB, error) {
 			db, mock, err := sqlmock.New()
 			if db == nil || mock == nil || err != nil {
 				t.Fatal("Failed to create sqlmock")
@@ -143,7 +145,7 @@ func TestServer(t *testing.T) {
 			return &sql.DB{DB: db}, err
 		}
 
-		s.ctors.newAPIServer = func(serverConfig, tlsConfig, log.Logger, ...http.ServerOption) (*http.Server, error) {
+		s.Constructors.NewAPIServer = func(assets.ServerConfig, assets.TLSConfig, log.Logger, ...http.ServerOption) (*http.Server, error) {
 			return nil, errors.New("api server construction failure")
 		}
 
@@ -164,15 +166,15 @@ func TestServer(t *testing.T) {
 	t.Run("telemetry server construction failure", func(t *testing.T) {
 		s, b := setup()
 
-		s.ctors.newConfig = func(...cconfig.Option) (config, error) {
-			return config{
-				logger:    mockLoggerConfig{level: "debug", format: "logfmt"},
-				tls:       mockTLSConfig{},
-				apiServer: mockServerConfig{addr: ":4201"},
+		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
+			return assets.Config{
+				Logger:    mockLoggerConfig{level: "debug", format: "logfmt"},
+				TLS:       mockTLSConfig{},
+				APIServer: mockServerConfig{addr: ":4201"},
 			}, nil
 		}
 
-		s.ctors.newLogger = func(cfg loggerConfig) (log.Logger, error) {
+		s.Constructors.NewLogger = func(cfg assets.LoggerConfig) (log.Logger, error) {
 			return log.New(
 				log.WithLevel(log.ToLevel(cfg.Level())),
 				log.WithFormat(log.ToFormat(cfg.Format())),
@@ -182,7 +184,7 @@ func TestServer(t *testing.T) {
 		}
 
 		var m sqlmock.Sqlmock
-		s.ctors.newDB = func(sqlConfig, log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(assets.SQLConfig, log.Logger) (*sql.DB, error) {
 			db, mock, err := sqlmock.New()
 			if db == nil || mock == nil || err != nil {
 				t.Fatal("Failed to create sqlmock")
@@ -192,7 +194,7 @@ func TestServer(t *testing.T) {
 			return &sql.DB{DB: db}, err
 		}
 
-		s.ctors.newTelemetryServer = func(serverConfig, tlsConfig, log.Logger, ...http.ServerOption) (*http.Server, error) {
+		s.Constructors.NewTelemetryServer = func(assets.ServerConfig, assets.TLSConfig, log.Logger, ...http.ServerOption) (*http.Server, error) {
 			return nil, errors.New("telemetry server construction failure")
 		}
 
@@ -211,8 +213,8 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		s := New("assets", "version", "branch", "commit", "date", "go")
-		s.ctors.newDB = func(sqlConfig, log.Logger) (*sql.DB, error) {
+		s := assets.NewServer()
+		s.Constructors.NewDB = func(assets.SQLConfig, log.Logger) (*sql.DB, error) {
 			db, _, err := sqlmock.New()
 			return &sql.DB{DB: db}, err
 		}
@@ -235,11 +237,17 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setup() (*Server, *log.StringBuffer) {
-	s := New("assets", "version", "branch", "commit", "date", "go")
+func setup() (*assets.Server, *log.StringBuffer) {
+	s := assets.NewServer()
+	assets.Name = "assets"
+	assets.Version = "version"
+	assets.Branch = "branch"
+	assets.Commit = "commit"
+	assets.Date = "date"
+
 	b := log.NewStringBuffer()
-	s.stdout = b
-	s.stderr = b
+	s.Stdout = b
+	s.Stderr = b
 
 	return s, b
 }

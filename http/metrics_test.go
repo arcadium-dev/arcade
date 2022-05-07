@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package metrics
+package http_test
 
 import (
 	"io"
@@ -21,14 +21,16 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+
+	ahttp "arcadium.dev/arcade/http"
 )
 
-func TestServiceRegister(t *testing.T) {
+func TestMetricsServiceRegister(t *testing.T) {
 	method := http.MethodGet
 	route := "/metrics"
 
 	router := mux.NewRouter()
-	s := Service{}
+	s := ahttp.MetricsService{}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, route, nil)
@@ -52,8 +54,8 @@ func TestServiceRegister(t *testing.T) {
 	}
 }
 
-func TestServiceName(t *testing.T) {
-	var s Service
+func TestMetricsServiceName(t *testing.T) {
+	var s ahttp.MetricsService
 	if s.Name() != "metrics" {
 		t.Errorf("Unexpected service name: %s", s.Name())
 	}

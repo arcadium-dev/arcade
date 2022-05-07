@@ -83,6 +83,73 @@ func TestRoomJSONEncoding(t *testing.T) {
 			t.Error("bummer")
 		}
 	})
+
+	t.Run("test room response json encoding", func(t *testing.T) {
+		p := arcade.RoomResponse{
+			Data: arcade.Room{
+				ID:          id,
+				Name:        name,
+				Description: description,
+				OwnerID:     ownerID,
+				ParentID:    parentID,
+				Created:     created,
+				Updated:     updated,
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.RoomResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		room := resp.Data
+		if room.ID != id ||
+			room.Name != name ||
+			room.Description != description ||
+			room.OwnerID != ownerID ||
+			room.ParentID != parentID {
+			t.Errorf("\n%+v\n%+v", p, room)
+		}
+	})
+
+	t.Run("test rooms response json encoding", func(t *testing.T) {
+		p := arcade.RoomsResponse{
+			Data: []arcade.Room{
+				{
+					ID:          id,
+					Name:        name,
+					Description: description,
+					OwnerID:     ownerID,
+					ParentID:    parentID,
+					Created:     created,
+					Updated:     updated,
+				},
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.RoomsResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if len(resp.Data) != 1 {
+			t.Fatal("sigh")
+		}
+		room := resp.Data[0]
+		if room.ID != id ||
+			room.Name != name ||
+			room.Description != description ||
+			room.OwnerID != ownerID ||
+			room.ParentID != parentID {
+			t.Errorf("\n%+v\n%+v", p, room)
+		}
+	})
 }
 
 func TestRoomRequestValidate(t *testing.T) {

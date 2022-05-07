@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package assets
+package main_test
 
 import (
 	"testing"
+
+	assets "arcadium.dev/arcade/cmd/assets"
 )
 
 func TestConfig(t *testing.T) {
@@ -35,13 +37,13 @@ func TestConfig(t *testing.T) {
 	t.Setenv("API_SERVER_ADDR", ":4201")
 	t.Setenv("TELEMETRY_SERVER_ADDR", ":4202")
 
-	cfg, err := newConfig()
+	cfg, err := assets.NewConfig()
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
 
 	t.Run("Test Log", func(t *testing.T) {
-		l := cfg.logger
+		l := cfg.Logger
 		if l.Level() != "debug" {
 			t.Error("Unexpected log level")
 		}
@@ -51,7 +53,7 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Test DB", func(t *testing.T) {
-		sql := cfg.sql
+		sql := cfg.SQL
 		expectedURL := "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full"
 		if sql.URL() != expectedURL {
 			t.Errorf("\nExpected URL: %s\nActuual URL:  %s", expectedURL, sql.URL())
@@ -59,7 +61,7 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Test TLS", func(t *testing.T) {
-		tls := cfg.tls
+		tls := cfg.TLS
 		if tls.Cert() != "/etc/certs/cert.pem" {
 			t.Errorf("Unexpected shared server cert: %s", tls.Cert())
 		}
@@ -72,11 +74,11 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Test Server", func(t *testing.T) {
-		apiServer := cfg.apiServer
+		apiServer := cfg.APIServer
 		if apiServer.Addr() != ":4201" {
 			t.Errorf("Unexpected server address: %s", apiServer.Addr())
 		}
-		telemetryServer := cfg.telemetryServer
+		telemetryServer := cfg.TelemetryServer
 		if telemetryServer.Addr() != ":4202" {
 			t.Errorf("Unexpected server address: %s", telemetryServer.Addr())
 		}

@@ -12,13 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package health
+package http // import "arcadium.dev/arcade/http"
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"arcadium.dev/arcade"
 )
 
 const (
@@ -26,34 +28,25 @@ const (
 )
 
 type (
-	// Service reports on the health of the service as a whole.
-	Service struct{}
+	// HealthService reports on the health of the service as a whole.
+	HealthService struct{}
 )
 
 // Register sets up the http handler for this service with the given router.
-func (s Service) Register(router *mux.Router) {
+func (s HealthService) Register(router *mux.Router) {
 	r := router.PathPrefix(route).Subrouter()
 	r.HandleFunc("", s.get).Methods(http.MethodGet)
 }
 
 // Name returns the name of the service.
-func (Service) Name() string {
+func (HealthService) Name() string {
 	return "health"
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (Service) Shutdown() {}
+func (HealthService) Shutdown() {}
 
-type (
-	response struct {
-		Data responseData `json:"data"`
-	}
-	responseData struct {
-		Status string `json:"status"`
-	}
-)
-
-func (Service) get(w http.ResponseWriter, r *http.Request) {
+func (HealthService) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response{Data: responseData{Status: "up"}})
+	json.NewEncoder(w).Encode(arcade.HealthResponse{Data: arcade.Health{Status: "up"}})
 }

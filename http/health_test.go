@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package health
+package http_test
 
 import (
 	"io"
@@ -22,14 +22,16 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+
+	ahttp "arcadium.dev/arcade/http"
 )
 
-func TestServiceRegister(t *testing.T) {
+func TestHealthServiceRegister(t *testing.T) {
 	method := http.MethodGet
 	route := "/health"
 
 	router := mux.NewRouter()
-	s := Service{}
+	s := ahttp.HealthService{}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, route, nil)
@@ -56,8 +58,8 @@ func TestServiceRegister(t *testing.T) {
 	}
 }
 
-func TestServiceName(t *testing.T) {
-	var s Service
+func TestHealthServiceName(t *testing.T) {
+	var s ahttp.HealthService
 	if s.Name() != "health" {
 		t.Errorf("Unexpected service name: %s", s.Name())
 	}

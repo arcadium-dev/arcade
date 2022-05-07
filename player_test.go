@@ -83,6 +83,73 @@ func TestPlayerJSONEncoding(t *testing.T) {
 			t.Error("bummer")
 		}
 	})
+
+	t.Run("test player response json encoding", func(t *testing.T) {
+		p := arcade.PlayerResponse{
+			Data: arcade.Player{
+				ID:          id,
+				Name:        name,
+				Description: description,
+				HomeID:      homeID,
+				LocationID:  locationID,
+				Created:     created,
+				Updated:     updated,
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.PlayerResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		player := resp.Data
+		if player.ID != id ||
+			player.Name != name ||
+			player.Description != description ||
+			player.HomeID != homeID ||
+			player.LocationID != locationID {
+			t.Errorf("\n%+v\n%+v", p, player)
+		}
+	})
+
+	t.Run("test players response json encoding", func(t *testing.T) {
+		p := arcade.PlayersResponse{
+			Data: []arcade.Player{
+				{
+					ID:          id,
+					Name:        name,
+					Description: description,
+					HomeID:      homeID,
+					LocationID:  locationID,
+					Created:     created,
+					Updated:     updated,
+				},
+			},
+		}
+
+		b, err := json.Marshal(p)
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		var resp arcade.PlayersResponse
+		if err := json.Unmarshal(b, &resp); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if len(resp.Data) != 1 {
+			t.Fatal("sigh")
+		}
+		player := resp.Data[0]
+		if player.ID != id ||
+			player.Name != name ||
+			player.Description != description ||
+			player.HomeID != homeID ||
+			player.LocationID != locationID {
+			t.Errorf("\n%+v\n%+v", p, player)
+		}
+	})
 }
 
 func TestPlayerRequestValidate(t *testing.T) {

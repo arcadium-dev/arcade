@@ -61,10 +61,15 @@ func (RoomsService) Shutdown() {}
 func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// TODO: parse query params
+	// Create the filter.
+	filter, err := arcade.NewRoomsFilter(r)
+	if err != nil {
+		chttp.Response(ctx, w, err)
+		return
+	}
 
 	// Read list of rooms.
-	rooms, err := s.Storage.List(ctx, arcade.RoomsFilter{})
+	rooms, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return

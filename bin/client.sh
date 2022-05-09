@@ -66,16 +66,20 @@ is_error() {
   return ${SUCCESS}
 }
 
-skip_broken_on_ci() {
+skip_ci() {
   if [[ "${CI:-}" == ""  ]]; then
     return
   fi
-  skip_broken
+  skip_test
 }
 
 declare -ri SKIPPED=2
+declare _allow_skip="yes"
 
-skip_broken() {
+skip_test() {
+  if [[ "${_allow_skip}" == "no" ]]; then
+    return
+  fi
   echo -e "\n${BLUE}Skipping${CLEAR}"
   exit ${SKIPPED}
 }

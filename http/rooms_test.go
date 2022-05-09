@@ -45,6 +45,10 @@ func TestRoomsServiceShutdown(t *testing.T) {
 }
 
 func TestRoomsServiceList(t *testing.T) {
+	t.Run("filter error", func(t *testing.T) {
+		// FIXME
+	})
+
 	t.Run("service error", func(t *testing.T) {
 		err := errors.New("unknown error")
 		m := &mockRoomsStorage{t: t, err: err}

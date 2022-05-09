@@ -57,6 +57,7 @@ func (ItemsService) Name() string {
 // Shutdown is a no-op since there no long running processes for this service... yet.
 func (ItemsService) Shutdown() {}
 
+// List handles a request to retrieve multiple items.
 func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -80,6 +81,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get handles a request to retrieve an item.
 func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	itemID := params["itemID"]
@@ -102,6 +104,7 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Create handles a request to create an item.
 func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -146,6 +149,7 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update handles a request to update an item.
 func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -193,6 +197,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Remove handles a request to remove an item.
 func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

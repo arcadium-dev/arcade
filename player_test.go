@@ -16,6 +16,9 @@ package arcade_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -299,4 +302,151 @@ func TestNewPlayersReponse(t *testing.T) {
 		!updated.Equal(r.Data[0].Updated) {
 		t.Errorf("Unexpected response: %+v", r)
 	}
+}
+
+func TestNewPlayersFilter(t *testing.T) {
+	t.Run("location bad uuid", func(t *testing.T) {
+		q := "locationID=42"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid locationID query parameter: '42'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("valid uuid", func(t *testing.T) {
+		id := uuid.New()
+		q := "locationID=" + id.String()
+		filter, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if filter.LocationID == nil {
+			t.Fatal("Expected a filter locationID")
+		}
+		if *filter.LocationID != id {
+			t.Errorf("Unexpected locationID: %s", filter.LocationID)
+		}
+		if filter.Limit != arcade.DefaultPlayersFilterLimit {
+			t.Errorf("Unexpected limit: %d", filter.Limit)
+		}
+		if filter.Offset != 0 {
+			t.Errorf("Unexpected offset: %d", filter.Offset)
+		}
+	})
+
+	t.Run("negative limit", func(t *testing.T) {
+		q := "limit=-100"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid limit query parameter: '-100'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("non-number limit", func(t *testing.T) {
+		q := "limit=foo"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid limit query parameter: 'foo'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("limit greater than max", func(t *testing.T) {
+		q := "limit=4096"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid limit query parameter: '4096'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("valid limit", func(t *testing.T) {
+		limit := 42
+		q := fmt.Sprintf("limit=%d", limit)
+		filter, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if filter.LocationID != nil {
+			t.Errorf("Unexpected locationID: %s", *filter.LocationID)
+		}
+		if filter.Limit != limit {
+			t.Errorf("Unexpected limit: %d", filter.Limit)
+		}
+		if filter.Offset != 0 {
+			t.Errorf("Unexpected offset: %d", filter.Offset)
+		}
+	})
+
+	t.Run("negative offset", func(t *testing.T) {
+		q := "offset=-100"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid offset query parameter: '-100'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("non-number offset", func(t *testing.T) {
+		q := "offset=foo"
+		_, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err == nil {
+			t.Fatal("Expected an error")
+		}
+		expected := "invalid argument: invalid offset query parameter: 'foo'"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		}
+	})
+
+	t.Run("valid offset", func(t *testing.T) {
+		offset := 42
+		q := fmt.Sprintf("offset=%d", offset)
+		filter, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: q}})
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if filter.LocationID != nil {
+			t.Errorf("Unexpected locationID: %s", *filter.LocationID)
+		}
+		if filter.Limit != arcade.DefaultPlayersFilterLimit {
+			t.Errorf("Unexpected limit: %d", filter.Limit)
+		}
+		if filter.Offset != offset {
+			t.Errorf("Unexpected offset: %d", filter.Offset)
+		}
+	})
+
+	t.Run("no query parameters", func(t *testing.T) {
+		filter, err := arcade.NewPlayersFilter(&http.Request{URL: &url.URL{RawQuery: ""}})
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+		if filter.LocationID != nil {
+			t.Errorf("Unexpected locationID: %s", filter.LocationID)
+		}
+		if filter.Limit != arcade.DefaultPlayersFilterLimit {
+			t.Errorf("Unexpected limit: %d", filter.Limit)
+		}
+		if filter.Offset != 0 {
+			t.Errorf("Unexpected offset: %d", filter.Offset)
+		}
+	})
 }

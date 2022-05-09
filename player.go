@@ -17,6 +17,8 @@ package arcade // import "arcadium.dev/arcade"
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,8 +27,10 @@ import (
 )
 
 const (
-	MaxPlayerNameLen        = 255
-	MaxPlayerDescriptionLen = 4096
+	MaxPlayerNameLen          = 255
+	MaxPlayerDescriptionLen   = 4096
+	DefaultPlayersFilterLimit = 10
+	MaxPlayersFilterLimit     = 100
 )
 
 type (
@@ -62,15 +66,15 @@ type (
 	// PlayersFilter is used to filter results from List.
 	PlayersFilter struct {
 		// LocationID filters for players in a given location.
-		LocationID string
+		LocationID *uuid.UUID
 
 		// Restrict to a subset of the results.
 		Offset int
 		Limit  int
 	}
 
-	// PlayerStorage represents the persistent storage of players.
-	PlayerStorage interface {
+	// PlayersStorage represents the persistent storage of players.
+	PlayersStorage interface {
 		// List returns a slice of players based on the value of the filter.
 		List(ctx context.Context, filter PlayersFilter) ([]Player, error)
 
@@ -121,4 +125,39 @@ func NewPlayersResponse(ps []Player) PlayersResponse {
 		resp.Data = append(resp.Data, p)
 	}
 	return resp
+}
+
+// NewPlayersFilter creates a PlayersFilter from the the given request's URL
+// query parameters
+func NewPlayersFilter(r *http.Request) (PlayersFilter, error) {
+	q := r.URL.Query()
+	filter := PlayersFilter{
+		Limit: DefaultPlayersFilterLimit,
+	}
+
+	if values := q["locationID"]; len(values) > 0 {
+		locationID, err := uuid.Parse(values[0])
+		if err != nil {
+			return PlayersFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.LocationID = &locationID
+	}
+
+	if values := q["limit"]; len(values) > 0 {
+		limit, err := strconv.Atoi(values[0])
+		if err != nil || limit <= 0 || limit > MaxPlayersFilterLimit {
+			return PlayersFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.Limit = limit
+	}
+
+	if values := q["offset"]; len(values) > 0 {
+		offset, err := strconv.Atoi(values[0])
+		if err != nil || offset <= 0 {
+			return PlayersFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.Offset = offset
+	}
+
+	return filter, nil
 }

@@ -35,7 +35,7 @@ const (
 type (
 	// Players is used to manage the player assets.
 	PlayersService struct {
-		Storage arcade.PlayerStorage
+		Storage arcade.PlayersStorage
 	}
 )
 
@@ -57,13 +57,19 @@ func (PlayersService) Name() string {
 // Shutdown is a no-op since there no long running processes for this service... yet.
 func (PlayersService) Shutdown() {}
 
+// List handles a request to retrieve multiple players.
 func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// TODO: parse query params
+	// Create the filter.
+	filter, err := arcade.NewPlayersFilter(r)
+	if err != nil {
+		chttp.Response(ctx, w, err)
+		return
+	}
 
 	// Read list of players.
-	players, err := s.Storage.List(ctx, arcade.PlayersFilter{})
+	players, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		chttp.Response(ctx, w, err)
 		return
@@ -80,6 +86,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get handles a request to retrieve a player.
 func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	playerID := params["playerID"]
@@ -102,6 +109,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Create handles a request to create a player.
 func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -146,6 +154,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update handles a request to update a player.
 func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -193,6 +202,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Remove handles a request to remove a player.
 func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

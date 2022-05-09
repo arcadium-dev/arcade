@@ -72,8 +72,8 @@ type (
 		Limit  int
 	}
 
-	// RoomStorage represents the persistent storage of rooms.
-	RoomStorage interface {
+	// RoomsStorage represents the persistent storage of rooms.
+	RoomsStorage interface {
 		// List returns a slice of rooms based on the value of the filter.
 		List(ctx context.Context, filter RoomsFilter) ([]Room, error)
 

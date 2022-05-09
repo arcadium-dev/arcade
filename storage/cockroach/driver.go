@@ -16,6 +16,7 @@ package cockroach // import "arcadium.dev/cockroach"
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -24,157 +25,173 @@ import (
 )
 
 const (
-	// player queries
+	// Player Queries
 
-	playersListQuery   = `SELECT player_id, name, description, home_id, location_id, created, updated FROM players`
-	playersGetQuery    = `SELECT player_id, name, description, home_id, location_id, created, updated FROM players WHERE player_id = $1`
-	playersCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
+	PlayersListQuery   = `SELECT player_id, name, description, home_id, location_id, created, updated FROM players`
+	PlayersGetQuery    = `SELECT player_id, name, description, home_id, location_id, created, updated FROM players WHERE player_id = $1`
+	PlayersCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
 		`RETURNING player_id, name, description, home_id, location_id, created, updated`
-	playersUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
+	PlayersUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
 		`WHERE player_id = $1 ` +
 		`RETURNING player_id, name, description, home_id, location_id, created, updated`
-	playersRemoveQuery = `DELETE FROM players WHERE player_id = $1`
+	PlayersRemoveQuery = `DELETE FROM players WHERE player_id = $1`
 
-	// room queries
+	// Room Queries
 
-	roomsListQuery   = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms`
-	roomsGetQuery    = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE room_id = $1`
-	roomsCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
+	RoomsListQuery   = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms`
+	RoomsGetQuery    = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE room_id = $1`
+	RoomsCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
 		`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
-	roomsUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
+	RoomsUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
 		`WHERE room_id = $1 ` +
 		`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
-	roomsRemoveQuery = `DELETE FROM rooms WHERE room_id = $1`
+	RoomsRemoveQuery = `DELETE FROM rooms WHERE room_id = $1`
 
-	// link queries
+	// Link Queries
 
-	linksListQuery   = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
-	linksGetQuery    = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE link_id = $1`
-	linksCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
+	LinksListQuery   = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
+	LinksGetQuery    = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE link_id = $1`
+	LinksCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
 		`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
-	linksUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
+	LinksUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
 		`WHERE link_id = $1 ` +
 		`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
-	linksRemoveQuery = `DELETE FROM links WHERE link_id = $1`
+	LinksRemoveQuery = `DELETE FROM links WHERE link_id = $1`
 
-	// item queries
+	// Item Queries
 
-	itemsListQuery   = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
-	itemsGetQuery    = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE item_id = $1`
-	itemsCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
+	ItemsListQuery   = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
+	ItemsGetQuery    = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE item_id = $1`
+	ItemsCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
 		`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
-	itemsUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
+	ItemsUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
 		`WHERE item_id = $1 ` +
 		`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
-	itemsRemoveQuery = `DELETE FROM items WHERE item_id = $1`
+	ItemsRemoveQuery = `DELETE FROM items WHERE item_id = $1`
 )
 
 type (
 	Driver struct{}
 )
 
+func limitAndOffset(limit, offset int) string {
+	fq := ""
+	if limit > 0 {
+		fq += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	if offset > 0 {
+		fq += fmt.Sprintf(" OFFSET %d", offset)
+	}
+	return fq
+}
+
 // PlayersListQuery returns the List query string given the filter.
-func (Driver) PlayersListQuery(arcade.PlayersFilter) string {
-	return playersListQuery
+func (Driver) PlayersListQuery(filter arcade.PlayersFilter) string {
+	fq := ""
+	if filter.LocationID != nil {
+		fq += fmt.Sprintf(" WHERE location_id = '%s'", filter.LocationID)
+	}
+	fq += limitAndOffset(filter.Limit, filter.Offset)
+	return PlayersListQuery + fq
 }
 
 // PlayersGetQuery returns the Get query string.
 func (Driver) PlayersGetQuery() string {
-	return playersGetQuery
+	return PlayersGetQuery
 }
 
 // PlayersCreateQuery returns the Create query string.
 func (Driver) PlayersCreateQuery() string {
-	return playersCreateQuery
+	return PlayersCreateQuery
 }
 
 // PlayersUpdateQuery returns the update query string.
 func (Driver) PlayersUpdateQuery() string {
-	return playersUpdateQuery
+	return PlayersUpdateQuery
 }
 
 // PlayersRemoveQuery returns the Remove query string.
 func (Driver) PlayersRemoveQuery() string {
-	return playersRemoveQuery
+	return PlayersRemoveQuery
 }
 
 // RoomListQuery returns the List query string given the filter.
 func (Driver) RoomsListQuery(arcade.RoomsFilter) string {
-	return roomsListQuery
+	return RoomsListQuery
 }
 
 // RoomsGetQuery returns the Get query string.
 func (Driver) RoomsGetQuery() string {
-	return roomsGetQuery
+	return RoomsGetQuery
 }
 
 // RoomsCreateQuery returns the Create query string.
 func (Driver) RoomsCreateQuery() string {
-	return roomsCreateQuery
+	return RoomsCreateQuery
 }
 
 // RoomsUpdateQuery returns the Update query string.
 func (Driver) RoomsUpdateQuery() string {
-	return roomsUpdateQuery
+	return RoomsUpdateQuery
 }
 
 // RoomsRemoveQuery returns the Remove query string.
 func (Driver) RoomsRemoveQuery() string {
-	return roomsRemoveQuery
+	return RoomsRemoveQuery
 }
 
 // LinksListQuery returns the List query string given the filter.
 func (Driver) LinksListQuery(arcade.LinksFilter) string {
-	return linksListQuery
+	return LinksListQuery
 }
 
 // LinksGetQuery returns the Get query string.
 func (Driver) LinksGetQuery() string {
-	return linksGetQuery
+	return LinksGetQuery
 }
 
 // LinksCreateQuery returns the Create query string.
 func (Driver) LinksCreateQuery() string {
-	return linksCreateQuery
+	return LinksCreateQuery
 }
 
 // LinksUpdateQuery returns the Update query string.
 func (Driver) LinksUpdateQuery() string {
-	return linksUpdateQuery
+	return LinksUpdateQuery
 }
 
 // LinksRemoveQuery returns the Remove query string.
 func (Driver) LinksRemoveQuery() string {
-	return linksRemoveQuery
+	return LinksRemoveQuery
 }
 
 // ItemsListQuery returns the List query string given the filter.
 func (Driver) ItemsListQuery(arcade.ItemsFilter) string {
-	return itemsListQuery
+	return ItemsListQuery
 }
 
 // ItemsGetQuery returns the Get query string.
 func (Driver) ItemsGetQuery() string {
-	return itemsGetQuery
+	return ItemsGetQuery
 }
 
 // ItemsCreateQuery returns the Create query string.
 func (Driver) ItemsCreateQuery() string {
-	return itemsCreateQuery
+	return ItemsCreateQuery
 }
 
 // ItemsUpdateQuery returns the Update query string.
 func (Driver) ItemsUpdateQuery() string {
-	return itemsUpdateQuery
+	return ItemsUpdateQuery
 }
 
 // ItemsRemoveQuery returns the Remove query string.
 func (Driver) ItemsRemoveQuery() string {
-	return itemsRemoveQuery
+	return ItemsRemoveQuery
 }
 
 // IsForeignKeyViolation returns true if the given error is a foreign key violation error.

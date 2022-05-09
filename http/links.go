@@ -35,7 +35,7 @@ const (
 type (
 	// Links is used to manage the link assets.
 	LinksService struct {
-		Storage arcade.LinkStorage
+		Storage arcade.LinksStorage
 	}
 )
 
@@ -57,6 +57,7 @@ func (LinksService) Name() string {
 // Shutdown is a no-op since there no long running processes for this service... yet.
 func (LinksService) Shutdown() {}
 
+// List handles a request to retrieve multiple links.
 func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -80,6 +81,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get handles a request to retrieve a link.
 func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	linkID := params["linkID"]
@@ -102,6 +104,7 @@ func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Create handles a request to create a link.
 func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -146,6 +149,7 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update handles a request to update a link.
 func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -193,6 +197,7 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Remove handles a request to remove a link.
 func (s LinksService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

@@ -77,8 +77,8 @@ type (
 		Limit  int
 	}
 
-	// LinkStorage represents the persistent storage of links.
-	LinkStorage interface {
+	// LinksStorage represents the persistent storage of links.
+	LinksStorage interface {
 		// List returns a slice of links based on the value of the filter.
 		List(ctx context.Context, filter LinksFilter) ([]Link, error)
 

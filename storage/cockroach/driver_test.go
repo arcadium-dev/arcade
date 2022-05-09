@@ -12,81 +12,82 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package cockroach
+package cockroach_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"arcadium.dev/arcade"
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+
+	"arcadium.dev/arcade/storage/cockroach"
 )
 
 func TestDriver(t *testing.T) {
-	d := Driver{}
+	d := cockroach.Driver{}
 
-	if d.PlayersListQuery(arcade.PlayersFilter{}) != playersListQuery {
+	if d.PlayersGetQuery() != cockroach.PlayersGetQuery {
 		t.Error("query mismatch")
 	}
-	if d.PlayersGetQuery() != playersGetQuery {
+	if d.PlayersCreateQuery() != cockroach.PlayersCreateQuery {
 		t.Error("query mismatch")
 	}
-	if d.PlayersCreateQuery() != playersCreateQuery {
+	if d.PlayersUpdateQuery() != cockroach.PlayersUpdateQuery {
 		t.Error("query mismatch")
 	}
-	if d.PlayersUpdateQuery() != playersUpdateQuery {
-		t.Error("query mismatch")
-	}
-	if d.PlayersRemoveQuery() != playersRemoveQuery {
+	if d.PlayersRemoveQuery() != cockroach.PlayersRemoveQuery {
 		t.Error("query mismatch")
 	}
 
-	if d.RoomsListQuery(arcade.RoomsFilter{}) != roomsListQuery {
+	if d.RoomsListQuery(arcade.RoomsFilter{}) != cockroach.RoomsListQuery {
 		t.Error("query mismatch")
 	}
-	if d.RoomsGetQuery() != roomsGetQuery {
+	if d.RoomsGetQuery() != cockroach.RoomsGetQuery {
 		t.Error("query mismatch")
 	}
-	if d.RoomsCreateQuery() != roomsCreateQuery {
+	if d.RoomsCreateQuery() != cockroach.RoomsCreateQuery {
 		t.Error("query mismatch")
 	}
-	if d.RoomsUpdateQuery() != roomsUpdateQuery {
+	if d.RoomsUpdateQuery() != cockroach.RoomsUpdateQuery {
 		t.Error("query mismatch")
 	}
-	if d.RoomsRemoveQuery() != roomsRemoveQuery {
-		t.Error("query mismatch")
-	}
-
-	if d.LinksListQuery(arcade.LinksFilter{}) != linksListQuery {
-		t.Error("query mismatch")
-	}
-	if d.LinksGetQuery() != linksGetQuery {
-		t.Error("query mismatch")
-	}
-	if d.LinksCreateQuery() != linksCreateQuery {
-		t.Error("query mismatch")
-	}
-	if d.LinksUpdateQuery() != linksUpdateQuery {
-		t.Error("query mismatch")
-	}
-	if d.LinksRemoveQuery() != linksRemoveQuery {
+	if d.RoomsRemoveQuery() != cockroach.RoomsRemoveQuery {
 		t.Error("query mismatch")
 	}
 
-	if d.ItemsListQuery(arcade.ItemsFilter{}) != itemsListQuery {
+	if d.LinksListQuery(arcade.LinksFilter{}) != cockroach.LinksListQuery {
 		t.Error("query mismatch")
 	}
-	if d.ItemsGetQuery() != itemsGetQuery {
+	if d.LinksGetQuery() != cockroach.LinksGetQuery {
 		t.Error("query mismatch")
 	}
-	if d.ItemsCreateQuery() != itemsCreateQuery {
+	if d.LinksCreateQuery() != cockroach.LinksCreateQuery {
 		t.Error("query mismatch")
 	}
-	if d.ItemsUpdateQuery() != itemsUpdateQuery {
+	if d.LinksUpdateQuery() != cockroach.LinksUpdateQuery {
 		t.Error("query mismatch")
 	}
-	if d.ItemsRemoveQuery() != itemsRemoveQuery {
+	if d.LinksRemoveQuery() != cockroach.LinksRemoveQuery {
+		t.Error("query mismatch")
+	}
+
+	if d.ItemsListQuery(arcade.ItemsFilter{}) != cockroach.ItemsListQuery {
+		t.Error("query mismatch")
+	}
+	if d.ItemsGetQuery() != cockroach.ItemsGetQuery {
+		t.Error("query mismatch")
+	}
+	if d.ItemsCreateQuery() != cockroach.ItemsCreateQuery {
+		t.Error("query mismatch")
+	}
+	if d.ItemsUpdateQuery() != cockroach.ItemsUpdateQuery {
+		t.Error("query mismatch")
+	}
+	if d.ItemsRemoveQuery() != cockroach.ItemsRemoveQuery {
 		t.Error("query mismatch")
 	}
 
@@ -104,5 +105,52 @@ func TestDriver(t *testing.T) {
 	err = &pgconn.PgError{Code: pgerrcode.UniqueViolation}
 	if !d.IsUniqueViolation(err) {
 		t.Error("unique error expected")
+	}
+}
+
+func TestPlayersListQuery(t *testing.T) {
+	d := cockroach.Driver{}
+
+	filter := arcade.PlayersFilter{}
+
+	actual := d.PlayersListQuery(filter)
+	expected := cockroach.PlayersListQuery
+	if expected != actual {
+		t.Errorf("\nExpected query: %s\nActual query   %s", expected, actual)
+	}
+
+	id := uuid.New()
+	filter.LocationID = &id
+	actual = d.PlayersListQuery(filter)
+	expected = cockroach.PlayersListQuery + fmt.Sprintf(" WHERE location_id = '%s'", id)
+	if expected != actual {
+		t.Errorf("\nExpected query: %s\nActual query:   %s", expected, actual)
+	}
+
+	limit := 42
+	filter.LocationID = nil
+	filter.Limit = limit
+	actual = d.PlayersListQuery(filter)
+	expected = cockroach.PlayersListQuery + fmt.Sprintf(" LIMIT %d", limit)
+	if expected != actual {
+		t.Errorf("\nExpected query: %s\nActual query:   %s", expected, actual)
+	}
+
+	offset := 10
+	filter.Limit = 0
+	filter.Offset = offset
+	actual = d.PlayersListQuery(filter)
+	expected = cockroach.PlayersListQuery + fmt.Sprintf(" OFFSET %d", offset)
+	if expected != actual {
+		t.Errorf("\nExpected query: %s\nActual query:   %s", expected, actual)
+	}
+
+	filter.LocationID = &id
+	filter.Limit = limit
+	filter.Offset = offset
+	actual = d.PlayersListQuery(filter)
+	expected = cockroach.PlayersListQuery + fmt.Sprintf(" WHERE location_id = '%s' LIMIT %d OFFSET %d", id, limit, offset)
+	if expected != actual {
+		t.Errorf("\nExpected query: %s\nActual query:   %s", expected, actual)
 	}
 }

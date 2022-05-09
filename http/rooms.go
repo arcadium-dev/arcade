@@ -35,7 +35,7 @@ const (
 type (
 	// Rooms is used to manage the room assets.
 	RoomsService struct {
-		Storage arcade.RoomStorage
+		Storage arcade.RoomsStorage
 	}
 )
 
@@ -57,6 +57,7 @@ func (RoomsService) Name() string {
 // Shutdown is a no-op since there no long running processes for this service... yet.
 func (RoomsService) Shutdown() {}
 
+// List handles a request to retrieve multiple rooms.
 func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -80,6 +81,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get handles a request to retrieve a room.
 func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	roomID := params["roomID"]
@@ -102,6 +104,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Create handles a request to retrieve a room.
 func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -146,6 +149,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update handles a request to update a room.
 func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -193,6 +197,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Remove handles a request to remove a room.
 func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

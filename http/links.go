@@ -35,7 +35,7 @@ const (
 type (
 	// Links is used to manage the link assets.
 	LinksService struct {
-		Storage arcade.LinkStorage
+		Storage arcade.LinksStorage
 	}
 )
 

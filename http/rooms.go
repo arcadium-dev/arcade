@@ -35,7 +35,7 @@ const (
 type (
 	// Rooms is used to manage the room assets.
 	RoomsService struct {
-		Storage arcade.RoomStorage
+		Storage arcade.RoomsStorage
 	}
 )
 

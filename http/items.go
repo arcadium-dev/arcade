@@ -35,7 +35,7 @@ const (
 type (
 	// Items is used to manage the item assets.
 	ItemsService struct {
-		Storage arcade.ItemStorage
+		Storage arcade.ItemsStorage
 	}
 )
 

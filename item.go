@@ -77,8 +77,8 @@ type (
 		Limit  int
 	}
 
-	// ItemStorage represents the persistent storage of items.
-	ItemStorage interface {
+	// ItemsStorage represents the persistent storage of items.
+	ItemsStorage interface {
 		// List returns a slice of items based on the value of the filter.
 		List(ctx context.Context, filter ItemsFilter) ([]Item, error)
 

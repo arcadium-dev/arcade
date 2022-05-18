@@ -17,6 +17,8 @@ package arcade // import "arcadium.dev/arcade"
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,8 +27,10 @@ import (
 )
 
 const (
-	MaxRoomNameLen        = 255
-	MaxRoomDescriptionLen = 4096
+	MaxRoomNameLen          = 255
+	MaxRoomDescriptionLen   = 4096
+	DefaultRoomsFilterLimit = 10
+	MaxRoomsFilterLimit     = 100
 )
 
 type (
@@ -62,10 +66,10 @@ type (
 	// RoomsFilter is used to filter results from a List.
 	RoomsFilter struct {
 		// OwnerID filters for rooms owned by a given room.
-		OwnerID *string
+		OwnerID *uuid.UUID
 
 		// ParentID filters for rooms located in a parent room (non-recursive).
-		ParentID *string
+		ParentID *uuid.UUID
 
 		// Restrict to a subset of the results.
 		Offset int
@@ -124,4 +128,46 @@ func NewRoomsResponse(rs []Room) RoomsResponse {
 		resp.Data = append(resp.Data, r)
 	}
 	return resp
+}
+
+// NewRoomsFilter creates a RoomsFilter from the the given request's URL
+// query parameters
+func NewRoomsFilter(r *http.Request) (RoomsFilter, error) {
+	q := r.URL.Query()
+	filter := RoomsFilter{
+		Limit: DefaultRoomsFilterLimit,
+	}
+
+	if values := q["ownerID"]; len(values) > 0 {
+		ownerID, err := uuid.Parse(values[0])
+		if err != nil {
+			return RoomsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.OwnerID = &ownerID
+	}
+	if values := q["parentID"]; len(values) > 0 {
+		parentID, err := uuid.Parse(values[0])
+		if err != nil {
+			return RoomsFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.ParentID = &parentID
+	}
+
+	if values := q["limit"]; len(values) > 0 {
+		limit, err := strconv.Atoi(values[0])
+		if err != nil || limit <= 0 || limit > MaxRoomsFilterLimit {
+			return RoomsFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.Limit = limit
+	}
+
+	if values := q["offset"]; len(values) > 0 {
+		offset, err := strconv.Atoi(values[0])
+		if err != nil || offset <= 0 {
+			return RoomsFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrInvalidArgument, values[0])
+		}
+		filter.Offset = offset
+	}
+
+	return filter, nil
 }

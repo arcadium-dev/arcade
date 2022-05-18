@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -45,6 +46,15 @@ func TestRoomsServiceShutdown(t *testing.T) {
 }
 
 func TestRoomsServiceList(t *testing.T) {
+	t.Run("filter error", func(t *testing.T) {
+		route := fmt.Sprintf("%s?ownerID=42", ahttp.RoomsRoute)
+		checkRespError(
+			t, invokeRoomsService(t, nil, http.MethodGet, route, nil),
+			http.StatusBadRequest,
+			"invalid argument: invalid ownerID query parameter: '42'",
+		)
+	})
+
 	t.Run("service error", func(t *testing.T) {
 		err := errors.New("unknown error")
 		m := &mockRoomsStorage{t: t, err: err}

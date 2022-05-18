@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -45,6 +46,15 @@ func TestPlayersServiceShutdown(t *testing.T) {
 }
 
 func TestPlayersServiceList(t *testing.T) {
+	t.Run("filter error", func(t *testing.T) {
+		route := fmt.Sprintf("%s?locationID=42", ahttp.PlayersRoute)
+		checkRespError(
+			t, invokePlayersService(t, nil, http.MethodGet, route, nil),
+			http.StatusBadRequest,
+			"invalid argument: invalid locationID query parameter: '42'",
+		)
+	})
+
 	t.Run("service error", func(t *testing.T) {
 		err := errors.New("unknown error")
 		m := &mockPlayersStorage{t: t, err: err}

@@ -17,18 +17,18 @@ jobs:
         ssh-add - <<< "${{ secrets.CI_SSH_PRIVATE_KEY }}"
         ssh-add -l
 
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        stable: false
-        go-version: '1.18'
-
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Integration Tests
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.18'
+        check-latest: true
+
+    - name: Integration tests
       run: |
         make integration_test
 

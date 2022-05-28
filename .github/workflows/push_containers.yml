@@ -10,19 +10,21 @@ on:
     - published
 
 jobs:
-  release_containers:
+  push_containers:
+    name: Push Containers
     runs-on: ubuntu-latest
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
 
+    steps:
     - name: Setup SSH access to private repos
       run: |
         ssh-agent -a $SSH_AUTH_SOCK > /dev/null
         ssh-add - <<< "${{ secrets.CI_SSH_PRIVATE_KEY }}"
         ssh-add -l
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
     - name: Create container images
       run: |

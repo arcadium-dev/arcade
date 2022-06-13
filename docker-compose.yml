@@ -98,22 +98,22 @@ services:
     networks:
       - assets_network
 
-  csql:
+  crdb:
     image: cockroachdb/cockroach:v21.2.8
     entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
     env_file:
-      - env/csql
+      - env/crdb
     volumes:
       - certificates_volume:/etc/certs
     networks:
       - data_network
 
-  # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
-  create_migration:
+  # To create a new set of migrations run: `docker-compose run --rm crdb_migration <migration_name>`
+  crdb_migration:
     image: migrate/migrate:v4.15.1
     entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
     volumes:
-      - ./migrations:/migrations
+      - ./storage/cockroach/migrations:/migrations
 
 volumes:
   certificates_volume:

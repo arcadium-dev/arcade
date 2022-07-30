@@ -1,8 +1,5 @@
 name: Push Containers
 
-env:
-  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-
 on:
   workflow_dispatch:
   release:
@@ -15,12 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup SSH access to private repos
-      run: |
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-add - <<< "${{ secrets.CI_SSH_PRIVATE_KEY }}"
-        ssh-add -l
-
     - name: Checkout code
       uses: actions/checkout@v2
       with:
@@ -29,16 +20,3 @@ jobs:
     - name: Create container images
       run: |
         make containers
-
-    - name: Push release container images to AWS ECR
-      env:
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
-      run: |
-        make push_containers
-
-    - name: Cleanup SSH
-      run: |
-        ssh-add -D

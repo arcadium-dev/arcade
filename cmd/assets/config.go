@@ -17,14 +17,14 @@ package main
 import (
 	"crypto/tls"
 
-	cconfig "arcadium.dev/core/config"
+	"arcadium.dev/core/config"
 )
 
 type (
 	// Config contains the configuration of the server.
 	Config struct {
 		Logger          LoggerConfig
-		SQL             SQLConfig
+		DB              DBConfig
 		TLS             TLSConfig
 		APIServer       ServerConfig
 		TelemetryServer ServerConfig
@@ -35,16 +35,16 @@ type (
 		Format() string
 	}
 
-	SQLConfig interface {
+	DBConfig interface {
 		Driver() string
-		URL() string
+		DSN() string
 	}
 
 	TLSConfig interface {
 		Cert() string
 		Key() string
 		CACert() string
-		TLSConfig(...cconfig.TLSOption) (*tls.Config, error)
+		TLSConfig(...config.TLSOption) (*tls.Config, error)
 	}
 
 	ServerConfig interface {
@@ -53,24 +53,24 @@ type (
 )
 
 // NewConfig returns the configuration of the server.
-func NewConfig(opts ...cconfig.Option) (Config, error) {
+func NewConfig(opts ...config.Option) (Config, error) {
 	var err error
 	c := Config{}
-	if c.Logger, err = cconfig.NewLogger(opts...); err != nil {
+	if c.Logger, err = config.NewLogger(opts...); err != nil {
 		return Config{}, err
 	}
-	if c.SQL, err = cconfig.NewSQL(opts...); err != nil {
+	if c.DB, err = config.NewDB(opts...); err != nil {
 		return Config{}, err
 	}
-	if c.TLS, err = cconfig.NewTLS(opts...); err != nil {
+	if c.TLS, err = config.NewTLS(opts...); err != nil {
 		return Config{}, err
 	}
-	apiOpts := append(opts, cconfig.WithPrefix("api"))
-	if c.APIServer, err = cconfig.NewServer(apiOpts...); err != nil {
+	apiOpts := append(opts, config.WithPrefix("api"))
+	if c.APIServer, err = config.NewServer(apiOpts...); err != nil {
 		return Config{}, err
 	}
-	telemertyOpts := append(opts, cconfig.WithPrefix("telemetry"))
-	if c.TelemetryServer, err = cconfig.NewServer(telemertyOpts...); err != nil {
+	telemertyOpts := append(opts, config.WithPrefix("telemetry"))
+	if c.TelemetryServer, err = config.NewServer(telemertyOpts...); err != nil {
 		return Config{}, err
 	}
 	return c, nil

@@ -91,7 +91,7 @@ func TestServer(t *testing.T) {
 		s.Constructors.NewConfig = func(...cconfig.Option) (assets.Config, error) {
 			return assets.Config{
 				Logger: mockLoggerConfig{level: "debug", format: "logfmt"},
-				SQL:    mockSQLConfig{driver: "pgx", url: "pgx://cockroach:26257/assets"},
+				DB:     mockDBConfig{driver: "pgx", dsn: "pgx://cockroach:26257/assets"},
 			}, nil
 		}
 
@@ -103,7 +103,7 @@ func TestServer(t *testing.T) {
 				log.WithoutTimestamp(),
 			)
 		}
-		s.Constructors.NewDB = func(cfg assets.SQLConfig, logger log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(cfg assets.DBConfig, logger log.Logger) (*sql.DB, error) {
 			return nil, errors.New("db construction failure")
 		}
 
@@ -135,7 +135,7 @@ func TestServer(t *testing.T) {
 		}
 
 		var m sqlmock.Sqlmock
-		s.Constructors.NewDB = func(cfg assets.SQLConfig, logger log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(cfg assets.DBConfig, logger log.Logger) (*sql.DB, error) {
 			db, mock, err := sqlmock.New()
 			if db == nil || mock == nil || err != nil {
 				t.Fatal("Failed to create sqlmock")
@@ -184,7 +184,7 @@ func TestServer(t *testing.T) {
 		}
 
 		var m sqlmock.Sqlmock
-		s.Constructors.NewDB = func(assets.SQLConfig, log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(assets.DBConfig, log.Logger) (*sql.DB, error) {
 			db, mock, err := sqlmock.New()
 			if db == nil || mock == nil || err != nil {
 				t.Fatal("Failed to create sqlmock")
@@ -214,7 +214,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		s := assets.NewServer()
-		s.Constructors.NewDB = func(assets.SQLConfig, log.Logger) (*sql.DB, error) {
+		s.Constructors.NewDB = func(assets.DBConfig, log.Logger) (*sql.DB, error) {
 			db, _, err := sqlmock.New()
 			return &sql.DB{DB: db}, err
 		}
@@ -228,7 +228,7 @@ func TestServer(t *testing.T) {
 		t.Setenv("LOG_LEVEL", "info")
 		t.Setenv("LOG_FORMAT", "logfmt")
 
-		t.Setenv("SQL_URL", "postgresql://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt&sslcert=%2Fetc%2Fcerts%2Fclient.arcadium.crt&sslkey=%2Fetc%2Fcerts%2Fclient.arcadium.key")
+		t.Setenv("DB_DSN", "postgresql://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt&sslcert=%2Fetc%2Fcerts%2Fclient.arcadium.crt&sslkey=%2Fetc%2Fcerts%2Fclient.arcadium.key")
 
 		r := make(chan struct{}, 1)
 		go func() { s.Start(args); close(r) }()
@@ -257,8 +257,8 @@ type (
 		level, format string
 	}
 
-	mockSQLConfig struct {
-		driver, url string
+	mockDBConfig struct {
+		driver, dsn string
 	}
 
 	mockServerConfig struct {
@@ -273,8 +273,8 @@ type (
 func (m mockLoggerConfig) Level() string  { return m.level }
 func (m mockLoggerConfig) Format() string { return m.format }
 
-func (m mockSQLConfig) Driver() string { return m.driver }
-func (m mockSQLConfig) URL() string    { return m.url }
+func (m mockDBConfig) Driver() string { return m.driver }
+func (m mockDBConfig) DSN() string    { return m.dsn }
 
 func (m mockServerConfig) Addr() string { return m.addr }
 

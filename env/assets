@@ -8,4 +8,5 @@ TLS_CACERT=/etc/certs/rootCA.pem
 LOG_LEVEL=info
 LOG_FORMAT=logfmt
 
-SQL_URL=postgresql://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt&sslcert=%2Fetc%2Fcerts%2Fclient.arcadium.crt&sslkey=%2Fetc%2Fcerts%2Fclient.arcadium.key
+DB_DRIVER=pgx
+DB_DSN=postgresql://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt&sslcert=%2Fetc%2Fcerts%2Fclient.arcadium.crt&sslkey=%2Fetc%2Fcerts%2Fclient.arcadium.key

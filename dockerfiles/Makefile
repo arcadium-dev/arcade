@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go_version := 1.18.1
-migrate_version := v4.15.1
-mkcert_version := v1.4.3
+go_version := 1.18.4
+migrate_version := v4.15.2
+mkcert_version := v1.4.4
 
 container_registry := ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
@@ -34,7 +34,6 @@ containers: assets_container migrate_container
 assets_container: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
 		--file Dockerfile.assets \
-		--ssh default \
 		--build-arg go_version=$(go_version) \
 		--build-arg version=$(version) \
 		--build-arg branch=$(branch) \

@@ -1,7 +1,7 @@
 TELEMETRY_SERVER_ADDR=:4202
 
-TLS_CERT=/etc/certs/arcade.pem
-TLS_KEY=/etc/certs/arcade_key.pem
+TLS_CERT=/etc/certs/assets.pem
+TLS_KEY=/etc/certs/assets_key.pem
 
 LOG_LEVEL=info
 LOG_FORMAT=logfmt

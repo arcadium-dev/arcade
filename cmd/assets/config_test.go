@@ -26,7 +26,8 @@ func TestConfig(t *testing.T) {
 	t.Setenv("LOG_FORMAT", "JSON")
 
 	// DB confing
-	t.Setenv("SQL_URL", "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full")
+	t.Setenv("DB_DRIVER", "postgres")
+	t.Setenv("DB_DSN", "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full")
 
 	// TLS config
 	t.Setenv("TLS_CERT", "/etc/certs/cert.pem")
@@ -53,10 +54,10 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Test DB", func(t *testing.T) {
-		sql := cfg.SQL
-		expectedURL := "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full"
-		if sql.URL() != expectedURL {
-			t.Errorf("\nExpected URL: %s\nActuual URL:  %s", expectedURL, sql.URL())
+		db := cfg.DB
+		expectedDSN := "cockroachdb://arcadium@cockroah:26257/assets?sslmode=verify-full"
+		if db.DSN() != expectedDSN {
+			t.Errorf("\nExpected DSN: %s\nActual DSN:  %s", expectedDSN, db.DSN())
 		}
 	})
 

@@ -27,7 +27,7 @@ import (
 	"sync"
 
 	"arcadium.dev/core/build"
-	cconfig "arcadium.dev/core/config"
+	"arcadium.dev/core/config"
 	chttp "arcadium.dev/core/http"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/sql"
@@ -70,9 +70,9 @@ type (
 
 	// Constructors provide a way to inject different functions to create server components.
 	Constructors struct {
-		NewConfig          func(...cconfig.Option) (Config, error)
+		NewConfig          func(...config.Option) (Config, error)
 		NewLogger          func(LoggerConfig) (log.Logger, error)
-		NewDB              func(SQLConfig, log.Logger) (*sql.DB, error)
+		NewDB              func(DBConfig, log.Logger) (*sql.DB, error)
 		NewAPIServer       func(ServerConfig, TLSConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
 		NewTelemetryServer func(ServerConfig, TLSConfig, log.Logger, ...chttp.ServerOption) (*chttp.Server, error)
 	}
@@ -86,7 +86,7 @@ func NewServer() *Server {
 	s := &Server{
 		interrupt: make(chan os.Signal, 1),
 		Constructors: Constructors{
-			NewConfig: func(opts ...cconfig.Option) (Config, error) {
+			NewConfig: func(opts ...config.Option) (Config, error) {
 				return NewConfig(opts...)
 			},
 
@@ -98,12 +98,12 @@ func NewServer() *Server {
 				)
 			},
 
-			NewDB: func(cfg SQLConfig, logger log.Logger) (*sql.DB, error) {
-				return sql.Open(cfg.Driver(), cfg.URL(), logger)
+			NewDB: func(cfg DBConfig, logger log.Logger) (*sql.DB, error) {
+				return sql.Open(cfg.Driver(), cfg.DSN(), logger)
 			},
 
 			NewAPIServer: func(cfg ServerConfig, tls TLSConfig, logger log.Logger, opts ...chttp.ServerOption) (*chttp.Server, error) {
-				tlsConfig, err := tls.TLSConfig(cconfig.WithMTLS())
+				tlsConfig, err := tls.TLSConfig(config.WithMTLS())
 				if err != nil {
 					return nil, err
 				}
@@ -186,7 +186,7 @@ func (s *Server) Start(args []string) {
 	s.logger.Info(start...)
 
 	// Setup database.
-	s.db, err = s.Constructors.NewDB(s.config.SQL, s.logger)
+	s.db, err = s.Constructors.NewDB(s.config.DB, s.logger)
 	if err != nil {
 		s.logger.Error("msg", "failed to open db", "error", err)
 		return

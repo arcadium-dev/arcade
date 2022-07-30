@@ -308,7 +308,7 @@ main() {
     die "Must be in the root directory to run dev."
   fi
 
-  local command="${1:-help}"
+  local command="${1:-status}"
   if ! cmd_check "${command}"; then
     help
     failed

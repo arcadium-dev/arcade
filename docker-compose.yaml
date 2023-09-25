@@ -1,0 +1,67 @@
+version: '3.3'
+
+services:
+  arcade:
+    image: arcade:latest
+    container_name: arcade
+    env_file:
+      - env/arcade
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  influxdb:
+    image: influxdb:alpine
+    container_name: influxdb
+    ports:
+      - 8086:8086
+    volumes:
+      - ./env/influx.yml:/etc/influxdb2/config.yml
+      - influxdb_volume:/var/lib/influxdb2
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    env_file:
+      - env/influxdb_token
+    volumes:
+      - ./env/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  influx:
+    image: influxdb:alpine
+    container_name: influx
+    entrypoint: [ "influx" ]
+    networks:
+      - arcadium_network
+
+  mkcert:
+    image: mkcert:latest
+    environment:
+      - CAROOT=/etc/certs
+    volumes:
+      - certificates_volume:/etc/certs
+
+  curl:
+    image: curl:latest
+    working_dir: /etc
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+
+volumes:
+  certificates_volume:
+  influxdb_volume:
+
+
+networks:
+  arcadium_network:
+    external: true

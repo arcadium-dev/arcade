@@ -1,0 +1,36 @@
+# LOG_LEVEL defines the level of logging.
+LOG_LEVEL="info"
+
+# SERVER_ADDR defines the address the arcade API service will listen to.
+# This is required.
+SERVER_ADDR=":443"
+
+# TLS_CERT and TLS_KEY define the file path where the certificates used to
+# serve https traffic are stored. These are optional.
+TLS_CERT="/etc/certs/arcade.pem"
+TLS_KEY="/etc/certs/arcade_key.pem"
+
+# TLS_CACERT and MTLS_ENABLED are used to require MTLS communication.
+# TLS_CACERT="/etc/certs/rootCA.pem"
+#MTLS_ENABLED="true"
+
+# ALLOWED_ORIGINS sets the allowed origins for CORS requests, as used in the
+# 'Allow-Access-Control-Origin' HTTP header. Note: Passing in a string "*"
+# will allow any domain.
+#ALLOWED_ORIGINS="*"
+
+# ALLOWED_METHODS can be used to explicitly allow methods in the
+# Access-Control-Allow-Methods header. This is a replacement operation so you
+# must also pass GET, HEAD, and POST if you wish to support those methods.
+#ALLOWED_METHODS="GET,POST,PUT,PATCH"
+
+# ALLOWED_HEADERS adds the provided headers to the list of allowed headers in a
+# CORS request. This is an append operation so the headers Accept,
+# Accept-Language, and Content-Language are always allowed. Content-Type must be
+# explicitly declared if accepting Content-Types other than
+# application/x-www-form-urlencoded, multipart/form-data, or text/plain.
+#ALLOWED_HEADERS="*"
+
+# PPROF_ENABLED adds the pprof endpoints to the server.
+# See: https://pkg.go.dev/net/http/pprof and https://go.dev/blog/pprof
+#PPROF_ENABLED="true"

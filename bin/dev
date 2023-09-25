@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC1091
+
+source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/../env/influxdb_token"
+
+app="$(basename "$0")"
+declare -r app
+
+declare -ar infrastructure=(
+	"influxdb"
+	"telegraf"
+)
+
+declare -ar tls_servers=(
+	"arcade"
+	"influxdb"
+)
+
+declare -ar networks=(
+	"arcadium_network"
+)
+
+declare -ar services=(
+	"arcade"
+)
+
+declare -Ar influxdb_config=(
+	["username"]="admin"
+	["password"]="password"
+	["organization"]="arcadium"
+	["bucket"]="arcade"
+	["token"]="${INFLUXDB_TOKEN}"
+)
+
+docker_compose() {
+  if "$(command -v docker-compose)"; then
+    docker-compse "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+#----------------------------------------------------------------------------
+# init
+
+init() {
+	local command="${1:-all}"
+	shift >/dev/null
+	if ! cmd_check "init_${command}"; then
+		help
+		failed
+	fi
+	"init_${command}" "$@"
+}
+
+init_all() {
+	init_networks && init_certs && init_influxdb
+}
+
+init_networks() {
+	info "Creating networks"
+	local network
+	for network in "${networks[@]}"; do
+		printf "%-20s" "${network}:"
+		docker network create "${network}" 2>&1 | sed "s/Error response from daemon: //"
+	done
+	docker network ls
+}
+
+init_certs() {
+	local -r certs_dir="/etc/certs"
+
+	# Remove the old certs
+	docker volume rm certificates_volume 2>/dev/null
+
+	# Create the CA cert for TLS communication.
+	info "Installing root CA certificate"
+	if ! docker_compose run --rm mkcert -install; then
+		failed
+	fi
+
+	# Create the server certs for TLS servers.
+	local server_cert
+	for server_cert in "${tls_servers[@]}"; do
+		info "Creating ${server_cert} server cert"
+		if ! docker_compose run --rm mkcert -cert-file "${certs_dir}/${server_cert}.pem" -key-file "${certs_dir}/${server_cert}_key.pem" "${server_cert}"; then
+			failed
+		fi
+	done
+
+	success
+}
+
+init_influxdb() {
+	info "Influxdb initialization"
+
+	# Remove the influxdb volume.
+	docker_compose down &>/dev/null
+	docker volume rm arcade_influxdb_volume 2>/dev/null
+	docker_compose up -d "influxdb"
+	sleep 10
+
+	docker_compose run --rm influx setup \
+		--force \
+		--skip-verify \
+		--host "https://influxdb:8086" \
+		--username "${influxdb_config[username]}" \
+		--password "${influxdb_config[password]}" \
+		--org "${influxdb_config[organization]}" \
+		--bucket "${influxdb_config[bucket]}" \
+		--token "${influxdb_config[token]}"
+}
+
+#----------------------------------------------------------------------------
+# services
+
+start() {
+	info "Services starting"
+	set +o noglob
+	chmod 0644 env/*
+	set -o noglob
+
+	local -a s
+	if [[ $# -gt 0 ]]; then
+		s=("$@")
+	else
+		s=("${infrastructure[@]}" "${services[@]}")
+	fi
+
+	if ! docker_compose up -d "${s[@]}"; then
+		failed
+	fi
+}
+
+up() {
+	start
+}
+
+status() {
+	info "Services status"
+	docker_compose ps
+}
+
+ps() {
+	status
+}
+
+logs() {
+	docker_compose logs "$@"
+}
+
+stop() {
+	info "Services stopping"
+
+	local -a s=()
+	if [[ $# -gt 0 ]]; then
+		s=("$@")
+	fi
+
+	if [[ ${#s[@]} -eq 0 ]]; then
+		docker_compose down
+	else
+		docker_compose stop "${s[@]}"
+	fi
+}
+
+down() {
+	stop "$@"
+}
+
+#----------------------------------------------------------------------------
+# clean
+
+clean() {
+	local answer
+	echo -n "This removes ALL docker containers, volumes, and networks. Are you sure? [y/N] "
+	read -r answer
+	if [[ "${answer}" != "y" ]]; then
+		return
+	fi
+	nuke
+}
+
+nuke() {
+	stop
+	yes | docker system prune -a || true
+	yes | docker volume prune || true
+	yes | docker network prune || true
+}
+
+#----------------------------------------------------------------------------
+# run
+
+run() {
+	docker_compose run --rm --name "$1-$(uuidgen)" "$@"
+}
+
+#----------------------------------------------------------------------------
+# completion
+
+completion() {
+	case "${1:-}" in
+	"init")
+		echo "networks certs"
+		;;
+	"dev")
+		echo "init start up status ps logs stop down clean help"
+		;;
+	esac
+	exit 0
+}
+
+#----------------------------------------------------------------------------
+# help
+
+help() {
+	cat <<-EOHELP
+		usage: ${app} command command_options
+
+		  commands:
+		    init [networks|certs|influxdb]
+		    start
+		    up
+		    status
+		    ps
+		    logs
+		    stop
+		    down
+		    clean
+		    help
+	EOHELP
+}
+
+#----------------------------------------------------------------------------
+# main
+
+main() {
+	if [[ ! -x ./bin/dev ]]; then
+		die "Must be in the root directory to run dev."
+	fi
+
+	local command="${1:-status}"
+	if ! cmd_check "${command}"; then
+		help
+		failed
+	fi
+	shift || true
+	if ! "${command}" "$@"; then
+		failed
+	fi
+}
+
+main "$@"

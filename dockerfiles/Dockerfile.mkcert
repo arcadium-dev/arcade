@@ -1,0 +1,29 @@
+# Build mkcert
+ARG     go_version
+FROM    golang:${go_version}-alpine as mkcert_builder
+LABEL   stage=intermediate
+ARG     mkcert_version
+RUN     go install filippo.io/mkcert@${mkcert_version}
+
+
+# Mkcert container
+FROM        alpine
+
+RUN apk update && \
+    apk add --no-cache ca-certificates tzdata bash && update-ca-certificates && \
+    adduser \
+      --disabled-password \
+      --gecos "" \
+      --home "/nonexistent" \
+      --shell "/sbin/nologin" \
+      --no-create-home \
+      --uid "10001" \
+      arcadium
+
+RUN mkdir -p /etc/certs && chown arcadium:arcadium /etc/certs
+
+COPY --chown=root:root --from=mkcert_builder /go/bin/mkcert /usr/local/bin/mkcert
+COPY --chown=root:root mkcert.sh /usr/local/bin/mkcert.sh
+
+VOLUME /etc/certs
+ENTRYPOINT  ["/usr/local/bin/mkcert.sh"]

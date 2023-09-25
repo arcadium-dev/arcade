@@ -1,0 +1,54 @@
+name: Build
+
+env:
+  GOPRIVATE: "arcadium.dev"
+  SSH_AUTH_SOCK: "/tmp/ssh_agent.sock"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: setup ssh access to private repos
+      run: |
+        git config --global url."git@github.com:".insteadOf "https://github.com"
+        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+        ssh-add - <<< "${{ secrets.CI_SSH_PRIVATE_KEY }}"
+        ssh-add -l
+
+    - name: checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: install go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.21'
+        check-latest: true
+        cache: true
+
+    - name: build
+      run: |
+        make build
+
+    - name: lint
+      run: |
+        make lint
+
+    - name: test
+      run: |
+        make test
+
+    - name: cleanup ssh
+      run: |
+        ssh-add -D

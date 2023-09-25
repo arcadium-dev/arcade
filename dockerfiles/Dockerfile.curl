@@ -1,0 +1,16 @@
+FROM alpine:latest
+
+RUN apk update && \
+    apk add --no-cache ca-certificates tzdata bash curl && update-ca-certificates && \
+    adduser \
+      --disabled-password \
+      --gecos "" \
+      --home "/nonexistent" \
+      --shell "/sbin/nologin" \
+      --no-create-home \
+      --uid "10001" \
+      arcadium
+
+USER arcadium:arcadium
+VOLUME /etc/certs
+ENTRYPOINT  ["/usr/bin/curl", "--cacert", "/etc/certs/rootCA.pem"]

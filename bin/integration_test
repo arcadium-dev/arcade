@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=SC2155,SC1091,SC1090,SC2207,SC2153
+
+source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/client.sh"
+
+declare -r test_dir="$(readlink -f "$(dirname "$0")"/../test)"
+declare -r seed_dir="${test_dir}/seed"
+
+# This loads all the sh files from the test/integrations directory.
+set +o noglob
+source <(cat "${test_dir}"/integration/*.test)
+set -o noglob
+
+main() {
+	mkdir -p "${seed_dir}"
+
+	local list="no"
+	if [[ "${1:-}" == "list" ]]; then
+		list="yes"
+		shift
+	fi
+
+	# You can pass a list of tests on the command line if you want to
+	# run a subtest of the available tests.
+	local -a tests
+	if [[ "$#" -gt 0 ]]; then
+		_allow_skip="no"
+		tests=("$@")
+	else
+		tests=($(compgen -A function | grep "^test_"))
+	fi
+
+	if [[ "${list}" == "yes" ]]; then
+		local t
+		for t in "${tests[@]}"; do
+			echo "${t}"
+		done
+		return
+	fi
+
+	time run_tests "${tests[@]}"
+}
+
+run_tests() {
+	if [[ ! -x ./bin/integration_test ]]; then
+		die "Must be in the root directory to run."
+	fi
+
+	local -a tests=("$@")
+
+	local -i errors=0
+	local -i skipped=0
+	local -i passed=0
+	if cmd_check "${tests[@]}"; then
+		local test
+		for test in "${tests[@]}"; do
+			# Run the test in a sub-shell so that exits from failed or skipped test
+			# won't cause the entire suite of tests to exit.
+			echo -en "\n${MAGENTA}Test:${CLEAR}  ${test}"
+			set +o errexit
+			("${test}")
+			rc=$?
+			if [[ $rc -eq $SKIPPED ]]; then
+				((skipped++))
+			elif [[ $rc -ne $SUCCESS ]]; then
+				((errors++))
+			else
+				((passed++))
+			fi
+			set -o errexit
+		done
+	else
+		error "Tests not found: ${tests[*]}"
+	fi
+
+	echo ""
+	if [[ ${passed} -gt 0 ]]; then
+		msg "${GREEN}Successful tests:${CLEAR} ${passed}"
+	fi
+	if [[ ${skipped} -gt 0 ]]; then
+		msg "${BLUE}Skipped tests:${CLEAR}    ${skipped}"
+	fi
+	if [[ ${errors} -gt 0 ]]; then
+		msg "${RED}Failed tests:${CLEAR}     ${errors}"
+	fi
+	return "${errors}"
+}
+
+main "$@"

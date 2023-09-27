@@ -2,7 +2,10 @@ module arcadium.dev/arcade
 
 go 1.21.1
 
-require arcadium.dev/core v0.0.6
+require (
+	arcadium.dev/core v0.0.6
+	github.com/google/uuid v1.3.1
+)
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect

@@ -30,8 +30,8 @@ type (
 	ItemStorage interface {
 		List(ctx context.Context, filter arcade.ItemsFilter) ([]*arcade.Item, error)
 		Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Item, error)
-		Create(ctx context.Context, item arcade.Item) error
-		Update(ctx context.Context, item arcade.Item) (*arcade.Item, error)
+		Create(ctx context.Context, itemReq arcade.ItemRequest) (*arcade.Item, error)
+		Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error)
 		Remove(ctx context.Context, itemID arcade.ItemID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m ItemManager) Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Ite
 }
 
 // Create creates a new item in persistent storage.
-func (m ItemManager) Create(ctx context.Context, item arcade.Item) error {
-	return m.Storage.Create(ctx, item)
+func (m ItemManager) Create(ctx context.Context, itemReq arcade.ItemRequest) (*arcade.Item, error) {
+	return m.Storage.Create(ctx, itemReq)
 }
 
 // Update updates the item in persistent storage.
-func (m ItemManager) Update(ctx context.Context, item arcade.Item) (*arcade.Item, error) {
-	return m.Storage.Update(ctx, item)
+func (m ItemManager) Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error) {
+	return m.Storage.Update(ctx, itemID, itemReq)
 }
 
 // Remove deletes the given item, based on the given itemID, from persistent storage.

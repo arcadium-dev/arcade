@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	MaxItemNameLen        = 255
+	MaxItemNameLen        = 256
 	MaxItemDescriptionLen = 4096
 
 	DefaultItemsFilterLimit = 10
@@ -62,6 +62,14 @@ type (
 		// indicating the maximum number of results to return.
 		Limit uint
 	}
+
+	// ItemRequest is used to request an item be created or updated.
+	ItemRequest struct {
+		Name        string
+		Description string
+		OwnerID     PlayerID
+		LocationID  ItemLocationID
+	}
 )
 
 type (
@@ -83,3 +91,13 @@ const (
 	LocationTypePlayer
 	LocationTypeItem
 )
+
+func (t LocationType) String() string {
+	switch t {
+	case LocationTypeRoom:
+		return "room"
+	case LocationTypePlayer:
+		return "player"
+	}
+	return "item"
+}

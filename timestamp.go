@@ -31,7 +31,7 @@ type (
 )
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", t.Time.Format(TimestampFormat))), nil
+	return []byte(fmt.Sprintf("\"%s\"", t.Time.UTC().Format(TimestampFormat))), nil
 }
 
 func (t *Timestamp) UnmarshalJSON(b []byte) error {

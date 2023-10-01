@@ -1,24 +1,20 @@
 package networking_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 
 	"arcadium.dev/arcade/networking"
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/errors"
-	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade"
 )
@@ -32,38 +28,38 @@ func TestItemsList(t *testing.T) {
 
 		// ownerID failure
 		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
-		checkRespError(t, w, http.StatusBadRequest, "bad request: invalid ownerID query parameter: 'bad uuid'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid ownerID query parameter: 'bad uuid'")
 
 		// locationID.ID failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", "bad uuid")
-		checkRespError(t, w, http.StatusBadRequest, "bad request: invalid locationID query parameter: 'bad uuid'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid locationID query parameter: 'bad uuid'")
 
 		// locationID.Type failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "bad type")
-		checkRespError(t, w, http.StatusBadRequest, "bad request: invalid locationType query parameter: 'bad type'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid locationType query parameter: 'bad type'")
 
 		// locationID.Type missing failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String())
-		checkRespError(t, w, http.StatusBadRequest, "bad request: locationType required when locationID is set")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: locationType required when locationID is set")
 
 		// owner and location failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "ownerID", id.String(), "locationID", id.String(), "locationType", "room")
-		checkRespError(t, w, http.StatusBadRequest, "either ownerID or locationID/locationType can be set, not both")
+		assertRespError(t, w, http.StatusBadRequest, "either ownerID or locationID/locationType can be set, not both")
 
 		// offset failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "player", "offset", "bad offset")
-		checkRespError(t, w, http.StatusBadRequest, "bad request: invalid offset query parameter: 'bad offset'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid offset query parameter: 'bad offset'")
 
 		// limit failure
 		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "limit", "bad limit")
-		checkRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
 	t.Run("item manager list failure", func(t *testing.T) {
 		m := mockItemManager{
 			t: t,
 			filter: arcade.ItemsFilter{
-				LocationID: arcade.ItemID(uuid.NullUUID{UUID: id, Valid: true}),
+				LocationID: arcade.ItemID(id),
 				Offset:     10,
 				Limit:      10,
 			},
@@ -71,7 +67,7 @@ func TestItemsList(t *testing.T) {
 		}
 
 		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "offset", "10", "limit", "10")
-		checkRespError(t, w, http.StatusNotFound, "list failure")
+		assertRespError(t, w, http.StatusNotFound, "list failure")
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -80,9 +76,9 @@ func TestItemsList(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			itemID     = arcade.ItemID(uuid.NullUUID{UUID: uuid.New(), Valid: true})
-			ownerID    = arcade.PlayerID(uuid.NullUUID{UUID: uuid.New(), Valid: true})
-			locationID = arcade.RoomID(uuid.NullUUID{UUID: uuid.New(), Valid: true})
+			itemID     = arcade.ItemID(uuid.New())
+			ownerID    = arcade.PlayerID(uuid.New())
+			locationID = arcade.RoomID(uuid.New())
 			created    = arcade.Timestamp{Time: time.Now()}
 			updated    = arcade.Timestamp{Time: time.Now()}
 		)
@@ -107,7 +103,7 @@ func TestItemsList(t *testing.T) {
 			},
 		}
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", locationID.ID().UUID.String(), "locationType", "room", "offset", "25", "limit", "100")
+		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", locationID.ID().String(), "locationType", "room", "offset", "25", "limit", "100")
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -121,12 +117,12 @@ func TestItemsList(t *testing.T) {
 
 		assert.Compare(t, itemsResp, networking.ItemsResponse{Items: []networking.Item{
 			{
-				ID:          itemID.UUID.String(),
+				ID:          itemID.String(),
 				Name:        name,
 				Description: desc,
-				OwnerID:     ownerID.UUID.String(),
+				OwnerID:     ownerID.String(),
 				LocationID: networking.ItemLocationID{
-					ID:   locationID.UUID.String(),
+					ID:   locationID.String(),
 					Type: locationID.Type().String(),
 				},
 				Created: created,
@@ -136,50 +132,292 @@ func TestItemsList(t *testing.T) {
 	})
 }
 
-// helpers
+func TestItemGet(t *testing.T) {
+	id := uuid.New()
 
-func invokeEndpoint(t *testing.T, m mockItemManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
-	if len(query)%2 != 0 {
-		t.Fatal("query param problem, must be divible by 2")
-	}
+	t.Run("itemID failure", func(t *testing.T) {
+		m := mockItemManager{}
 
-	var b io.Reader
-	if body != nil {
-		b = bytes.NewBuffer(body)
-	}
+		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, "bad_itemID")
 
-	router := mux.NewRouter()
-	s := networking.ItemsService{Manager: m}
-	s.Register(router)
+		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid itemID, not a well formed uuid: 'bad_itemID'")
+	})
 
-	r := httptest.NewRequest(method, target, b)
-	w := httptest.NewRecorder()
+	t.Run("item manager get failure", func(t *testing.T) {
+		m := mockItemManager{
+			t:         t,
+			getItemID: arcade.ItemID(id),
+			getErr:    fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
+		}
 
-	q := r.URL.Query()
-	for i := 0; i < len(query); i += 2 {
-		q.Add(query[i], query[i+1])
-	}
-	r.URL.RawQuery = q.Encode()
+		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, id.String())
 
-	router.ServeHTTP(w, r)
+		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
+	})
 
-	return w
+	t.Run("success", func(t *testing.T) {
+		const (
+			name = "name"
+			desc = "desc"
+		)
+		var (
+			itemID     = arcade.ItemID(uuid.New())
+			ownerID    = arcade.PlayerID(uuid.New())
+			locationID = arcade.PlayerID(ownerID)
+			created    = arcade.Timestamp{Time: time.Now()}
+			updated    = arcade.Timestamp{Time: time.Now()}
+		)
+
+		m := mockItemManager{
+			t:         t,
+			getItemID: itemID,
+			getItem: &arcade.Item{
+				ID:          itemID,
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+				Created:     created,
+				Updated:     updated,
+			},
+		}
+
+		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
+
+		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+
+		resp := w.Result()
+		assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		defer resp.Body.Close()
+
+		var itemResp networking.ItemResponse
+		assert.Nil(t, json.Unmarshal(body, &itemResp))
+
+		assert.Compare(t, itemResp, networking.ItemResponse{Item: networking.Item{
+			ID:          itemID.String(),
+			Name:        name,
+			Description: desc,
+			OwnerID:     ownerID.String(),
+			LocationID: networking.ItemLocationID{
+				ID:   locationID.String(),
+				Type: locationID.Type().String(),
+			},
+			Created: created,
+			Updated: updated,
+		}}, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
+	})
 }
 
-func checkRespError(t *testing.T, w *httptest.ResponseRecorder, status int, errMsg string) {
-	resp := w.Result()
-	assert.Equal(t, resp.StatusCode, status)
+func TestItemCreate(t *testing.T) {
+	route := networking.V1ItemsRoute
 
-	body, err := io.ReadAll(resp.Body)
-	assert.Nil(t, err)
-	defer resp.Body.Close()
+	t.Run("empty body", func(t *testing.T) {
+		m := mockItemManager{}
 
-	var respErr server.ResponseError
-	err = json.Unmarshal(body, &respErr)
-	assert.Nil(t, err)
+		w := invokeEndpoint(t, m, http.MethodPost, route, nil)
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
 
-	assert.Contains(t, respErr.Detail, errMsg)
-	assert.Equal(t, respErr.Status, status)
+		w = invokeEndpoint(t, m, http.MethodPost, route, []byte(""))
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
+	})
+
+	t.Run("invalid body", func(t *testing.T) {
+		m := mockItemManager{}
+
+		w := invokeEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
+	})
+
+	t.Run("ingress item req failure", func(t *testing.T) {
+		m := mockItemManager{}
+
+		tests := []struct {
+			itemReq networking.ItemRequest
+			status  int
+			errMsg  string
+		}{
+			{
+				itemReq: networking.ItemRequest{
+					Name: "",
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: empty item name",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name: randString(257),
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: item name exceeds maximum length",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name:        "name",
+					Description: "",
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: empty item description",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name:        "name",
+					Description: randString(4097),
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: item description exceeds maximum length",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name:        randString(256),
+					Description: randString(4096),
+					OwnerID:     "bad owner id",
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: invalid ownerID: 'bad owner id'",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name:        "name",
+					Description: "description",
+					OwnerID:     uuid.New().String(),
+					LocationID: networking.ItemLocationID{
+						ID: "bad location id",
+					},
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: invalid locationID.ID: 'bad location id', invalid UUID length: 15",
+			},
+			{
+				itemReq: networking.ItemRequest{
+					Name:        "name",
+					Description: "description",
+					OwnerID:     uuid.New().String(),
+					LocationID: networking.ItemLocationID{
+						ID:   uuid.New().String(),
+						Type: "bad location type",
+					},
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: invalid locationID.Type: 'bad location type'",
+			},
+		}
+
+		for _, test := range tests {
+			body, err := json.Marshal(test.itemReq)
+			assert.Nil(t, err)
+
+			w := invokeEndpoint(t, m, http.MethodPost, route, body)
+			assertRespError(t, w, test.status, test.errMsg)
+		}
+	})
+
+	t.Run("item manager create failure", func(t *testing.T) {
+		ownerID := uuid.New()
+		locID := uuid.New()
+
+		m := mockItemManager{
+			t: t,
+			createItemReq: arcade.ItemRequest{
+				Name:        "name",
+				Description: "description",
+				OwnerID:     arcade.PlayerID(ownerID),
+				LocationID:  arcade.RoomID(locID),
+			},
+			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
+		}
+
+		itemReq := networking.ItemRequest{
+			Name:        "name",
+			Description: "description",
+			OwnerID:     ownerID.String(),
+			LocationID: networking.ItemLocationID{
+				ID:   locID.String(),
+				Type: "room",
+			},
+		}
+		body, err := json.Marshal(itemReq)
+		assert.Nil(t, err)
+
+		w := invokeEndpoint(t, m, http.MethodPost, route, body)
+		assertRespError(t, w, http.StatusConflict, "conflict: create failure")
+	})
+
+	t.Run("success", func(t *testing.T) {
+		const (
+			name = "name"
+			desc = "description"
+		)
+		var (
+			itemID  = uuid.New()
+			ownerID = uuid.New()
+			created = arcade.Timestamp{Time: time.Now()}
+			updated = arcade.Timestamp{Time: time.Now()}
+		)
+
+		m := mockItemManager{
+			t: t,
+			createItemReq: arcade.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     arcade.PlayerID(ownerID),
+				LocationID:  arcade.PlayerID(ownerID),
+			},
+			createItem: &arcade.Item{
+				ID:          arcade.ItemID(itemID),
+				Name:        name,
+				Description: desc,
+				OwnerID:     arcade.PlayerID(ownerID),
+				LocationID:  arcade.PlayerID(ownerID),
+				Created:     created,
+				Updated:     updated,
+			},
+		}
+
+		itemReq := networking.ItemRequest{
+			Name:        name,
+			Description: desc,
+			OwnerID:     ownerID.String(),
+			LocationID: networking.ItemLocationID{
+				ID:   ownerID.String(),
+				Type: "player",
+			},
+		}
+		body, err := json.Marshal(itemReq)
+		assert.Nil(t, err)
+
+		w := invokeEndpoint(t, m, http.MethodPost, route, body)
+
+		resp := w.Result()
+		assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+		respBody, err := io.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		defer resp.Body.Close()
+
+		var itemResp networking.ItemResponse
+		assert.Nil(t, json.Unmarshal(respBody, &itemResp))
+
+		assert.Compare(t, itemResp, networking.ItemResponse{Item: networking.Item{
+			ID:          itemID.String(),
+			Name:        name,
+			Description: desc,
+			OwnerID:     ownerID.String(),
+			LocationID: networking.ItemLocationID{
+				ID:   ownerID.String(),
+				Type: "player",
+			},
+			Created: created,
+			Updated: updated,
+		}}, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
+	})
+}
+
+func TestItemUpdate(t *testing.T) {
 }
 
 // mockItemManager
@@ -233,17 +471,34 @@ func (m mockItemManager) Get(ctx context.Context, itemID arcade.ItemID) (*arcade
 }
 
 func (m mockItemManager) Create(ctx context.Context, itemReq arcade.ItemRequest) (*arcade.Item, error) {
-	assert.Compare(m.t, itemReq, m.createItemReq)
+	assert.Compare(m.t, itemReq, m.createItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpItemRequest(m.t, itemReq, m.createItemReq)
 	return m.createItem, m.createErr
 }
 
 func (m mockItemManager) Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error) {
 	assert.Compare(m.t, itemID, m.updateItemID)
-	assert.Compare(m.t, itemReq, m.updateItemReq)
+	assert.Compare(m.t, itemReq, m.updateItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpItemRequest(m.t, itemReq, m.createItemReq)
 	return m.updateItem, m.updateErr
 }
 
 func (m mockItemManager) Remove(ctx context.Context, itemID arcade.ItemID) error {
 	assert.Compare(m.t, itemID, m.removeItemID)
 	return m.removeErr
+}
+
+func cmpItemRequest(t *testing.T, actual, expected arcade.ItemRequest) {
+	t.Helper()
+
+	if actual.LocationID == nil && expected.LocationID != nil {
+		t.Errorf("Failed: locationID mismatch, present in actual, missing in expected")
+	}
+	if actual.LocationID != nil && expected.LocationID == nil {
+		t.Errorf("Failed: locationID mismatch, missing in actual, present in expected")
+	}
+	if actual.LocationID != nil {
+		assert.Equal(t, actual.LocationID.Type(), expected.LocationID.Type())
+		assert.Compare(t, actual.LocationID.ID(), expected.LocationID.ID())
+	}
 }

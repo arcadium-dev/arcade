@@ -39,10 +39,7 @@ func NewPlayersFilter(r *http.Request) (arcade.PlayersFilter, error) {
 		if err != nil {
 			return arcade.PlayersFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.LocationID = arcade.RoomID(uuid.NullUUID{
-			UUID:  locationID,
-			Valid: true,
-		})
+		filter.LocationID = arcade.RoomID(locationID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {

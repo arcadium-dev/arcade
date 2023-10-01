@@ -30,11 +30,12 @@ const (
 
 type (
 	// RoomID is the unique identifier of an room.
-	RoomID uuid.NullUUID
+	RoomID uuid.UUID
 )
 
 func (r RoomID) ID() LocationID     { return LocationID(r) }
 func (r RoomID) Type() LocationType { return LocationTypeRoom }
+func (r RoomID) String() string     { return uuid.UUID(r).String() }
 
 type (
 	// Room is the internal representation of the data related to a room.

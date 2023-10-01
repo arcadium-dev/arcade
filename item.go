@@ -28,11 +28,12 @@ const (
 
 type (
 	// ItemID is the unique identifier of an item.
-	ItemID uuid.NullUUID
+	ItemID uuid.UUID
 )
 
 func (i ItemID) ID() LocationID     { return LocationID(i) }
 func (i ItemID) Type() LocationType { return LocationTypeItem }
+func (i ItemID) String() string     { return uuid.UUID(i).String() }
 
 type (
 	// Item is the internal representation of an item.
@@ -83,8 +84,10 @@ type (
 	LocationType uint8
 
 	// LocationID provides the ID of the item's location.
-	LocationID uuid.NullUUID
+	LocationID uuid.UUID
 )
+
+func (l LocationID) String() string { return uuid.UUID(l).String() }
 
 const (
 	LocationTypeRoom = LocationType(iota)

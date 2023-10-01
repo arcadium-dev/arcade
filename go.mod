@@ -3,7 +3,7 @@ module arcadium.dev/arcade
 go 1.21.1
 
 require (
-	arcadium.dev/core v0.0.6
+	arcadium.dev/core v0.0.7
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0

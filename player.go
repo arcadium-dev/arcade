@@ -28,11 +28,12 @@ const (
 
 type (
 	// PlayerID is the unique identifier of an player.
-	PlayerID uuid.NullUUID
+	PlayerID uuid.UUID
 )
 
 func (p PlayerID) ID() LocationID     { return LocationID(p) }
 func (p PlayerID) Type() LocationType { return LocationTypePlayer }
+func (p PlayerID) String() string     { return uuid.UUID(p).String() }
 
 type (
 	// Player is the internal representation of the data related to a player.

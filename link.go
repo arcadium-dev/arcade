@@ -28,8 +28,12 @@ const (
 
 type (
 	// LinkID is the unique identifier of a link.
-	LinkID uuid.NullUUID
+	LinkID uuid.UUID
+)
 
+func (l LinkID) String() string { return uuid.UUID(l).String() }
+
+type (
 	// Link is the internal representation of a link.
 	Link struct {
 		LinkID        LinkID

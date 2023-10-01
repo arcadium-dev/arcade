@@ -242,16 +242,13 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	itemID := mux.Vars(r)["itemID"]
 	aItemID, err := uuid.Parse(itemID)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid itemID query parameter, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
+		err := fmt.Errorf("%w: invalid itemID, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Request the item from the item manager.
-	aItem, err := s.Manager.Get(ctx, arcade.ItemID(uuid.NullUUID{
-		UUID:  aItemID,
-		Valid: true,
-	}))
+	aItem, err := s.Manager.Get(ctx, arcade.ItemID(aItemID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -372,7 +369,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 		server.Response(ctx, w, err)
 		return
 	}
-	aItemID := arcade.ItemID(uuid.NullUUID{UUID: u, Valid: true})
+	aItemID := arcade.ItemID(u)
 
 	// Process the request body.
 	body, err := io.ReadAll(r.Body)
@@ -460,10 +457,7 @@ func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the itemID to the item manager for removal.
-	err = s.Manager.Remove(ctx, arcade.ItemID(uuid.NullUUID{
-		UUID:  aItemID,
-		Valid: true,
-	}))
+	err = s.Manager.Remove(ctx, arcade.ItemID(aItemID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -483,10 +477,7 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 		if err != nil {
 			return arcade.ItemsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.OwnerID = arcade.PlayerID(uuid.NullUUID{
-			UUID:  ownerID,
-			Valid: true,
-		})
+		filter.OwnerID = arcade.PlayerID(ownerID)
 	}
 
 	var (
@@ -505,20 +496,11 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 		if values := q["locationType"]; len(values) > 0 {
 			switch strings.ToLower(values[0]) {
 			case "room":
-				location = arcade.RoomID(uuid.NullUUID{
-					UUID:  *locationUUID,
-					Valid: true,
-				})
+				location = arcade.RoomID(*locationUUID)
 			case "player":
-				location = arcade.PlayerID(uuid.NullUUID{
-					UUID:  *locationUUID,
-					Valid: true,
-				})
+				location = arcade.PlayerID(*locationUUID)
 			case "item":
-				location = arcade.ItemID(uuid.NullUUID{
-					UUID:  *locationUUID,
-					Valid: true,
-				})
+				location = arcade.ItemID(*locationUUID)
 			default:
 				return arcade.ItemsFilter{}, fmt.Errorf("%w: invalid locationType query parameter: '%s'", errors.ErrBadRequest, values[0])
 			}
@@ -528,7 +510,7 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 		filter.LocationID = location
 	}
 
-	if filter.OwnerID.Valid && filter.LocationID != nil {
+	if filter.OwnerID != arcade.PlayerID(uuid.Nil) && filter.LocationID != nil {
 		return arcade.ItemsFilter{}, fmt.Errorf("%w: either ownerID or locationID/locationType can be set, not both", errors.ErrBadRequest)
 	}
 
@@ -573,26 +555,26 @@ func IngressItemRequest(r ItemRequest) (arcade.ItemRequest, error) {
 	}
 	locID, err := uuid.Parse(r.LocationID.ID)
 	if err != nil {
-		return emptyReq, fmt.Errorf("%w: invalid locationID.ID: '%s'", errors.ErrBadRequest, r.LocationID.ID)
+		return emptyReq, fmt.Errorf("%w: invalid locationID.ID: '%s', %s", errors.ErrBadRequest, r.LocationID.ID, err)
 	}
 	t := strings.ToLower(r.LocationID.Type)
 	if t != "room" && t != "player" && t != "item" {
-		return emptyReq, fmt.Errorf("%w: invalid locationID.ID: '%s'", errors.ErrBadRequest, r.LocationID.ID)
+		return emptyReq, fmt.Errorf("%w: invalid locationID.Type: '%s'", errors.ErrBadRequest, r.LocationID.Type)
 	}
 
 	itemReq := arcade.ItemRequest{
 		Name:        r.Name,
 		Description: r.Description,
-		OwnerID:     arcade.PlayerID(uuid.NullUUID{UUID: ownerID, Valid: true}),
+		OwnerID:     arcade.PlayerID(ownerID),
 	}
 
 	switch t {
 	case "room":
-		itemReq.LocationID = arcade.RoomID(uuid.NullUUID{UUID: locID, Valid: true})
+		itemReq.LocationID = arcade.RoomID(locID)
 	case "player":
-		itemReq.LocationID = arcade.PlayerID(uuid.NullUUID{UUID: locID, Valid: true})
+		itemReq.LocationID = arcade.PlayerID(locID)
 	case "item":
-		itemReq.LocationID = arcade.ItemID(uuid.NullUUID{UUID: locID, Valid: true})
+		itemReq.LocationID = arcade.ItemID(locID)
 	}
 
 	return itemReq, nil
@@ -601,12 +583,12 @@ func IngressItemRequest(r ItemRequest) (arcade.ItemRequest, error) {
 // EgressItem translates an arcade item to a local item.
 func EgressItem(i *arcade.Item) Item {
 	return Item{
-		ID:          i.ID.UUID.String(),
+		ID:          i.ID.String(),
 		Name:        i.Name,
 		Description: i.Description,
-		OwnerID:     i.OwnerID.UUID.String(),
+		OwnerID:     i.OwnerID.String(),
 		LocationID: ItemLocationID{
-			ID:   i.LocationID.ID().UUID.String(),
+			ID:   i.LocationID.ID().String(),
 			Type: i.LocationID.Type().String(),
 		},
 		Created: i.Created,

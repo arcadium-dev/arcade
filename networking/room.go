@@ -39,10 +39,7 @@ func NewRoomsFilter(r *http.Request) (arcade.RoomsFilter, error) {
 		if err != nil {
 			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.OwnerID = arcade.PlayerID(uuid.NullUUID{
-			UUID:  ownerID,
-			Valid: true,
-		})
+		filter.OwnerID = arcade.PlayerID(ownerID)
 	}
 
 	if values := q["parentID"]; len(values) > 0 {
@@ -50,10 +47,7 @@ func NewRoomsFilter(r *http.Request) (arcade.RoomsFilter, error) {
 		if err != nil {
 			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.ParentID = arcade.RoomID(uuid.NullUUID{
-			UUID:  parentID,
-			Valid: true,
-		})
+		filter.ParentID = arcade.RoomID(parentID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {

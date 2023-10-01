@@ -80,11 +80,11 @@ type (
 		Type() LocationType
 	}
 
-	// LocationType provides the type of location, room, player, or item.
-	LocationType uint8
-
 	// LocationID provides the ID of the item's location.
 	LocationID uuid.UUID
+
+	// LocationType provides the type of location, room, player, or item.
+	LocationType uint8
 )
 
 func (l LocationID) String() string { return uuid.UUID(l).String() }

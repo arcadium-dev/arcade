@@ -40,13 +40,13 @@ func (r RoomID) String() string     { return uuid.UUID(r).String() }
 type (
 	// Room is the internal representation of the data related to a room.
 	Room struct {
-		RoomID      RoomID    `json:"roomID"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		OwnerID     PlayerID  `json:"ownerID"`
-		ParentID    RoomID    `json:"parentID"`
-		Created     time.Time `json:"created"`
-		Updated     time.Time `json:"updated"`
+		RoomID      RoomID
+		Name        string
+		Description string
+		OwnerID     PlayerID
+		ParentID    RoomID
+		Created     time.Time
+		Updated     time.Time
 	}
 
 	// RoomsFilter is used to filter results from a List.

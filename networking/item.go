@@ -365,7 +365,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	itemID := mux.Vars(r)["itemID"]
 	u, err := uuid.Parse(itemID)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid itemID query parameter, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
+		err := fmt.Errorf("%w: invalid itemID, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
 		server.Response(ctx, w, err)
 		return
 	}
@@ -451,7 +451,7 @@ func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
 	itemID := mux.Vars(r)["itemID"]
 	aItemID, err := uuid.Parse(itemID)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid itemID query parameter, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
+		err := fmt.Errorf("%w: invalid itemID, not a well formed uuid: '%s'", errors.ErrBadRequest, itemID)
 		server.Response(ctx, w, err)
 		return
 	}

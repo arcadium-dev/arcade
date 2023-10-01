@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	MaxPlayerNameLen        = 255
+	MaxPlayerNameLen        = 256
 	MaxPlayerDescriptionLen = 4096
 
-	DefaultPlayersFilterLimit = 10
+	DefaultPlayersFilterLimit = 50
 	MaxPlayersFilterLimit     = 100
 )
 

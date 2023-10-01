@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	MaxLinkNameLen        = 255
+	MaxLinkNameLen        = 256
 	MaxLinkDescriptionLen = 4096
 
-	DefaultLinksFilterLimit = 10
+	DefaultLinksFilterLimit = 50
 	MaxLinksFilterLimit     = 100
 )
 

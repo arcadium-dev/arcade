@@ -21,10 +21,10 @@ import (
 )
 
 const (
-	MaxRoomNameLen        = 255
+	MaxRoomNameLen        = 256
 	MaxRoomDescriptionLen = 4096
 
-	DefaultRoomsFilterLimit = 10
+	DefaultRoomsFilterLimit = 50
 	MaxRoomsFilterLimit     = 100
 )
 

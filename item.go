@@ -22,7 +22,7 @@ const (
 	MaxItemNameLen        = 256
 	MaxItemDescriptionLen = 4096
 
-	DefaultItemsFilterLimit = 10
+	DefaultItemsFilterLimit = 50
 	MaxItemsFilterLimit     = 100
 )
 

@@ -26,7 +26,7 @@ type (
 		Storage PlayerStorage
 	}
 
-	// LinkStorage defines the interface to manage the persistent storage of items.
+	// PlayerStorage defines the interface to manage the persistent storage of items.
 	PlayerStorage interface {
 		List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error)
 		Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error)

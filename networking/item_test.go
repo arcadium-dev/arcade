@@ -112,10 +112,10 @@ func TestItemsList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemsResp networking.ItemsResponse
-		assert.Nil(t, json.Unmarshal(body, &itemsResp))
+		var egressItems networking.EgressItems
+		assert.Nil(t, json.Unmarshal(body, &egressItems))
 
-		assert.Compare(t, itemsResp, networking.ItemsResponse{Items: []networking.Item{
+		assert.Compare(t, egressItems, networking.EgressItems{Items: []networking.Item{
 			{
 				ID:          itemID.String(),
 				Name:        name,
@@ -194,10 +194,10 @@ func TestItemGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp networking.ItemResponse
-		assert.Nil(t, json.Unmarshal(body, &itemResp))
+		var egressItem networking.EgressItem
+		assert.Nil(t, json.Unmarshal(body, &egressItem))
 
-		assert.Compare(t, itemResp, networking.ItemResponse{Item: networking.Item{
+		assert.Compare(t, egressItem, networking.EgressItem{Item: networking.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
@@ -236,26 +236,26 @@ func TestItemCreate(t *testing.T) {
 		m := mockItemManager{}
 
 		tests := []struct {
-			itemReq networking.ItemRequest
-			status  int
-			errMsg  string
+			ingressItem networking.IngressItem
+			status      int
+			errMsg      string
 		}{
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty item name",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: item name exceeds maximum length",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "",
 				},
@@ -263,7 +263,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: empty item description",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -271,7 +271,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: item description exceeds maximum length",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -280,7 +280,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -292,7 +292,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: invalid locationID.ID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -307,7 +307,7 @@ func TestItemCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.itemReq)
+			body, err := json.Marshal(test.ingressItem)
 			assert.Nil(t, err)
 
 			w := invokeEndpoint(t, m, http.MethodPost, route, body)
@@ -323,7 +323,7 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createItemReq: arcade.ItemRequest{
+			createItemReq: arcade.IngressItem{
 				Name:        "name",
 				Description: "description",
 				OwnerID:     arcade.PlayerID(ownerID),
@@ -332,7 +332,7 @@ func TestItemCreate(t *testing.T) {
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		itemReq := networking.ItemRequest{
+		ingressItem := networking.IngressItem{
 			Name:        "name",
 			Description: "description",
 			OwnerID:     ownerID.String(),
@@ -341,7 +341,7 @@ func TestItemCreate(t *testing.T) {
 				Type: locID.Type().String(),
 			},
 		}
-		body, err := json.Marshal(itemReq)
+		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
 		w := invokeEndpoint(t, m, http.MethodPost, route, body)
@@ -362,7 +362,7 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createItemReq: arcade.ItemRequest{
+			createItemReq: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -379,7 +379,7 @@ func TestItemCreate(t *testing.T) {
 			},
 		}
 
-		itemReq := networking.ItemRequest{
+		ingressItem := networking.IngressItem{
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
@@ -388,7 +388,7 @@ func TestItemCreate(t *testing.T) {
 				Type: ownerID.Type().String(),
 			},
 		}
-		body, err := json.Marshal(itemReq)
+		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
 		w := invokeEndpoint(t, m, http.MethodPost, route, body)
@@ -400,10 +400,10 @@ func TestItemCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp networking.ItemResponse
+		var itemResp networking.EgressItem
 		assert.Nil(t, json.Unmarshal(respBody, &itemResp))
 
-		assert.Compare(t, itemResp, networking.ItemResponse{Item: networking.Item{
+		assert.Compare(t, itemResp, networking.EgressItem{Item: networking.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
@@ -455,26 +455,26 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{}
 
 		tests := []struct {
-			itemReq networking.ItemRequest
-			status  int
-			errMsg  string
+			ingressItem networking.IngressItem
+			status      int
+			errMsg      string
 		}{
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty item name",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: item name exceeds maximum length",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "",
 				},
@@ -482,7 +482,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: empty item description",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -490,7 +490,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: item description exceeds maximum length",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -499,7 +499,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -511,7 +511,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: invalid locationID.ID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				itemReq: networking.ItemRequest{
+				ingressItem: networking.IngressItem{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -526,7 +526,7 @@ func TestItemUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.itemReq)
+			body, err := json.Marshal(test.ingressItem)
 			assert.Nil(t, err)
 
 			itemID := uuid.New()
@@ -551,7 +551,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:            t,
 			updateItemID: itemID,
-			updateItemReq: arcade.ItemRequest{
+			updateItemReq: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -560,7 +560,7 @@ func TestItemUpdate(t *testing.T) {
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		itemReq := networking.ItemRequest{
+		ingressItem := networking.IngressItem{
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
@@ -569,7 +569,7 @@ func TestItemUpdate(t *testing.T) {
 				Type: locID.Type().String(),
 			},
 		}
-		body, err := json.Marshal(itemReq)
+		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
@@ -593,7 +593,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:            t,
 			updateItemID: itemID,
-			updateItemReq: arcade.ItemRequest{
+			updateItemReq: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -610,7 +610,7 @@ func TestItemUpdate(t *testing.T) {
 			},
 		}
 
-		itemReq := networking.ItemRequest{
+		ingressItem := networking.IngressItem{
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
@@ -619,7 +619,7 @@ func TestItemUpdate(t *testing.T) {
 				Type: ownerID.Type().String(),
 			},
 		}
-		body, err := json.Marshal(itemReq)
+		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
@@ -633,10 +633,10 @@ func TestItemUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp networking.ItemResponse
+		var itemResp networking.EgressItem
 		assert.Nil(t, json.Unmarshal(respBody, &itemResp))
 
-		assert.Compare(t, itemResp, networking.ItemResponse{Item: networking.Item{
+		assert.Compare(t, itemResp, networking.EgressItem{Item: networking.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
@@ -705,12 +705,12 @@ type (
 		getItem   *arcade.Item
 		getErr    error
 
-		createItemReq arcade.ItemRequest
+		createItemReq arcade.IngressItem
 		createItem    *arcade.Item
 		createErr     error
 
 		updateItemID  arcade.ItemID
-		updateItemReq arcade.ItemRequest
+		updateItemReq arcade.IngressItem
 		updateItem    *arcade.Item
 		updateErr     error
 
@@ -741,16 +741,16 @@ func (m mockItemManager) Get(ctx context.Context, itemID arcade.ItemID) (*arcade
 	return m.getItem, m.getErr
 }
 
-func (m mockItemManager) Create(ctx context.Context, itemReq arcade.ItemRequest) (*arcade.Item, error) {
-	assert.Compare(m.t, itemReq, m.createItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
-	cmpItemRequest(m.t, itemReq, m.createItemReq)
+func (m mockItemManager) Create(ctx context.Context, ingressItem arcade.IngressItem) (*arcade.Item, error) {
+	assert.Compare(m.t, ingressItem, m.createItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpIngressItem(m.t, ingressItem, m.createItemReq)
 	return m.createItem, m.createErr
 }
 
-func (m mockItemManager) Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error) {
+func (m mockItemManager) Update(ctx context.Context, itemID arcade.ItemID, ingressItem arcade.IngressItem) (*arcade.Item, error) {
 	assert.Compare(m.t, itemID, m.updateItemID)
-	assert.Compare(m.t, itemReq, m.updateItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
-	cmpItemRequest(m.t, itemReq, m.updateItemReq)
+	assert.Compare(m.t, ingressItem, m.updateItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpIngressItem(m.t, ingressItem, m.updateItemReq)
 	return m.updateItem, m.updateErr
 }
 
@@ -759,7 +759,7 @@ func (m mockItemManager) Remove(ctx context.Context, itemID arcade.ItemID) error
 	return m.removeErr
 }
 
-func cmpItemRequest(t *testing.T, actual, expected arcade.ItemRequest) {
+func cmpIngressItem(t *testing.T, actual, expected arcade.IngressItem) {
 	t.Helper()
 
 	if actual.LocationID == nil && expected.LocationID != nil {

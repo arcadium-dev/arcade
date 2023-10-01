@@ -64,8 +64,8 @@ type (
 		Limit uint
 	}
 
-	// ItemRequest is used to request an item be created or updated.
-	ItemRequest struct {
+	// IngressItem is used to request an item be created or updated.
+	IngressItem struct {
 		Name        string
 		Description string
 		OwnerID     PlayerID

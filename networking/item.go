@@ -37,7 +37,7 @@ const (
 )
 
 type (
-	// Items is used to manage the item assets.
+	// ItemService services item related network requests.
 	ItemsService struct {
 		Manager ItemManager
 	}
@@ -46,15 +46,15 @@ type (
 	ItemManager interface {
 		List(ctx context.Context, filter arcade.ItemsFilter) ([]*arcade.Item, error)
 		Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Item, error)
-		Create(ctx context.Context, itemReq arcade.ItemRequest) (*arcade.Item, error)
-		Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error)
+		Create(ctx context.Context, itemReq arcade.IngressItem) (*arcade.Item, error)
+		Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.IngressItem) (*arcade.Item, error)
 		Remove(ctx context.Context, itemID arcade.ItemID) error
 	}
 
-	// ItemRequest is used to request an item be created or updated.
+	// IngressItem is used to request an item be created or updated.
 	//
 	// swagger:parameters ItemCreate ItemUpdate
-	ItemRequest struct {
+	IngressItem struct {
 		// Name is the name of the item.
 		// in: body
 		// minimum length: 1
@@ -78,15 +78,15 @@ type (
 		LocationID ItemLocationID `json:"locationID"`
 	}
 
-	// ItemReponse returns an item.
-	ItemResponse struct {
+	// EgressItem returns an item.
+	EgressItem struct {
 		// Item returns the information about an item.
 		// in: body
 		Item Item `json:"item"`
 	}
 
 	// ItemsResponse returns multiple items.
-	ItemsResponse struct {
+	EgressItems struct {
 		// Items returns the information about multiple items.
 		// in: body
 		Items []Item `json:"items"`
@@ -198,15 +198,15 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 
 	// Translate from arcade items, to local items.
 	var items []Item
-	for _, aitem := range aItems {
-		items = append(items, EgressItem(aitem))
+	for _, aItem := range aItems {
+		items = append(items, TranslateItem(aItem))
 	}
 
 	// Return list as body.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(ItemsResponse{Items: items})
+	err = json.NewEncoder(w).Encode(EgressItems{Items: items})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -258,7 +258,7 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(ItemResponse{Item: EgressItem(aItem)})
+	err = json.NewEncoder(w).Encode(EgressItem{Item: TranslateItem(aItem)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -302,8 +302,8 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var itemReq ItemRequest
-	err = json.Unmarshal(body, &itemReq)
+	var ingressItem IngressItem
+	err = json.Unmarshal(body, &ingressItem)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -312,13 +312,13 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the item request to the item manager.
-	aItemReq, err := IngressItemRequest(itemReq)
+	aIngressItem, err := TranslateIngressItem(ingressItem)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	aItem, err := s.Manager.Create(ctx, aItemReq)
+	aItem, err := s.Manager.Create(ctx, aIngressItem)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -328,7 +328,7 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(ItemResponse{Item: EgressItem(aItem)})
+	err = json.NewEncoder(w).Encode(EgressItem{Item: TranslateItem(aItem)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -388,9 +388,9 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Populate the local item request from the body.
-	var itemReq ItemRequest
-	err = json.Unmarshal(body, &itemReq)
+	// Populate the ingress item from the body.
+	var ingressItem IngressItem
+	err = json.Unmarshal(body, &ingressItem)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -399,14 +399,14 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the item request.
-	aItemReq, err := IngressItemRequest(itemReq)
+	aIngressItem, err := TranslateIngressItem(ingressItem)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the item to the item manager.
-	aItem, err := s.Manager.Update(ctx, aItemID, aItemReq)
+	aItem, err := s.Manager.Update(ctx, aItemID, aIngressItem)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -415,7 +415,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(ItemResponse{Item: EgressItem(aItem)})
+	err = json.NewEncoder(w).Encode(EgressItem{Item: TranslateItem(aItem)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -533,38 +533,38 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 	return filter, nil
 }
 
-// IngressItemRequest translates the item request from the http request to an arcade.ItemRequest.
-func IngressItemRequest(r ItemRequest) (arcade.ItemRequest, error) {
-	emptyReq := arcade.ItemRequest{}
+// IngressItemtranslates the item request from the http request to an arcade.ItemRequest.
+func TranslateIngressItem(i IngressItem) (arcade.IngressItem, error) {
+	empty := arcade.IngressItem{}
 
-	if r.Name == "" {
-		return emptyReq, fmt.Errorf("%w: empty item name", errors.ErrBadRequest)
+	if i.Name == "" {
+		return empty, fmt.Errorf("%w: empty item name", errors.ErrBadRequest)
 	}
-	if len(r.Name) > arcade.MaxItemNameLen {
-		return emptyReq, fmt.Errorf("%w: item name exceeds maximum length", errors.ErrBadRequest)
+	if len(i.Name) > arcade.MaxItemNameLen {
+		return empty, fmt.Errorf("%w: item name exceeds maximum length", errors.ErrBadRequest)
 	}
-	if r.Description == "" {
-		return emptyReq, fmt.Errorf("%w: empty item description", errors.ErrBadRequest)
+	if i.Description == "" {
+		return empty, fmt.Errorf("%w: empty item description", errors.ErrBadRequest)
 	}
-	if len(r.Description) > arcade.MaxItemDescriptionLen {
-		return emptyReq, fmt.Errorf("%w: item description exceeds maximum length", errors.ErrBadRequest)
+	if len(i.Description) > arcade.MaxItemDescriptionLen {
+		return empty, fmt.Errorf("%w: item description exceeds maximum length", errors.ErrBadRequest)
 	}
-	ownerID, err := uuid.Parse(r.OwnerID)
+	ownerID, err := uuid.Parse(i.OwnerID)
 	if err != nil {
-		return emptyReq, fmt.Errorf("%w: invalid ownerID: '%s'", errors.ErrBadRequest, r.OwnerID)
+		return empty, fmt.Errorf("%w: invalid ownerID: '%s'", errors.ErrBadRequest, i.OwnerID)
 	}
-	locID, err := uuid.Parse(r.LocationID.ID)
+	locID, err := uuid.Parse(i.LocationID.ID)
 	if err != nil {
-		return emptyReq, fmt.Errorf("%w: invalid locationID.ID: '%s', %s", errors.ErrBadRequest, r.LocationID.ID, err)
+		return empty, fmt.Errorf("%w: invalid locationID.ID: '%s', %s", errors.ErrBadRequest, i.LocationID.ID, err)
 	}
-	t := strings.ToLower(r.LocationID.Type)
+	t := strings.ToLower(i.LocationID.Type)
 	if t != "room" && t != "player" && t != "item" {
-		return emptyReq, fmt.Errorf("%w: invalid locationID.Type: '%s'", errors.ErrBadRequest, r.LocationID.Type)
+		return empty, fmt.Errorf("%w: invalid locationID.Type: '%s'", errors.ErrBadRequest, i.LocationID.Type)
 	}
 
-	itemReq := arcade.ItemRequest{
-		Name:        r.Name,
-		Description: r.Description,
+	itemReq := arcade.IngressItem{
+		Name:        i.Name,
+		Description: i.Description,
 		OwnerID:     arcade.PlayerID(ownerID),
 	}
 
@@ -580,8 +580,8 @@ func IngressItemRequest(r ItemRequest) (arcade.ItemRequest, error) {
 	return itemReq, nil
 }
 
-// EgressItem translates an arcade item to a local item.
-func EgressItem(i *arcade.Item) Item {
+// TranslateItem translates an arcade item to a local item.
+func TranslateItem(i *arcade.Item) Item {
 	return Item{
 		ID:          i.ID.String(),
 		Name:        i.Name,

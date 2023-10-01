@@ -51,7 +51,7 @@ func (m ItemManager) Create(ctx context.Context, itemReq arcade.ItemRequest) (*a
 	return m.Storage.Create(ctx, itemReq)
 }
 
-// Update updates the item in persistent storage.
+// Update replaces the item in persistent storage.
 func (m ItemManager) Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.ItemRequest) (*arcade.Item, error) {
 	return m.Storage.Update(ctx, itemID, itemReq)
 }

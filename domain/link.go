@@ -51,7 +51,7 @@ func (m LinkManager) Create(ctx context.Context, link arcade.Link) error {
 	return m.Storage.Create(ctx, link)
 }
 
-// Update updates the link in persistent storage.
+// Update replaces the link in persistent storage.
 func (m LinkManager) Update(ctx context.Context, link arcade.Link) (*arcade.Link, error) {
 	return m.Storage.Update(ctx, link)
 }

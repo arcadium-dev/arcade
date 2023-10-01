@@ -51,7 +51,7 @@ func (m RoomManager) Create(ctx context.Context, room arcade.Room) error {
 	return m.Storage.Create(ctx, room)
 }
 
-// Update updates the room in persistent storage.
+// Update replaces the room in persistent storage.
 func (m RoomManager) Update(ctx context.Context, room arcade.Room) (*arcade.Room, error) {
 	return m.Storage.Update(ctx, room)
 }

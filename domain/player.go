@@ -51,7 +51,7 @@ func (m PlayerManager) Create(ctx context.Context, player arcade.Player) error {
 	return m.Storage.Create(ctx, player)
 }
 
-// Update updates the player in persistent storage.
+// Update replaces the player in persistent storage.
 func (m PlayerManager) Update(ctx context.Context, player arcade.Player) (*arcade.Player, error) {
 	return m.Storage.Update(ctx, player)
 }

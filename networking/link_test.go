@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"arcadium.dev/arcade/networking"
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/errors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/errors"
+
 	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/networking"
 )
 
 func TestLinksList(t *testing.T) {

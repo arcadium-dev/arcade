@@ -22,11 +22,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"arcadium.dev/arcade"
-	"arcadium.dev/core/errors"
-	"arcadium.dev/core/http/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+
+	"arcadium.dev/core/errors"
+	"arcadium.dev/core/http/server"
+
+	"arcadium.dev/arcade"
 )
 
 const (

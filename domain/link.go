@@ -26,12 +26,12 @@ type (
 		Storage LinkStorage
 	}
 
-	// LinkStorage defines the interface to manage the persistent storage of items.
+	// LinkStorage defines the interface to manage the persistent storage of links.
 	LinkStorage interface {
 		List(ctx context.Context, filter arcade.LinksFilter) ([]*arcade.Link, error)
 		Get(ctx context.Context, linkID arcade.LinkID) (*arcade.Link, error)
-		Create(ctx context.Context, link arcade.Link) error
-		Update(ctx context.Context, link arcade.Link) (*arcade.Link, error)
+		Create(ctx context.Context, ingressLink arcade.IngressLink) (*arcade.Link, error)
+		Update(ctx context.Context, linkID arcade.LinkID, ingressLink arcade.IngressLink) (*arcade.Link, error)
 		Remove(ctx context.Context, linkID arcade.LinkID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m LinkManager) Get(ctx context.Context, linkID arcade.LinkID) (*arcade.Lin
 }
 
 // Create creates a new link in persistent storage.
-func (m LinkManager) Create(ctx context.Context, link arcade.Link) error {
-	return m.Storage.Create(ctx, link)
+func (m LinkManager) Create(ctx context.Context, ingressLink arcade.IngressLink) (*arcade.Link, error) {
+	return m.Storage.Create(ctx, ingressLink)
 }
 
 // Update replaces the link in persistent storage.
-func (m LinkManager) Update(ctx context.Context, link arcade.Link) (*arcade.Link, error) {
-	return m.Storage.Update(ctx, link)
+func (m LinkManager) Update(ctx context.Context, linkID arcade.LinkID, ingressLink arcade.IngressLink) (*arcade.Link, error) {
+	return m.Storage.Update(ctx, linkID, ingressLink)
 }
 
 // Remove deletes the given link, based on the given linkID, from persistent storage.

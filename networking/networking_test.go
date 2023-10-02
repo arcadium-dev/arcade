@@ -16,7 +16,7 @@ import (
 	"arcadium.dev/arcade/networking"
 )
 
-func invokeEndpoint(t *testing.T, m mockItemManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+func invokeItemsEndpoint(t *testing.T, m mockItemManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	if len(query)%2 != 0 {
@@ -30,6 +30,36 @@ func invokeEndpoint(t *testing.T, m mockItemManager, method, target string, body
 
 	router := mux.NewRouter()
 	s := networking.ItemsService{Manager: m}
+	s.Register(router)
+
+	r := httptest.NewRequest(method, target, b)
+	w := httptest.NewRecorder()
+
+	q := r.URL.Query()
+	for i := 0; i < len(query); i += 2 {
+		q.Add(query[i], query[i+1])
+	}
+	r.URL.RawQuery = q.Encode()
+
+	router.ServeHTTP(w, r)
+
+	return w
+}
+
+func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	if len(query)%2 != 0 {
+		t.Fatal("query param problem, must be divible by 2")
+	}
+
+	var b io.Reader
+	if body != nil {
+		b = bytes.NewBuffer(body)
+	}
+
+	router := mux.NewRouter()
+	s := networking.LinksService{Manager: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, b)

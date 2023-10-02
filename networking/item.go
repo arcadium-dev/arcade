@@ -46,8 +46,8 @@ type (
 	ItemManager interface {
 		List(ctx context.Context, filter arcade.ItemsFilter) ([]*arcade.Item, error)
 		Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Item, error)
-		Create(ctx context.Context, itemReq arcade.IngressItem) (*arcade.Item, error)
-		Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.IngressItem) (*arcade.Item, error)
+		Create(ctx context.Context, ingressItem arcade.IngressItem) (*arcade.Item, error)
+		Update(ctx context.Context, itemID arcade.ItemID, ingressItem arcade.IngressItem) (*arcade.Item, error)
 		Remove(ctx context.Context, itemID arcade.ItemID) error
 	}
 
@@ -108,11 +108,11 @@ type (
 		// in: body
 		Description string `json:"description"`
 
-		// OwnerID is the playerID of the item owner.
+		// OwnerID is the PlayerID of the item owner.
 		// in:body
 		OwnerID string `json:"ownerID"`
 
-		// LocationID is the locationID of the item's location.
+		// LocationID is the LocationID of the item's location.
 		// in: body
 		LocationID ItemLocationID `json:"locationID"`
 
@@ -125,7 +125,7 @@ type (
 		Updated arcade.Timestamp `json:"updated"`
 	}
 
-	// ItemLocationID holds
+	// ItemLocationID holds the locationID of the item, and the type of location.
 	ItemLocationID struct {
 		// ID is the location identifier. This can correspond the the ID of a room, player or item.
 		// in: body
@@ -160,8 +160,6 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	//
 	// List returns a list of items.
 	//
-	// Consumes: application/json
-	//
 	// Produces: application/json
 	//
 	// Parameters:
@@ -183,6 +181,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	//  500: ResponseError
 	ctx := r.Context()
 
+	// Create a filter from the quesry parameters.
 	filter, err := NewItemsFilter(r)
 	if err != nil {
 		server.Response(ctx, w, err)
@@ -220,8 +219,6 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	// swagger:route GET /v1/items/{itemID} Get
 	//
 	// Get returns an item.
-	//
-	// Consumes: application/json
 	//
 	// Produces: application/json
 	//
@@ -508,10 +505,6 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 			return arcade.ItemsFilter{}, fmt.Errorf("%w: locationType required when locationID is set", errors.ErrBadRequest)
 		}
 		filter.LocationID = location
-	}
-
-	if filter.OwnerID != arcade.PlayerID(uuid.Nil) && filter.LocationID != nil {
-		return arcade.ItemsFilter{}, fmt.Errorf("%w: either ownerID or locationID/locationType can be set, not both", errors.ErrBadRequest)
 	}
 
 	if values := q["offset"]; len(values) > 0 {

@@ -27,31 +27,27 @@ func TestItemsList(t *testing.T) {
 		m := mockItemManager{}
 
 		// ownerID failure
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid ownerID query parameter: 'bad uuid'")
 
 		// locationID.ID failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", "bad uuid")
+		w = invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", "bad uuid")
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid locationID query parameter: 'bad uuid'")
 
 		// locationID.Type failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "bad type")
+		w = invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "bad type")
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid locationType query parameter: 'bad type'")
 
 		// locationID.Type missing failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String())
+		w = invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String())
 		assertRespError(t, w, http.StatusBadRequest, "bad request: locationType required when locationID is set")
 
-		// owner and location failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "ownerID", id.String(), "locationID", id.String(), "locationType", "room")
-		assertRespError(t, w, http.StatusBadRequest, "either ownerID or locationID/locationType can be set, not both")
-
 		// offset failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "player", "offset", "bad offset")
+		w = invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "player", "offset", "bad offset")
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid offset query parameter: 'bad offset'")
 
 		// limit failure
-		w = invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "limit", "bad limit")
+		w = invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "limit", "bad limit")
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
@@ -66,7 +62,7 @@ func TestItemsList(t *testing.T) {
 			listErr: fmt.Errorf("%w: list failure", errors.ErrNotFound),
 		}
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "offset", "10", "limit", "10")
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", id.String(), "locationType", "item", "offset", "10", "limit", "10")
 		assertRespError(t, w, http.StatusNotFound, "list failure")
 	})
 
@@ -103,7 +99,7 @@ func TestItemsList(t *testing.T) {
 			},
 		}
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil, "locationID", locationID.ID().String(), "locationType", "room", "offset", "25", "limit", "100")
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "locationID", locationID.ID().String(), "locationType", "room", "offset", "25", "limit", "100")
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -140,7 +136,7 @@ func TestItemGet(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, "bad_itemID")
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid itemID, not a well formed uuid: 'bad_itemID'")
 	})
 
@@ -153,7 +149,7 @@ func TestItemGet(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
 	})
 
@@ -185,7 +181,7 @@ func TestItemGet(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodGet, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -218,17 +214,17 @@ func TestItemCreate(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		m := mockItemManager{}
 
-		w := invokeEndpoint(t, m, http.MethodPost, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodPost, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
 
-		w = invokeEndpoint(t, m, http.MethodPost, route, []byte(""))
+		w = invokeItemsEndpoint(t, m, http.MethodPost, route, []byte(""))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
 		m := mockItemManager{}
 
-		w := invokeEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
+		w := invokeItemsEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
@@ -310,7 +306,7 @@ func TestItemCreate(t *testing.T) {
 			body, err := json.Marshal(test.ingressItem)
 			assert.Nil(t, err)
 
-			w := invokeEndpoint(t, m, http.MethodPost, route, body)
+			w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
 		}
 	})
@@ -323,11 +319,11 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createItemReq: arcade.IngressItem{
+			createIngressItem: arcade.IngressItem{
 				Name:        "name",
 				Description: "description",
-				OwnerID:     arcade.PlayerID(ownerID),
-				LocationID:  arcade.RoomID(locID),
+				OwnerID:     ownerID,
+				LocationID:  locID,
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
@@ -344,7 +340,7 @@ func TestItemCreate(t *testing.T) {
 		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
-		w := invokeEndpoint(t, m, http.MethodPost, route, body)
+		w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
 		assertRespError(t, w, http.StatusConflict, "conflict: create failure")
 	})
 
@@ -362,7 +358,7 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createItemReq: arcade.IngressItem{
+			createIngressItem: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -391,7 +387,7 @@ func TestItemCreate(t *testing.T) {
 		body, err := json.Marshal(ingressItem)
 		assert.Nil(t, err)
 
-		w := invokeEndpoint(t, m, http.MethodPost, route, body)
+		w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -424,7 +420,7 @@ func TestItemUpdate(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, "bad_itemID")
 
-		w := invokeEndpoint(t, m, http.MethodPut, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid itemID, not a well formed uuid: 'bad_itemID'")
 	})
 
@@ -434,10 +430,10 @@ func TestItemUpdate(t *testing.T) {
 		itemID := uuid.New()
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodPut, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
 
-		w = invokeEndpoint(t, m, http.MethodPut, route, []byte(""))
+		w = invokeItemsEndpoint(t, m, http.MethodPut, route, []byte(""))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
 	})
 
@@ -447,7 +443,7 @@ func TestItemUpdate(t *testing.T) {
 		itemID := uuid.New()
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
+		w := invokeItemsEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
@@ -532,7 +528,7 @@ func TestItemUpdate(t *testing.T) {
 			itemID := uuid.New()
 			route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-			w := invokeEndpoint(t, m, http.MethodPut, route, body)
+			w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
 		}
 	})
@@ -551,7 +547,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:            t,
 			updateItemID: itemID,
-			updateItemReq: arcade.IngressItem{
+			updateIngressItem: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -574,7 +570,7 @@ func TestItemUpdate(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodPut, route, body)
+		w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
 	})
 
@@ -593,7 +589,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:            t,
 			updateItemID: itemID,
-			updateItemReq: arcade.IngressItem{
+			updateIngressItem: arcade.IngressItem{
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID,
@@ -624,7 +620,7 @@ func TestItemUpdate(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodPut, route, body)
+		w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -659,7 +655,7 @@ func TestItemRemove(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, "bad_itemID")
 
-		w := invokeEndpoint(t, m, http.MethodDelete, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid itemID, not a well formed uuid: 'bad_itemID'")
 	})
 
@@ -672,7 +668,7 @@ func TestItemRemove(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodDelete, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
 	})
 
@@ -684,7 +680,7 @@ func TestItemRemove(t *testing.T) {
 
 		route := fmt.Sprintf("%s/%s", networking.V1ItemsRoute, itemID.String())
 
-		w := invokeEndpoint(t, m, http.MethodDelete, route, nil)
+		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -705,14 +701,14 @@ type (
 		getItem   *arcade.Item
 		getErr    error
 
-		createItemReq arcade.IngressItem
-		createItem    *arcade.Item
-		createErr     error
+		createIngressItem arcade.IngressItem
+		createItem        *arcade.Item
+		createErr         error
 
-		updateItemID  arcade.ItemID
-		updateItemReq arcade.IngressItem
-		updateItem    *arcade.Item
-		updateErr     error
+		updateItemID      arcade.ItemID
+		updateIngressItem arcade.IngressItem
+		updateItem        *arcade.Item
+		updateErr         error
 
 		removeItemID arcade.ItemID
 		removeErr    error
@@ -742,15 +738,15 @@ func (m mockItemManager) Get(ctx context.Context, itemID arcade.ItemID) (*arcade
 }
 
 func (m mockItemManager) Create(ctx context.Context, ingressItem arcade.IngressItem) (*arcade.Item, error) {
-	assert.Compare(m.t, ingressItem, m.createItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
-	cmpIngressItem(m.t, ingressItem, m.createItemReq)
+	assert.Compare(m.t, ingressItem, m.createIngressItem, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpIngressItem(m.t, ingressItem, m.createIngressItem)
 	return m.createItem, m.createErr
 }
 
 func (m mockItemManager) Update(ctx context.Context, itemID arcade.ItemID, ingressItem arcade.IngressItem) (*arcade.Item, error) {
 	assert.Compare(m.t, itemID, m.updateItemID)
-	assert.Compare(m.t, ingressItem, m.updateItemReq, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
-	cmpIngressItem(m.t, ingressItem, m.updateItemReq)
+	assert.Compare(m.t, ingressItem, m.updateIngressItem, cmpopts.IgnoreInterfaces(struct{ arcade.ItemLocationID }{}))
+	cmpIngressItem(m.t, ingressItem, m.updateIngressItem)
 	return m.updateItem, m.updateErr
 }
 

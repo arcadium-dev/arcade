@@ -36,7 +36,7 @@ func (l LinkID) String() string { return uuid.UUID(l).String() }
 type (
 	// Link is the internal representation of a link.
 	Link struct {
-		LinkID        LinkID
+		ID            LinkID
 		Name          string
 		Description   string
 		OwnerID       PlayerID
@@ -51,7 +51,7 @@ type (
 		// OwnerID filters for links owned by a given link.
 		OwnerID PlayerID
 
-		// LocationID filters for links located in a location link (non-recursive).
+		// LocationID filters for links located in a location link.
 		LocationID RoomID
 
 		// DestinationID filters for links connected to the given destination.
@@ -64,5 +64,14 @@ type (
 		// Limit is used to restrict to a subset of the results,
 		// indicating the maximum number of results to return.
 		Limit uint
+	}
+
+	// IngressLink is used to request a link be created or updated.
+	IngressLink struct {
+		Name          string
+		Description   string
+		OwnerID       PlayerID
+		LocationID    RoomID
+		DestinationID RoomID
 	}
 )

@@ -76,6 +76,36 @@ func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string,
 	return w
 }
 
+func invokePlayersEndpoint(t *testing.T, m mockPlayerManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	if len(query)%2 != 0 {
+		t.Fatal("query param problem, must be divible by 2")
+	}
+
+	var b io.Reader
+	if body != nil {
+		b = bytes.NewBuffer(body)
+	}
+
+	router := mux.NewRouter()
+	s := networking.PlayersService{Manager: m}
+	s.Register(router)
+
+	r := httptest.NewRequest(method, target, b)
+	w := httptest.NewRecorder()
+
+	q := r.URL.Query()
+	for i := 0; i < len(query); i += 2 {
+		q.Add(query[i], query[i+1])
+	}
+	r.URL.RawQuery = q.Encode()
+
+	router.ServeHTTP(w, r)
+
+	return w
+}
+
 func assertRespError(t *testing.T, w *httptest.ResponseRecorder, status int, errMsg string) {
 	t.Helper()
 

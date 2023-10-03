@@ -38,7 +38,7 @@ func (p PlayerID) String() string     { return uuid.UUID(p).String() }
 type (
 	// Player is the internal representation of the data related to a player.
 	Player struct {
-		PlayerID    PlayerID
+		ID          PlayerID
 		Name        string
 		Description string
 		HomeID      RoomID
@@ -59,5 +59,13 @@ type (
 		// Limit is used to restrict to a subset of the results,
 		// indicating the maximum number of results to return.
 		Limit uint
+	}
+
+	// IngressPlyaer is used to request a player be created or updated.
+	IngressPlayer struct {
+		Name        string
+		Description string
+		HomeID      RoomID
+		LocationID  RoomID
 	}
 )

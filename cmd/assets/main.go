@@ -42,14 +42,14 @@ var New = func(v, b, c, d string) RestServer {
 	return rest.NewServer(v, b, c, d)
 }
 
-// Main is the testable entry point into the arcade server.
+// Main is the testable entry point into the assets server.
 func Main() error {
 	server := New(Version, Branch, Commit, Date)
 	if err := server.Init(); err != nil {
 		return err
 	}
 
-	// TODO: Setup arcade service here.
+	// TODO: Setup assets service here.
 
 	if err := server.Start(); err != nil {
 		return err

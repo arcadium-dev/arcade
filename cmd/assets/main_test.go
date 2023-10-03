@@ -8,7 +8,7 @@ import (
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/http/server"
 
-	cmd "arcadium.dev/arcade/cmd/arcade"
+	cmd "arcadium.dev/arcade/cmd/assets"
 )
 
 // Note: TestMain is a low-level primitive and can cause issues with IDEs

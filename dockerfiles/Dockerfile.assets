@@ -30,11 +30,11 @@ RUN GOOS="linux" GOARCH="amd64" CGO_ENAGLED=0 \
       -X 'main.Branch=${branch}' \
       -X 'main.Commit=${commit}' \
       -X 'main.Date=${build_date}'" \
-      -o ./dist/arcade ./cmd/arcade \
-    && setcap 'cap_net_bind_service=+ep' ./dist/arcade
+      -o ./dist/assets ./cmd/assets \
+    && setcap 'cap_net_bind_service=+ep' ./dist/assets
 
 
-# Arcade image.
+# Assets image.
 FROM --platform=linux/amd64 alpine
 
 RUN apk update && \
@@ -48,10 +48,10 @@ RUN apk update && \
     --uid "10001" \
     arcadium
 
-COPY --from=builder --chown=arcadium:arcadium /src/dist/arcade /arcadium/arcade
+COPY --from=builder --chown=arcadium:arcadium /src/dist/assets /arcadium/assets
 
 USER  arcadium:arcadium
 EXPOSE 443
 VOLUME "/etc/certs"
 WORKDIR /arcadium
-ENTRYPOINT ["/arcadium/arcade"]
+ENTRYPOINT ["/arcadium/assets"]

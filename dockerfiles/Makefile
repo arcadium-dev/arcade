@@ -24,13 +24,13 @@ all: containers tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: containers arcade_container
+.PHONY: containers assets_container
 
-containers: arcade_container
+containers: assets_container
 
-arcade_container: Dockerfile.arcade
+assets_container: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
-		--file Dockerfile.arcade \
+		--file Dockerfile.assets \
 		--ssh default \
 		--build-arg go_version=$(go_version) \
 		--build-arg version=$(version) \
@@ -38,8 +38,8 @@ arcade_container: Dockerfile.arcade
 		--build-arg commit=$(commit) \
 		--build-arg build_date=$(date) \
 		--rm --force-rm \
-		--tag arcade:latest \
-		--tag arcade:$(version) \
+		--tag assets:latest \
+		--tag assets:$(version) \
 		..
 
 # ____ tools _________________________________________________________________

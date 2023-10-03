@@ -30,8 +30,8 @@ type (
 	RoomStorage interface {
 		List(ctx context.Context, filter arcade.RoomsFilter) ([]*arcade.Room, error)
 		Get(ctx context.Context, roomID arcade.RoomID) (*arcade.Room, error)
-		Create(ctx context.Context, room arcade.Room) error
-		Update(ctx context.Context, room arcade.Room) (*arcade.Room, error)
+		Create(ctx context.Context, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
+		Update(ctx context.Context, roomID arcade.RoomID, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
 		Remove(ctx context.Context, roomID arcade.RoomID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m RoomManager) Get(ctx context.Context, roomID arcade.RoomID) (*arcade.Roo
 }
 
 // Create creates a new room in persistent storage.
-func (m RoomManager) Create(ctx context.Context, room arcade.Room) error {
-	return m.Storage.Create(ctx, room)
+func (m RoomManager) Create(ctx context.Context, ingressRoom arcade.IngressRoom) (*arcade.Room, error) {
+	return m.Storage.Create(ctx, ingressRoom)
 }
 
 // Update replaces the room in persistent storage.
-func (m RoomManager) Update(ctx context.Context, room arcade.Room) (*arcade.Room, error) {
-	return m.Storage.Update(ctx, room)
+func (m RoomManager) Update(ctx context.Context, roomID arcade.RoomID, ingressRoom arcade.IngressRoom) (*arcade.Room, error) {
+	return m.Storage.Update(ctx, roomID, ingressRoom)
 }
 
 // Remove deletes the given room, based on the given roomID, from persistent storage.

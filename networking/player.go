@@ -70,7 +70,7 @@ type (
 		// in: body
 		// minimum length: 1
 		// maximum length: 4096
-		HomeID string `json:"ownerID"`
+		HomeID string `json:"homeID"`
 
 		// LocationID is the ID of the location of the player.
 		// in: body
@@ -109,7 +109,7 @@ type (
 
 		// HomeID is the RoomID of the player's home.
 		// in:body
-		HomeID string `json:"ownerID"`
+		HomeID string `json:"homeID"`
 
 		// LocationID is the RoomID of the player's location.
 		// in: body

@@ -15,8 +15,6 @@
 package arcade // import "arcadium.dev/arcade"
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -40,13 +38,13 @@ func (r RoomID) String() string     { return uuid.UUID(r).String() }
 type (
 	// Room is the internal representation of the data related to a room.
 	Room struct {
-		RoomID      RoomID
+		ID          RoomID
 		Name        string
 		Description string
 		OwnerID     PlayerID
 		ParentID    RoomID
-		Created     time.Time
-		Updated     time.Time
+		Created     Timestamp
+		Updated     Timestamp
 	}
 
 	// RoomsFilter is used to filter results from a List.
@@ -64,5 +62,13 @@ type (
 		// Limit is used to restrict to a subset of the results,
 		// indicating the maximum number of results to return.
 		Limit uint
+	}
+
+	// IngressRoom is used to request a room be created or updated.
+	IngressRoom struct {
+		Name        string
+		Description string
+		OwnerID     PlayerID
+		ParentID    RoomID
 	}
 )

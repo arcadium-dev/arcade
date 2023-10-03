@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091,SC2119
 
 source "$(dirname "$0")/common.sh"
 source "$(dirname "$0")/../env/influxdb_token"
@@ -11,11 +11,22 @@ declare -r app
 declare -ar infrastructure=(
 	"influxdb"
 	"telegraf"
+  "cockroach"
 )
 
+declare -ar cockroach_dbs=(
+  "arcade"
+)
+
+declare -ar cockroach_clients=(
+  "root"
+  "arcadium"
+)
+  
 declare -ar tls_servers=(
-	"arcade"
+	"assets"
 	"influxdb"
+  "cockroachdb"
 )
 
 declare -ar networks=(
@@ -23,7 +34,7 @@ declare -ar networks=(
 )
 
 declare -ar services=(
-	"arcade"
+	"assets"
 )
 
 declare -Ar influxdb_config=(
@@ -34,8 +45,12 @@ declare -Ar influxdb_config=(
 	["token"]="${INFLUXDB_TOKEN}"
 )
 
+declare -ar migrations=(
+  "migrate"
+)
+
 docker_compose() {
-  if "$(command -v docker-compose)"; then
+  if command -v docker-compose; then
     docker-compse "$@"
   else
     docker compose "$@"
@@ -56,7 +71,7 @@ init() {
 }
 
 init_all() {
-	init_networks && init_certs && init_influxdb
+	init_networks && init_certs && init_influxdb && init_db && init_migrate
 }
 
 init_networks() {
@@ -75,6 +90,29 @@ init_certs() {
 	# Remove the old certs
 	docker volume rm certificates_volume 2>/dev/null
 
+  # Create the cockroach CA cert.
+  info "Installing Cockroach CA certificate"
+  if ! docker_compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+    failed
+  fi
+
+  # Create the cockroach node cert.
+  info "Creating Cockroach node certificate"
+  if ! docker_compose run --rm cockroach cert create-node cockroach --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+    failed
+  fi
+  
+  # Create the cockroach client cert.
+  local cockroach_client
+  for cockroach_client in ${cockroach_clients[@]}; do
+    info "Creating Cockroach client certificate for user ${cockroach_client}"
+    if ! docker_compose run --rm cockroach cert create-client "${cockroach_client}" --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+      failed
+    fi
+  done
+
+  docker_compose run --rm cockroach cert list --certs-dir="${certs_dir}"
+
 	# Create the CA cert for TLS communication.
 	info "Installing root CA certificate"
 	if ! docker_compose run --rm mkcert -install; then
@@ -89,7 +127,7 @@ init_certs() {
 			failed
 		fi
 	done
-
+                                                                                                                                                                                                                                                              
 	success
 }
 
@@ -111,6 +149,60 @@ init_influxdb() {
 		--org "${influxdb_config[organization]}" \
 		--bucket "${influxdb_config[bucket]}" \
 		--token "${influxdb_config[token]}"
+}
+
+init_db() {                                                                                                                   
+  info "Database initialization"
+
+  # Remove the db volume.
+  docker_compose down &>/dev/null
+  docker volume rm arcade_database_volume #&>/dev/null
+  docker_compose up -d "cockroach"
+  sleep 1
+  set +x
+
+  local db
+  for db in "${cockroach_dbs[@]}"; do
+    create_db "${db}"
+  done
+}
+
+create_db() {
+  local -r db="${1}"
+  local user="arcadium" role="${db}_role" passwd="arcadium"
+
+  info "${db} database initialization"
+  if ! docker_compose run --rm csql --execute="
+    create database ${db};
+    show databases;
+    use ${db};
+    create role ${role};
+    grant create, drop on database ${db} to ${role};
+    alter default privileges grant delete, insert, select, update on tables to ${role};
+    show grants on database ${db};
+    create user ${user} with password ${passwd};
+    grant ${role} to ${user};
+    show roles;
+  "; then
+    failed
+  fi
+}
+
+init_migrate() {
+  local -a args=( "up" )
+  if [[ "$*" != "" ]]; then
+    args=( "$@" )
+  fi
+
+  info "Running database migrations"
+
+  local migrate
+  for migrate in "${migrations[@]}"; do
+    info "Running ${migrate} ${args[*]}"
+    if ! docker_compose run --rm "${migrate}" "${args[@]}"; then
+      failed
+    fi
+  done
 }
 
 #----------------------------------------------------------------------------
@@ -185,9 +277,9 @@ clean() {
 
 nuke() {
 	stop
-	yes | docker system prune -a || true
-	yes | docker volume prune || true
-	yes | docker network prune || true
+	docker system prune -af || true
+	docker volume prune -f --filter all=1 || true
+	docker network prune -f || true
 }
 
 #----------------------------------------------------------------------------
@@ -203,7 +295,7 @@ run() {
 completion() {
 	case "${1:-}" in
 	"init")
-		echo "networks certs"
+		echo "networks certs db migrate"
 		;;
 	"dev")
 		echo "init start up status ps logs stop down clean help"
@@ -220,7 +312,7 @@ help() {
 		usage: ${app} command command_options
 
 		  commands:
-		    init [networks|certs|influxdb]
+		    init [networks|certs|influxdb|db|migrate]
 		    start
 		    up
 		    status

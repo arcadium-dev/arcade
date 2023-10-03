@@ -1,11 +1,11 @@
 version: '3.3'
 
 services:
-  arcade:
-    image: arcade:latest
-    container_name: arcade
+  assets:
+    image: assets:latest
+    container_name: assets
     env_file:
-      - env/arcade
+      - env/assets
     volumes:
       - certificates_volume:/etc/certs
     networks:
@@ -41,12 +41,46 @@ services:
     networks:
       - arcadium_network
 
+  cockroach:
+    image: cockroachdb/cockroach:v21.2.8
+    container_name: cockroach
+    hostname: cockroach
+    command: ["start-single-node", "--certs-dir=/etc/certs"]
+    ports:
+      - 4000:8080
+    volumes:
+      - database_volume:/cockroach/cockroach-data
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  migrate:
+    image: migrate:latest
+    depends_on:
+      - cockroach
+    env_file:
+      - env/migrate
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
   mkcert:
     image: mkcert:latest
     environment:
       - CAROOT=/etc/certs
     volumes:
       - certificates_volume:/etc/certs
+
+  csql:
+    image: cockroachdb/cockroach:v21.2.8
+    entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
+    env_file:
+      - env/csql
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
 
   curl:
     image: curl:latest
@@ -56,10 +90,17 @@ services:
     networks:
       - arcadium_network
 
+  # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
+  create_migration:
+    image: migrate/migrate:v4.15.1
+    entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
+    volumes:
+      - ./migrations:/migration
 
 volumes:
   certificates_volume:
   influxdb_volume:
+  database_volume:
 
 
 networks:

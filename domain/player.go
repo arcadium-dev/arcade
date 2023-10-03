@@ -30,8 +30,8 @@ type (
 	PlayerStorage interface {
 		List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error)
 		Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error)
-		Create(ctx context.Context, player arcade.Player) error
-		Update(ctx context.Context, player arcade.Player) (*arcade.Player, error)
+		Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
+		Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
 		Remove(ctx context.Context, playerID arcade.PlayerID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m PlayerManager) Get(ctx context.Context, playerID arcade.PlayerID) (*arca
 }
 
 // Create creates a new player in persistent storage.
-func (m PlayerManager) Create(ctx context.Context, player arcade.Player) error {
-	return m.Storage.Create(ctx, player)
+func (m PlayerManager) Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
+	return m.Storage.Create(ctx, ingressPlayer)
 }
 
 // Update replaces the player in persistent storage.
-func (m PlayerManager) Update(ctx context.Context, player arcade.Player) (*arcade.Player, error) {
-	return m.Storage.Update(ctx, player)
+func (m PlayerManager) Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
+	return m.Storage.Update(ctx, playerID, ingressPlayer)
 }
 
 // Remove deletes the given player, based on the given playerID, from persistent storage.

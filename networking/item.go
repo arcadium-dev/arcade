@@ -526,7 +526,7 @@ func NewItemsFilter(r *http.Request) (arcade.ItemsFilter, error) {
 	return filter, nil
 }
 
-// IngressItemtranslates the item request from the http request to an arcade.ItemRequest.
+// TranslateIngressItem translates the item request from the http request to an arcade.ItemRequest.
 func TranslateIngressItem(i IngressItem) (arcade.IngressItem, error) {
 	empty := arcade.IngressItem{}
 

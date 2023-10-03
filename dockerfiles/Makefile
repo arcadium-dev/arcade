@@ -13,6 +13,7 @@
 # limitations under the License.
 
 go_version := 1.21
+migrate_version := v4.16.2
 mkcert_version := v1.4.4
 
 # ____ all __________________________________________________________________
@@ -24,9 +25,9 @@ all: containers tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: containers assets_container
+.PHONY: containers assets_container migrate_container
 
-containers: assets_container
+containers: assets_container migrate_container
 
 assets_container: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -39,8 +40,15 @@ assets_container: Dockerfile.assets
 		--build-arg build_date=$(date) \
 		--rm --force-rm \
 		--tag assets:latest \
-		--tag assets:$(version) \
 		..
+
+migrate_container: Dockerfile.migrate
+	DOCKER_BUILDKIT=1 docker build \
+    --file Dockerfile.migrate \
+    --build-arg migrate_version=$(migrate_version) \
+    --rm --force-rm \
+    --tag migrate:latest \
+    ..
 
 # ____ tools _________________________________________________________________
 

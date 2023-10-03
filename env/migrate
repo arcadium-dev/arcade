@@ -1,0 +1,1 @@
+SQL_URL=cockroachdb://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt&sslcert=%2Fetc%2Fcerts%2Fclient.arcadium.crt&sslkey=%2Fetc%2Fcerts%2Fclient.arcadium.key

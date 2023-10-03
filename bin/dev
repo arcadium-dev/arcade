@@ -38,8 +38,8 @@ declare -ar services=(
 )
 
 declare -Ar influxdb_config=(
-	["username"]="admin"
-	["password"]="password"
+	["username"]="arcadium"
+	["password"]="arcadium"
 	["organization"]="arcadium"
 	["bucket"]="arcade"
 	["token"]="${INFLUXDB_TOKEN}"

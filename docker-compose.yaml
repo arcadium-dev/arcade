@@ -15,7 +15,7 @@ services:
     image: influxdb:alpine
     container_name: influxdb
     ports:
-      - 8086:8086
+      - 4001:8086
     volumes:
       - ./env/influx.yml:/etc/influxdb2/config.yml
       - influxdb_volume:/var/lib/influxdb2

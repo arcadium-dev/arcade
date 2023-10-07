@@ -1,26 +1,30 @@
-package networking_test
+package server_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/errors"
 
-	"arcadium.dev/arcade"
-	"arcadium.dev/arcade/networking"
+	"arcadium.dev/arcade/assets"
+	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/server"
 )
 
 func TestPlayersList(t *testing.T) {
-	route := networking.V1PlayersRoute
+	route := server.V1PlayersRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -42,8 +46,8 @@ func TestPlayersList(t *testing.T) {
 	t.Run("player manager list failure", func(t *testing.T) {
 		m := mockPlayerManager{
 			t: t,
-			filter: arcade.PlayersFilter{
-				LocationID: arcade.RoomID(id),
+			filter: assets.PlayersFilter{
+				LocationID: assets.RoomID(id),
 				Offset:     10,
 				Limit:      10,
 			},
@@ -60,20 +64,20 @@ func TestPlayersList(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			playerID   = arcade.PlayerID(uuid.New())
-			homeID     = arcade.RoomID(uuid.New())
-			locationID = arcade.RoomID(uuid.New())
-			created    = arcade.Timestamp{Time: time.Now()}
-			updated    = arcade.Timestamp{Time: time.Now()}
+			playerID   = assets.PlayerID(uuid.New())
+			homeID     = assets.RoomID(uuid.New())
+			locationID = assets.RoomID(uuid.New())
+			created    = assets.Timestamp{Time: time.Now()}
+			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockPlayerManager{
 			t: t,
-			filter: arcade.PlayersFilter{
+			filter: assets.PlayersFilter{
 				Offset: 25,
 				Limit:  100,
 			},
-			list: []*arcade.Player{
+			list: []*assets.Player{
 				{
 					ID:          playerID,
 					Name:        name,
@@ -95,10 +99,10 @@ func TestPlayersList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressPlayers networking.EgressPlayers
+		var egressPlayers network.PlayersResponse
 		assert.Nil(t, json.Unmarshal(body, &egressPlayers))
 
-		assert.Compare(t, egressPlayers, networking.EgressPlayers{Players: []networking.Player{
+		assert.Compare(t, egressPlayers, network.PlayersResponse{Players: []network.Player{
 			{
 				ID:          playerID.String(),
 				Name:        name,
@@ -113,25 +117,25 @@ func TestPlayersList(t *testing.T) {
 }
 
 func TestPlayerGet(t *testing.T) {
-	playerID := arcade.PlayerID(uuid.New())
+	playerID := assets.PlayerID(uuid.New())
 
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid playerID, not a well formed uuid: 'bad_playerID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
 	t.Run("player manager get failure", func(t *testing.T) {
 		m := mockPlayerManager{
-			t:           t,
-			getPlayerID: playerID,
-			getErr:      fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
+			t:      t,
+			getID:  playerID,
+			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -143,16 +147,16 @@ func TestPlayerGet(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			homeID     = arcade.RoomID(uuid.New())
-			locationID = arcade.RoomID(homeID)
-			created    = arcade.Timestamp{Time: time.Now()}
-			updated    = arcade.Timestamp{Time: time.Now()}
+			homeID     = assets.RoomID(uuid.New())
+			locationID = assets.RoomID(homeID)
+			created    = assets.Timestamp{Time: time.Now()}
+			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockPlayerManager{
-			t:           t,
-			getPlayerID: playerID,
-			getPlayer: &arcade.Player{
+			t:     t,
+			getID: playerID,
+			getPlayer: &assets.Player{
 				ID:          playerID,
 				Name:        name,
 				Description: desc,
@@ -163,7 +167,7 @@ func TestPlayerGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -174,10 +178,10 @@ func TestPlayerGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressPlayer networking.EgressPlayer
-		assert.Nil(t, json.Unmarshal(body, &egressPlayer))
+		var playerResp network.PlayerResponse
+		assert.Nil(t, json.Unmarshal(body, &playerResp))
 
-		assert.Compare(t, egressPlayer, networking.EgressPlayer{Player: networking.Player{
+		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -190,7 +194,7 @@ func TestPlayerGet(t *testing.T) {
 }
 
 func TestPlayerCreate(t *testing.T) {
-	route := networking.V1PlayersRoute
+	route := server.V1PlayersRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockPlayerManager{}
@@ -209,30 +213,30 @@ func TestPlayerCreate(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
-	t.Run("ingress player req failure", func(t *testing.T) {
+	t.Run("create player req failure", func(t *testing.T) {
 		m := mockPlayerManager{}
 
 		tests := []struct {
-			ingressPlayer networking.IngressPlayer
-			status        int
-			errMsg        string
+			req    network.PlayerCreateRequest
+			status int
+			errMsg string
 		}{
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty player name",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: player name exceeds maximum length",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -240,7 +244,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: empty player description",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -248,7 +252,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: player description exceeds maximum length",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					HomeID:      "bad owner id",
@@ -257,7 +261,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: invalid homeID: 'bad owner id'",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerCreateRequest{
 					Name:        "name",
 					Description: "description",
 					HomeID:      uuid.New().String(),
@@ -269,7 +273,7 @@ func TestPlayerCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.ingressPlayer)
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			w := invokePlayersEndpoint(t, m, http.MethodPost, route, body)
@@ -279,13 +283,13 @@ func TestPlayerCreate(t *testing.T) {
 
 	t.Run("player manager create failure", func(t *testing.T) {
 		var (
-			homeID = arcade.RoomID(uuid.New())
-			locID  = arcade.RoomID(uuid.New())
+			homeID = assets.RoomID(uuid.New())
+			locID  = assets.RoomID(uuid.New())
 		)
 
 		m := mockPlayerManager{
 			t: t,
-			createPlayerReq: arcade.IngressPlayer{
+			createReq: assets.PlayerRequest{
 				Name:        "name",
 				Description: "description",
 				HomeID:      homeID,
@@ -294,13 +298,13 @@ func TestPlayerCreate(t *testing.T) {
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		ingressPlayer := networking.IngressPlayer{
+		createReq := network.PlayerCreateRequest{
 			Name:        "name",
 			Description: "description",
 			HomeID:      homeID.String(),
 			LocationID:  locID.String(),
 		}
-		body, err := json.Marshal(ingressPlayer)
+		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
 
 		w := invokePlayersEndpoint(t, m, http.MethodPost, route, body)
@@ -313,22 +317,22 @@ func TestPlayerCreate(t *testing.T) {
 			desc = "description"
 		)
 		var (
-			playerID = arcade.PlayerID(uuid.New())
-			homeID   = arcade.RoomID(uuid.New())
-			locID    = arcade.RoomID(uuid.New())
-			created  = arcade.Timestamp{Time: time.Now()}
-			updated  = arcade.Timestamp{Time: time.Now()}
+			playerID = assets.PlayerID(uuid.New())
+			homeID   = assets.RoomID(uuid.New())
+			locID    = assets.RoomID(uuid.New())
+			created  = assets.Timestamp{Time: time.Now()}
+			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockPlayerManager{
 			t: t,
-			createPlayerReq: arcade.IngressPlayer{
+			createReq: assets.PlayerCreateRequest{
 				Name:        name,
 				Description: desc,
 				HomeID:      homeID,
 				LocationID:  locID,
 			},
-			createPlayer: &arcade.Player{
+			createPlayer: &assets.Player{
 				ID:          playerID,
 				Name:        name,
 				Description: desc,
@@ -339,13 +343,13 @@ func TestPlayerCreate(t *testing.T) {
 			},
 		}
 
-		ingressPlayer := networking.IngressPlayer{
+		createReq := network.PlayerCreateRequest{
 			Name:        name,
 			Description: desc,
 			HomeID:      homeID.String(),
 			LocationID:  locID.String(),
 		}
-		body, err := json.Marshal(ingressPlayer)
+		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
 
 		w := invokePlayersEndpoint(t, m, http.MethodPost, route, body)
@@ -357,10 +361,10 @@ func TestPlayerCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var playerResp networking.EgressPlayer
+		var playerResp network.PlayerResponse
 		assert.Nil(t, json.Unmarshal(respBody, &playerResp))
 
-		assert.Compare(t, playerResp, networking.EgressPlayer{Player: networking.Player{
+		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -376,17 +380,17 @@ func TestPlayerUpdate(t *testing.T) {
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid playerID, not a well formed uuid: 'bad_playerID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockPlayerManager{}
 
 		playerID := uuid.New()
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -399,36 +403,36 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerManager{}
 
 		playerID := uuid.New()
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
-	t.Run("ingress player req failure", func(t *testing.T) {
+	t.Run("update player req failure", func(t *testing.T) {
 		m := mockPlayerManager{}
 
 		tests := []struct {
-			ingressPlayer networking.IngressPlayer
-			status        int
-			errMsg        string
+			req    network.PlayerUpdateRequest
+			status int
+			errMsg string
 		}{
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty player name",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: player name exceeds maximum length",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -436,7 +440,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: empty player description",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -444,7 +448,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: player description exceeds maximum length",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					HomeID:      "bad owner id",
@@ -453,7 +457,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: invalid homeID: 'bad owner id'",
 			},
 			{
-				ingressPlayer: networking.IngressPlayer{
+				req: network.PlayerUpdateRequest{
 					Name:        "name",
 					Description: "description",
 					HomeID:      uuid.New().String(),
@@ -465,11 +469,11 @@ func TestPlayerUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.ingressPlayer)
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			playerID := uuid.New()
-			route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+			route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 			w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -482,15 +486,15 @@ func TestPlayerUpdate(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			playerID = arcade.PlayerID(uuid.New())
-			homeID   = arcade.RoomID(uuid.New())
-			locID    = arcade.RoomID(uuid.New())
+			playerID = assets.PlayerID(uuid.New())
+			homeID   = assets.RoomID(uuid.New())
+			locID    = assets.RoomID(uuid.New())
 		)
 
 		m := mockPlayerManager{
-			t:              t,
-			updatePlayerID: playerID,
-			updatePlayerReq: arcade.IngressPlayer{
+			t:        t,
+			updateID: playerID,
+			updateReq: assets.PlayerUpdateRequest{
 				Name:        name,
 				Description: desc,
 				HomeID:      homeID,
@@ -499,16 +503,16 @@ func TestPlayerUpdate(t *testing.T) {
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		ingressPlayer := networking.IngressPlayer{
+		playerReq := network.PlayerUpdateRequest{
 			Name:        name,
 			Description: desc,
 			HomeID:      homeID.String(),
 			LocationID:  locID.String(),
 		}
-		body, err := json.Marshal(ingressPlayer)
+		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -520,23 +524,23 @@ func TestPlayerUpdate(t *testing.T) {
 			desc = "description"
 		)
 		var (
-			playerID = arcade.PlayerID(uuid.New())
-			homeID   = arcade.RoomID(uuid.New())
-			locID    = arcade.RoomID(uuid.New())
-			created  = arcade.Timestamp{Time: time.Now()}
-			updated  = arcade.Timestamp{Time: time.Now()}
+			playerID = assets.PlayerID(uuid.New())
+			homeID   = assets.RoomID(uuid.New())
+			locID    = assets.RoomID(uuid.New())
+			created  = assets.Timestamp{Time: time.Now()}
+			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockPlayerManager{
-			t:              t,
-			updatePlayerID: playerID,
-			updatePlayerReq: arcade.IngressPlayer{
+			t:        t,
+			updateID: playerID,
+			updateReq: assets.PlayerUpdateRequest{
 				Name:        name,
 				Description: desc,
 				HomeID:      homeID,
 				LocationID:  locID,
 			},
-			updatePlayer: &arcade.Player{
+			updatePlayer: &assets.Player{
 				ID:          playerID,
 				Name:        name,
 				Description: desc,
@@ -547,16 +551,16 @@ func TestPlayerUpdate(t *testing.T) {
 			},
 		}
 
-		ingressPlayer := networking.IngressPlayer{
+		playerReq := network.PlayerUpdateRequest{
 			Name:        name,
 			Description: desc,
 			HomeID:      homeID.String(),
 			LocationID:  locID.String(),
 		}
-		body, err := json.Marshal(ingressPlayer)
+		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 
@@ -567,10 +571,10 @@ func TestPlayerUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var playerResp networking.EgressPlayer
+		var playerResp network.PlayerResponse
 		assert.Nil(t, json.Unmarshal(respBody, &playerResp))
 
-		assert.Compare(t, playerResp, networking.EgressPlayer{Player: networking.Player{
+		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -583,25 +587,25 @@ func TestPlayerUpdate(t *testing.T) {
 }
 
 func TestPlayerRemove(t *testing.T) {
-	playerID := arcade.PlayerID(uuid.New())
+	playerID := assets.PlayerID(uuid.New())
 
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid playerID, not a well formed uuid: 'bad_playerID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
 	t.Run("player manager remove eailure", func(t *testing.T) {
 		m := mockPlayerManager{
-			t:              t,
-			removePlayerID: playerID,
-			removeErr:      fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
+			t:         t,
+			removeID:  playerID,
+			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -609,11 +613,11 @@ func TestPlayerRemove(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		m := mockPlayerManager{
-			t:              t,
-			removePlayerID: playerID,
+			t:        t,
+			removeID: playerID,
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
 
@@ -622,56 +626,88 @@ func TestPlayerRemove(t *testing.T) {
 	})
 }
 
+// helper
+
+func invokePlayersEndpoint(t *testing.T, m mockPlayerManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	if len(query)%2 != 0 {
+		t.Fatal("query param problem, must be divible by 2")
+	}
+
+	var b io.Reader
+	if body != nil {
+		b = bytes.NewBuffer(body)
+	}
+
+	router := mux.NewRouter()
+	s := server.PlayersService{Manager: m}
+	s.Register(router)
+
+	r := httptest.NewRequest(method, target, b)
+	w := httptest.NewRecorder()
+
+	q := r.URL.Query()
+	for i := 0; i < len(query); i += 2 {
+		q.Add(query[i], query[i+1])
+	}
+	r.URL.RawQuery = q.Encode()
+
+	router.ServeHTTP(w, r)
+
+	return w
+}
+
 // mockPlayerManager
 
 type (
 	mockPlayerManager struct {
 		t *testing.T
 
-		filter  arcade.PlayersFilter
-		list    []*arcade.Player
+		filter  assets.PlayersFilter
+		list    []*assets.Player
 		listErr error
 
-		getPlayerID arcade.PlayerID
-		getPlayer   *arcade.Player
-		getErr      error
+		getID     assets.PlayerID
+		getPlayer *assets.Player
+		getErr    error
 
-		createPlayerReq arcade.IngressPlayer
-		createPlayer    *arcade.Player
-		createErr       error
+		createReq    assets.PlayerCreateRequest
+		createPlayer *assets.Player
+		createErr    error
 
-		updatePlayerID  arcade.PlayerID
-		updatePlayerReq arcade.IngressPlayer
-		updatePlayer    *arcade.Player
-		updateErr       error
+		updateID     assets.PlayerID
+		updateReq    assets.PlayerUpdateRequest
+		updatePlayer *assets.Player
+		updateErr    error
 
-		removePlayerID arcade.PlayerID
-		removeErr      error
+		removeID  assets.PlayerID
+		removeErr error
 	}
 )
 
-func (m mockPlayerManager) List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error) {
+func (m mockPlayerManager) List(ctx context.Context, filter assets.PlayersFilter) ([]*assets.Player, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }
 
-func (m mockPlayerManager) Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error) {
-	assert.Compare(m.t, playerID, m.getPlayerID)
+func (m mockPlayerManager) Get(ctx context.Context, id assets.PlayerID) (*assets.Player, error) {
+	assert.Compare(m.t, id, m.getID)
 	return m.getPlayer, m.getErr
 }
 
-func (m mockPlayerManager) Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
-	assert.Compare(m.t, ingressPlayer, m.createPlayerReq)
+func (m mockPlayerManager) Create(ctx context.Context, req assets.PlayerCreateRequest) (*assets.Player, error) {
+	assert.Compare(m.t, req, m.createReq)
 	return m.createPlayer, m.createErr
 }
 
-func (m mockPlayerManager) Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
-	assert.Compare(m.t, playerID, m.updatePlayerID)
-	assert.Compare(m.t, ingressPlayer, m.updatePlayerReq)
+func (m mockPlayerManager) Update(ctx context.Context, id assets.PlayerID, req assets.PlayerUpdateRequest) (*assets.Player, error) {
+	assert.Compare(m.t, id, m.updateID)
+	assert.Compare(m.t, req, m.updateReq)
 	return m.updatePlayer, m.updateErr
 }
 
-func (m mockPlayerManager) Remove(ctx context.Context, playerID arcade.PlayerID) error {
-	assert.Compare(m.t, playerID, m.removePlayerID)
+func (m mockPlayerManager) Remove(ctx context.Context, id assets.PlayerID) error {
+	assert.Compare(m.t, id, m.removeID)
 	return m.removeErr
 }

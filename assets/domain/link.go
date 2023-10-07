@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package domain // import "arcadium.dev/domain"
+package domain // import "arcadium.dev/arcade/assets/domain"
 
 import (
 	"context"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
 )
 
 type (
@@ -28,35 +28,35 @@ type (
 
 	// LinkStorage defines the interface to manage the persistent storage of links.
 	LinkStorage interface {
-		List(ctx context.Context, filter arcade.LinksFilter) ([]*arcade.Link, error)
-		Get(ctx context.Context, linkID arcade.LinkID) (*arcade.Link, error)
-		Create(ctx context.Context, ingressLink arcade.IngressLink) (*arcade.Link, error)
-		Update(ctx context.Context, linkID arcade.LinkID, ingressLink arcade.IngressLink) (*arcade.Link, error)
-		Remove(ctx context.Context, linkID arcade.LinkID) error
+		List(context.Context, assets.LinksFilter) ([]*assets.Link, error)
+		Get(context.Context, assets.LinkID) (*assets.Link, error)
+		Create(context.Context, assets.LinkCreateRequest) (*assets.Link, error)
+		Update(context.Context, assets.LinkID, assets.LinkUpdateRequest) (*assets.Link, error)
+		Remove(context.Context, assets.LinkID) error
 	}
 )
 
 // List returns a slice of links based on the value of the filter.
-func (m LinkManager) List(ctx context.Context, filter arcade.LinksFilter) ([]*arcade.Link, error) {
+func (m LinkManager) List(ctx context.Context, filter assets.LinksFilter) ([]*assets.Link, error) {
 	return m.Storage.List(ctx, filter)
 }
 
 // Get returns a single link given the linkID.
-func (m LinkManager) Get(ctx context.Context, linkID arcade.LinkID) (*arcade.Link, error) {
-	return m.Storage.Get(ctx, linkID)
+func (m LinkManager) Get(ctx context.Context, id assets.LinkID) (*assets.Link, error) {
+	return m.Storage.Get(ctx, id)
 }
 
 // Create creates a new link in persistent storage.
-func (m LinkManager) Create(ctx context.Context, ingressLink arcade.IngressLink) (*arcade.Link, error) {
-	return m.Storage.Create(ctx, ingressLink)
+func (m LinkManager) Create(ctx context.Context, req assets.LinkCreateRequest) (*assets.Link, error) {
+	return m.Storage.Create(ctx, req)
 }
 
 // Update replaces the link in persistent storage.
-func (m LinkManager) Update(ctx context.Context, linkID arcade.LinkID, ingressLink arcade.IngressLink) (*arcade.Link, error) {
-	return m.Storage.Update(ctx, linkID, ingressLink)
+func (m LinkManager) Update(ctx context.Context, id assets.LinkID, req assets.LinkUpdateRequest) (*assets.Link, error) {
+	return m.Storage.Update(ctx, id, req)
 }
 
 // Remove deletes the given link, based on the given linkID, from persistent storage.
-func (m LinkManager) Remove(ctx context.Context, linkID arcade.LinkID) error {
-	return m.Storage.Remove(ctx, linkID)
+func (m LinkManager) Remove(ctx context.Context, id assets.LinkID) error {
+	return m.Storage.Remove(ctx, id)
 }

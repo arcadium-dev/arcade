@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package domain // import "arcadium.dev/domain"
+package domain // import "arcadium.dev/arcade/assets/domain"
 
 import (
 	"context"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
 )
 
 type (
@@ -28,35 +28,35 @@ type (
 
 	// PlayerStorage defines the interface to manage the persistent storage of items.
 	PlayerStorage interface {
-		List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error)
-		Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error)
-		Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
-		Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
-		Remove(ctx context.Context, playerID arcade.PlayerID) error
+		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
+		Get(context.Context, assets.PlayerID) (*assets.Player, error)
+		Create(context.Context, assets.PlayerCreateRequest) (*assets.Player, error)
+		Update(context.Context, assets.PlayerID, assets.PlayerUpdateRequest) (*assets.Player, error)
+		Remove(context.Context, assets.PlayerID) error
 	}
 )
 
 // List returns a slice of players based on the value of the filter.
-func (m PlayerManager) List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error) {
+func (m PlayerManager) List(ctx context.Context, filter assets.PlayersFilter) ([]*assets.Player, error) {
 	return m.Storage.List(ctx, filter)
 }
 
 // Get returns a single player given the playerID.
-func (m PlayerManager) Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error) {
-	return m.Storage.Get(ctx, playerID)
+func (m PlayerManager) Get(ctx context.Context, id assets.PlayerID) (*assets.Player, error) {
+	return m.Storage.Get(ctx, id)
 }
 
 // Create creates a new player in persistent storage.
-func (m PlayerManager) Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
-	return m.Storage.Create(ctx, ingressPlayer)
+func (m PlayerManager) Create(ctx context.Context, req assets.PlayerCreateRequest) (*assets.Player, error) {
+	return m.Storage.Create(ctx, req)
 }
 
 // Update replaces the player in persistent storage.
-func (m PlayerManager) Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error) {
-	return m.Storage.Update(ctx, playerID, ingressPlayer)
+func (m PlayerManager) Update(ctx context.Context, id assets.PlayerID, req assets.PlayerUpdateRequest) (*assets.Player, error) {
+	return m.Storage.Update(ctx, id, req)
 }
 
 // Remove deletes the given player, based on the given playerID, from persistent storage.
-func (m PlayerManager) Remove(ctx context.Context, playerID arcade.PlayerID) error {
-	return m.Storage.Remove(ctx, playerID)
+func (m PlayerManager) Remove(ctx context.Context, id assets.PlayerID) error {
+	return m.Storage.Remove(ctx, id)
 }

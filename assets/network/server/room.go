@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package networking // import "arcadium.dev/networking"
+package server // import "arcadium.dev/arcade/assets/network/server"
 
 import (
 	"context"
@@ -28,7 +28,8 @@ import (
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
+	"arcadium.dev/arcade/assets/network"
 )
 
 const (
@@ -43,85 +44,11 @@ type (
 
 	// RoomManager defines the expected behavior of the room manager in the domain layer.
 	RoomManager interface {
-		List(ctx context.Context, filter arcade.RoomsFilter) ([]*arcade.Room, error)
-		Get(ctx context.Context, roomID arcade.RoomID) (*arcade.Room, error)
-		Create(ctx context.Context, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
-		Update(ctx context.Context, roomID arcade.RoomID, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
-		Remove(ctx context.Context, roomID arcade.RoomID) error
-	}
-
-	// IngressRoom is used to request a room be created or updated.
-	//
-	// swagger:parameters RoomCreate RoomUpdate
-	IngressRoom struct {
-		// Name is the name of the room.
-		// in: body
-		// minimum length: 1
-		// maximum length: 256
-		Name string `json:"name"`
-
-		// Description is the description of the room.
-		// in: body
-		// minimum length: 1
-		// maximum length: 4096
-		Description string `json:"description"`
-
-		// OwnerID is the ID of the owner of the room.
-		// in: body
-		// minimum length: 1
-		// maximum length: 4096
-		OwnerID string `json:"ownerID"`
-
-		// ParentID is the ID of the parent of the room.
-		// in: body
-		ParentID string `json:"parentID"`
-	}
-
-	// EgressRoom returns a room.
-	EgressRoom struct {
-		// Room returns the information about a room.
-		// in: body
-		Room Room `json:"room"`
-	}
-
-	// RoomsResponse returns multiple rooms.
-	EgressRooms struct {
-		// Rooms returns the information about multiple rooms.
-		// in: body
-		Rooms []Room `json:"rooms"`
-	}
-
-	// Room holds a room's information, and is sent in a response.
-	//
-	// swagger:parameter
-	Room struct {
-		// ID is the room identifier.
-		// in: body
-		ID string `json:"id"`
-
-		// Name is the room name.
-		// in: body
-		Name string `json:"name"`
-
-		// Description is the room description.
-		// in: body
-		Description string `json:"description"`
-
-		// OwnerID is the PlayerID of the room owner.
-		// in:body
-		OwnerID string `json:"ownerID"`
-
-		// ParentID is the RoomID of the room's parent.
-		// in: body
-		ParentID string `json:"parentID"`
-
-		// Created is the time of the room's creation.
-		// in: body
-		Created arcade.Timestamp `json:"created"`
-
-		// Updated is the time the room was last updated.
-		// in: body
-		Updated arcade.Timestamp `json:"updated"`
+		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
+		Get(context.Context, assets.RoomID) (*assets.Room, error)
+		Create(context.Context, assets.RoomCreateRequest) (*assets.Room, error)
+		Update(context.Context, assets.RoomID, assets.RoomUpdateRequest) (*assets.Room, error)
+		Remove(context.Context, assets.RoomID) error
 	}
 )
 
@@ -129,10 +56,10 @@ type (
 func (s RoomsService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1RoomsRoute).Subrouter()
 	r.HandleFunc("", s.List).Methods(http.MethodGet)
-	r.HandleFunc("/{roomID}", s.Get).Methods(http.MethodGet)
+	r.HandleFunc("/{id}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)
-	r.HandleFunc("/{roomID}", s.Update).Methods(http.MethodPut)
-	r.HandleFunc("/{roomID}", s.Remove).Methods(http.MethodDelete)
+	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
+	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
 }
 
 // Name returns the name of the service.
@@ -145,7 +72,7 @@ func (RoomsService) Shutdown() {}
 
 // List handles a request to retrieve multiple rooms.
 func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/rooms List
+	// swagger:route GET /v1/rooms RoomList
 	//
 	// List returns a list of rooms.
 	//
@@ -182,8 +109,8 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Translate from arcade rooms, to local rooms.
-	var rooms []Room
+	// Translate from assets rooms, to network rooms.
+	var rooms []network.Room
 	for _, aRoom := range aRooms {
 		rooms = append(rooms, TranslateRoom(aRoom))
 	}
@@ -192,7 +119,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressRooms{Rooms: rooms})
+	err = json.NewEncoder(w).Encode(network.RoomsResponse{Rooms: rooms})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -203,7 +130,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles a request to retrieve a room.
 func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/rooms/{roomID} Get
+	// swagger:route GET /v1/rooms/{roomID} RoomGet
 	//
 	// Get returns a room.
 	//
@@ -223,16 +150,16 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse the roomID from the uri.
-	roomID := mux.Vars(r)["roomID"]
-	aRoomID, err := uuid.Parse(roomID)
+	id := mux.Vars(r)["id"]
+	roomID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid roomID, not a well formed uuid: '%s'", errors.ErrBadRequest, roomID)
+		err := fmt.Errorf("%w: invalid room id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Request the room from the room manager.
-	aRoom, err := s.Manager.Get(ctx, arcade.RoomID(aRoomID))
+	room, err := s.Manager.Get(ctx, assets.RoomID(roomID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -242,7 +169,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressRoom{Room: TranslateRoom(aRoom)})
+	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -253,7 +180,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 
 // Create handles a request to create a room.
 func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
-	// swagger:route POST /v1/rooms
+	// swagger:route POST /v1/rooms RoomCreate
 	//
 	// Create will create a new room based on the room request in the body of the
 	// request.
@@ -286,8 +213,8 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ingressRoom IngressRoom
-	err = json.Unmarshal(body, &ingressRoom)
+	var createReq network.RoomCreateRequest
+	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -296,13 +223,13 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the room request to the room manager.
-	aIngressRoom, err := TranslateIngressRoom(ingressRoom)
+	req, err := TranslateRoomRequest(createReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	aRoom, err := s.Manager.Create(ctx, aIngressRoom)
+	room, err := s.Manager.Create(ctx, req)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -312,7 +239,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressRoom{Room: TranslateRoom(aRoom)})
+	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -323,7 +250,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update handles a request to update a room.
 func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
-	// swagger:route PUT /v1/rooms/{roomID}
+	// swagger:route PUT /v1/rooms/{id} RoomUpdate
 	//
 	// Update will update room based on the roomID and the room\ request in the
 	// body of the request.
@@ -346,14 +273,13 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Grab the roomID from the uri.
-	roomID := mux.Vars(r)["roomID"]
-	u, err := uuid.Parse(roomID)
+	id := mux.Vars(r)["id"]
+	roomID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid roomID, not a well formed uuid: '%s'", errors.ErrBadRequest, roomID)
+		err := fmt.Errorf("%w: invalid room id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
-	aRoomID := arcade.RoomID(u)
 
 	// Process the request body.
 	body, err := io.ReadAll(r.Body)
@@ -372,9 +298,9 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Populate the ingress room from the body.
-	var ingressRoom IngressRoom
-	err = json.Unmarshal(body, &ingressRoom)
+	// Populate the network room from the body.
+	var updateReq network.RoomUpdateRequest
+	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -383,14 +309,14 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the room request.
-	aIngressRoom, err := TranslateIngressRoom(ingressRoom)
+	req, err := TranslateRoomRequest(updateReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the room to the room manager.
-	aRoom, err := s.Manager.Update(ctx, aRoomID, aIngressRoom)
+	room, err := s.Manager.Update(ctx, assets.RoomID(roomID), req)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -399,7 +325,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressRoom{Room: TranslateRoom(aRoom)})
+	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -410,7 +336,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 
 // Remove handles a request to remove a room.
 func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
-	// swagger:route DELETE /v1/rooms/{roomID} Get
+	// swagger:route DELETE /v1/rooms/{id} RoomRemove
 	//
 	// Remove deletes the room.
 	//
@@ -432,50 +358,49 @@ func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse the roomID from the uri.
-	roomID := mux.Vars(r)["roomID"]
-	aRoomID, err := uuid.Parse(roomID)
+	id := mux.Vars(r)["id"]
+	roomID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid roomID, not a well formed uuid: '%s'", errors.ErrBadRequest, roomID)
+		err := fmt.Errorf("%w: invalid room id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the roomID to the room manager for removal.
-	err = s.Manager.Remove(ctx, arcade.RoomID(aRoomID))
+	err = s.Manager.Remove(ctx, assets.RoomID(roomID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 }
 
-// NewRoomsFilter creates a RoomsFilter from the the given request's URL
-// query parameters
-func NewRoomsFilter(r *http.Request) (arcade.RoomsFilter, error) {
+// NewRoomsFilter creates an assets rooms filter from the given request's URL query parameters.
+func NewRoomsFilter(r *http.Request) (assets.RoomsFilter, error) {
 	q := r.URL.Query()
-	filter := arcade.RoomsFilter{
-		Limit: arcade.DefaultRoomsFilterLimit,
+	filter := assets.RoomsFilter{
+		Limit: assets.DefaultRoomsFilterLimit,
 	}
 
 	if values := q["ownerID"]; len(values) > 0 {
 		ownerID, err := uuid.Parse(values[0])
 		if err != nil {
-			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.OwnerID = arcade.PlayerID(ownerID)
+		filter.OwnerID = assets.PlayerID(ownerID)
 	}
 
 	if values := q["parentID"]; len(values) > 0 {
 		parentID, err := uuid.Parse(values[0])
 		if err != nil {
-			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.ParentID = arcade.RoomID(parentID)
+		filter.ParentID = assets.RoomID(parentID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > arcade.MaxRoomsFilterLimit {
-			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxRoomsFilterLimit {
+			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}
@@ -483,7 +408,7 @@ func NewRoomsFilter(r *http.Request) (arcade.RoomsFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return arcade.RoomsFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}
@@ -491,48 +416,48 @@ func NewRoomsFilter(r *http.Request) (arcade.RoomsFilter, error) {
 	return filter, nil
 }
 
-// IngressRoomtranslates the room request from the http request to an arcade.RoomRequest.
-func TranslateIngressRoom(l IngressRoom) (arcade.IngressRoom, error) {
-	empty := arcade.IngressRoom{}
+// TranslateRoomRequest translates a network room request to an assets room request.
+func TranslateRoomRequest(r network.RoomRequest) (assets.RoomRequest, error) {
+	empty := assets.RoomRequest{}
 
-	if l.Name == "" {
+	if r.Name == "" {
 		return empty, fmt.Errorf("%w: empty room name", errors.ErrBadRequest)
 	}
-	if len(l.Name) > arcade.MaxRoomNameLen {
+	if len(r.Name) > assets.MaxRoomNameLen {
 		return empty, fmt.Errorf("%w: room name exceeds maximum length", errors.ErrBadRequest)
 	}
-	if l.Description == "" {
+	if r.Description == "" {
 		return empty, fmt.Errorf("%w: empty room description", errors.ErrBadRequest)
 	}
-	if len(l.Description) > arcade.MaxRoomDescriptionLen {
+	if len(r.Description) > assets.MaxRoomDescriptionLen {
 		return empty, fmt.Errorf("%w: room description exceeds maximum length", errors.ErrBadRequest)
 	}
-	ownerID, err := uuid.Parse(l.OwnerID)
+	ownerID, err := uuid.Parse(r.OwnerID)
 	if err != nil {
-		return empty, fmt.Errorf("%w: invalid ownerID: '%s'", errors.ErrBadRequest, l.OwnerID)
+		return empty, fmt.Errorf("%w: invalid ownerID: '%s'", errors.ErrBadRequest, r.OwnerID)
 	}
-	parentID, err := uuid.Parse(l.ParentID)
+	parentID, err := uuid.Parse(r.ParentID)
 	if err != nil {
-		return empty, fmt.Errorf("%w: invalid parentID: '%s', %s", errors.ErrBadRequest, l.ParentID, err)
+		return empty, fmt.Errorf("%w: invalid parentID: '%s', %s", errors.ErrBadRequest, r.ParentID, err)
 	}
 
-	return arcade.IngressRoom{
-		Name:        l.Name,
-		Description: l.Description,
-		OwnerID:     arcade.PlayerID(ownerID),
-		ParentID:    arcade.RoomID(parentID),
+	return assets.RoomRequest{
+		Name:        r.Name,
+		Description: r.Description,
+		OwnerID:     assets.PlayerID(ownerID),
+		ParentID:    assets.RoomID(parentID),
 	}, nil
 }
 
-// TranslateRoom translates an arcade room to a local room.
-func TranslateRoom(l *arcade.Room) Room {
-	return Room{
-		ID:          l.ID.String(),
-		Name:        l.Name,
-		Description: l.Description,
-		OwnerID:     l.OwnerID.String(),
-		ParentID:    l.ParentID.String(),
-		Created:     l.Created,
-		Updated:     l.Updated,
+// TranslateRoom translates an assets room to a network room.
+func TranslateRoom(r *assets.Room) network.Room {
+	return network.Room{
+		ID:          r.ID.String(),
+		Name:        r.Name,
+		Description: r.Description,
+		OwnerID:     r.OwnerID.String(),
+		ParentID:    r.ParentID.String(),
+		Created:     r.Created,
+		Updated:     r.Updated,
 	}
 }

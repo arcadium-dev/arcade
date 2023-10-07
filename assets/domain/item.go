@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package domain // import "arcadium.dev/domain"
+package domain // import "arcadium.dev/arcade/assets/domain"
 
 import (
 	"context"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
 )
 
 type (
@@ -28,35 +28,35 @@ type (
 
 	// ItemStorage defines the interface to manage the persistent storage of items.
 	ItemStorage interface {
-		List(ctx context.Context, filter arcade.ItemsFilter) ([]*arcade.Item, error)
-		Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Item, error)
-		Create(ctx context.Context, ingressItem arcade.IngressItem) (*arcade.Item, error)
-		Update(ctx context.Context, itemID arcade.ItemID, ingressItem arcade.IngressItem) (*arcade.Item, error)
-		Remove(ctx context.Context, itemID arcade.ItemID) error
+		List(context.Context, assets.ItemsFilter) ([]*assets.Item, error)
+		Get(context.Context, assets.ItemID) (*assets.Item, error)
+		Create(context.Context, assets.ItemCreateRequest) (*assets.Item, error)
+		Update(context.Context, assets.ItemID, assets.ItemUpdateRequest) (*assets.Item, error)
+		Remove(context.Context, assets.ItemID) error
 	}
 )
 
 // List returns a slice of items based on the value of the filter.
-func (m ItemManager) List(ctx context.Context, filter arcade.ItemsFilter) ([]*arcade.Item, error) {
+func (m ItemManager) List(ctx context.Context, filter assets.ItemsFilter) ([]*assets.Item, error) {
 	return m.Storage.List(ctx, filter)
 }
 
 // Get returns a single item given the itemID.
-func (m ItemManager) Get(ctx context.Context, itemID arcade.ItemID) (*arcade.Item, error) {
-	return m.Storage.Get(ctx, itemID)
+func (m ItemManager) Get(ctx context.Context, id assets.ItemID) (*assets.Item, error) {
+	return m.Storage.Get(ctx, id)
 }
 
 // Create creates a new item in persistent storage.
-func (m ItemManager) Create(ctx context.Context, itemReq arcade.IngressItem) (*arcade.Item, error) {
-	return m.Storage.Create(ctx, itemReq)
+func (m ItemManager) Create(ctx context.Context, req assets.ItemCreateRequest) (*assets.Item, error) {
+	return m.Storage.Create(ctx, req)
 }
 
 // Update replaces the item in persistent storage.
-func (m ItemManager) Update(ctx context.Context, itemID arcade.ItemID, itemReq arcade.IngressItem) (*arcade.Item, error) {
-	return m.Storage.Update(ctx, itemID, itemReq)
+func (m ItemManager) Update(ctx context.Context, id assets.ItemID, req assets.ItemUpdateRequest) (*assets.Item, error) {
+	return m.Storage.Update(ctx, id, req)
 }
 
 // Remove deletes the given item, based on the given itemID, from persistent storage.
-func (m ItemManager) Remove(ctx context.Context, itemID arcade.ItemID) error {
-	return m.Storage.Remove(ctx, itemID)
+func (m ItemManager) Remove(ctx context.Context, id assets.ItemID) error {
+	return m.Storage.Remove(ctx, id)
 }

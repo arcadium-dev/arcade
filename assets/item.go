@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package arcade // import "arcadium.dev/arcade"
+package assets // import "arcadium.dev/arcade/assets"
 
 import (
 	"github.com/google/uuid"
@@ -64,8 +64,14 @@ type (
 		Limit uint
 	}
 
-	// IngressItem is used to request an item be created or updated.
-	IngressItem struct {
+	// ItemCreateRequest is used to request an item to be created.
+	ItemCreateRequest = ItemRequest
+
+	// ItemCreateRequest is used to request an item to be updated.
+	ItemUpdateRequest = ItemRequest
+
+	// ItemRequest holds item information.
+	ItemRequest struct {
 		Name        string
 		Description string
 		OwnerID     PlayerID

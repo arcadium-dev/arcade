@@ -1,26 +1,30 @@
-package networking_test
+package server_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/errors"
 
-	"arcadium.dev/arcade"
-	"arcadium.dev/arcade/networking"
+	"arcadium.dev/arcade/assets"
+	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/server"
 )
 
 func TestLinksList(t *testing.T) {
-	route := networking.V1LinksRoute
+	route := server.V1LinksRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -50,8 +54,8 @@ func TestLinksList(t *testing.T) {
 	t.Run("link manager list failure", func(t *testing.T) {
 		m := mockLinkManager{
 			t: t,
-			filter: arcade.LinksFilter{
-				LocationID: arcade.RoomID(id),
+			filter: assets.LinksFilter{
+				LocationID: assets.RoomID(id),
 				Offset:     10,
 				Limit:      10,
 			},
@@ -68,21 +72,21 @@ func TestLinksList(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			linkID        = arcade.LinkID(uuid.New())
-			ownerID       = arcade.PlayerID(uuid.New())
-			locationID    = arcade.RoomID(uuid.New())
-			destinationID = arcade.RoomID(uuid.New())
-			created       = arcade.Timestamp{Time: time.Now()}
-			updated       = arcade.Timestamp{Time: time.Now()}
+			linkID        = assets.LinkID(uuid.New())
+			ownerID       = assets.PlayerID(uuid.New())
+			locationID    = assets.RoomID(uuid.New())
+			destinationID = assets.RoomID(uuid.New())
+			created       = assets.Timestamp{Time: time.Now()}
+			updated       = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkManager{
 			t: t,
-			filter: arcade.LinksFilter{
+			filter: assets.LinksFilter{
 				Offset: 25,
 				Limit:  100,
 			},
-			list: []*arcade.Link{
+			list: []*assets.Link{
 				{
 					ID:            linkID,
 					Name:          name,
@@ -105,10 +109,10 @@ func TestLinksList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressLinks networking.EgressLinks
+		var egressLinks network.LinksResponse
 		assert.Nil(t, json.Unmarshal(body, &egressLinks))
 
-		assert.Compare(t, egressLinks, networking.EgressLinks{Links: []networking.Link{
+		assert.Compare(t, egressLinks, network.LinksResponse{Links: []network.Link{
 			{
 				ID:            linkID.String(),
 				Name:          name,
@@ -124,25 +128,25 @@ func TestLinksList(t *testing.T) {
 }
 
 func TestLinkGet(t *testing.T) {
-	linkID := arcade.LinkID(uuid.New())
+	linkID := assets.LinkID(uuid.New())
 
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid linkID, not a well formed uuid: 'bad_linkID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
 	t.Run("link manager get failure", func(t *testing.T) {
 		m := mockLinkManager{
-			t:         t,
-			getLinkID: linkID,
-			getErr:    fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
+			t:      t,
+			getID:  linkID,
+			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -154,17 +158,17 @@ func TestLinkGet(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			ownerID       = arcade.PlayerID(uuid.New())
-			locationID    = arcade.RoomID(ownerID)
-			destinationID = arcade.RoomID(ownerID)
-			created       = arcade.Timestamp{Time: time.Now()}
-			updated       = arcade.Timestamp{Time: time.Now()}
+			ownerID       = assets.PlayerID(uuid.New())
+			locationID    = assets.RoomID(ownerID)
+			destinationID = assets.RoomID(ownerID)
+			created       = assets.Timestamp{Time: time.Now()}
+			updated       = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkManager{
-			t:         t,
-			getLinkID: linkID,
-			getLink: &arcade.Link{
+			t:     t,
+			getID: linkID,
+			getLink: &assets.Link{
 				ID:            linkID,
 				Name:          name,
 				Description:   desc,
@@ -176,7 +180,7 @@ func TestLinkGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -187,10 +191,10 @@ func TestLinkGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressLink networking.EgressLink
+		var egressLink network.LinkResponse
 		assert.Nil(t, json.Unmarshal(body, &egressLink))
 
-		assert.Compare(t, egressLink, networking.EgressLink{Link: networking.Link{
+		assert.Compare(t, egressLink, network.LinkResponse{Link: network.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -204,7 +208,7 @@ func TestLinkGet(t *testing.T) {
 }
 
 func TestLinkCreate(t *testing.T) {
-	route := networking.V1LinksRoute
+	route := server.V1LinksRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockLinkManager{}
@@ -223,30 +227,30 @@ func TestLinkCreate(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
-	t.Run("ingress link req failure", func(t *testing.T) {
+	t.Run("create link req failure", func(t *testing.T) {
 		m := mockLinkManager{}
 
 		tests := []struct {
-			ingressLink networking.IngressLink
-			status      int
-			errMsg      string
+			req    network.LinkCreateRequest
+			status int
+			errMsg string
 		}{
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty link name",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: link name exceeds maximum length",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -254,7 +258,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: empty link description",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -262,7 +266,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: link description exceeds maximum length",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -271,7 +275,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -281,7 +285,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: invalid locationID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkCreateRequest{
 					Name:          "name",
 					Description:   "description",
 					OwnerID:       uuid.New().String(),
@@ -294,7 +298,7 @@ func TestLinkCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.ingressLink)
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			w := invokeLinksEndpoint(t, m, http.MethodPost, route, body)
@@ -304,14 +308,14 @@ func TestLinkCreate(t *testing.T) {
 
 	t.Run("link manager create failure", func(t *testing.T) {
 		var (
-			ownerID = arcade.PlayerID(uuid.New())
-			locID   = arcade.RoomID(uuid.New())
-			destID  = arcade.RoomID(uuid.New())
+			ownerID = assets.PlayerID(uuid.New())
+			locID   = assets.RoomID(uuid.New())
+			destID  = assets.RoomID(uuid.New())
 		)
 
 		m := mockLinkManager{
 			t: t,
-			createLinkReq: arcade.IngressLink{
+			createReq: assets.LinkCreateRequest{
 				Name:          "name",
 				Description:   "description",
 				OwnerID:       ownerID,
@@ -321,14 +325,14 @@ func TestLinkCreate(t *testing.T) {
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		ingressLink := networking.IngressLink{
+		createReq := network.LinkCreateRequest{
 			Name:          "name",
 			Description:   "description",
 			OwnerID:       ownerID.String(),
 			LocationID:    locID.String(),
 			DestinationID: destID.String(),
 		}
-		body, err := json.Marshal(ingressLink)
+		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
 
 		w := invokeLinksEndpoint(t, m, http.MethodPost, route, body)
@@ -341,24 +345,24 @@ func TestLinkCreate(t *testing.T) {
 			desc = "description"
 		)
 		var (
-			linkID  = arcade.LinkID(uuid.New())
-			ownerID = arcade.PlayerID(uuid.New())
-			locID   = arcade.RoomID(uuid.New())
-			destID  = arcade.RoomID(uuid.New())
-			created = arcade.Timestamp{Time: time.Now()}
-			updated = arcade.Timestamp{Time: time.Now()}
+			linkID  = assets.LinkID(uuid.New())
+			ownerID = assets.PlayerID(uuid.New())
+			locID   = assets.RoomID(uuid.New())
+			destID  = assets.RoomID(uuid.New())
+			created = assets.Timestamp{Time: time.Now()}
+			updated = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkManager{
 			t: t,
-			createLinkReq: arcade.IngressLink{
+			createReq: assets.LinkCreateRequest{
 				Name:          name,
 				Description:   desc,
 				OwnerID:       ownerID,
 				LocationID:    locID,
 				DestinationID: destID,
 			},
-			createLink: &arcade.Link{
+			createLink: &assets.Link{
 				ID:            linkID,
 				Name:          name,
 				Description:   desc,
@@ -370,14 +374,14 @@ func TestLinkCreate(t *testing.T) {
 			},
 		}
 
-		ingressLink := networking.IngressLink{
+		createReq := network.LinkCreateRequest{
 			Name:          name,
 			Description:   desc,
 			OwnerID:       ownerID.String(),
 			LocationID:    locID.String(),
 			DestinationID: destID.String(),
 		}
-		body, err := json.Marshal(ingressLink)
+		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
 
 		w := invokeLinksEndpoint(t, m, http.MethodPost, route, body)
@@ -389,10 +393,10 @@ func TestLinkCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var linkResp networking.EgressLink
+		var linkResp network.LinkResponse
 		assert.Nil(t, json.Unmarshal(respBody, &linkResp))
 
-		assert.Compare(t, linkResp, networking.EgressLink{Link: networking.Link{
+		assert.Compare(t, linkResp, network.LinkResponse{Link: network.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -409,17 +413,17 @@ func TestLinkUpdate(t *testing.T) {
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid linkID, not a well formed uuid: 'bad_linkID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockLinkManager{}
 
 		linkID := uuid.New()
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -432,36 +436,36 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkManager{}
 
 		linkID := uuid.New()
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
-	t.Run("ingress link req failure", func(t *testing.T) {
+	t.Run("update link req failure", func(t *testing.T) {
 		m := mockLinkManager{}
 
 		tests := []struct {
-			ingressLink networking.IngressLink
-			status      int
-			errMsg      string
+			req    network.LinkUpdateRequest
+			status int
+			errMsg string
 		}{
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty link name",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: link name exceeds maximum length",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -469,7 +473,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: empty link description",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -477,7 +481,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: link description exceeds maximum length",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -486,7 +490,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -496,7 +500,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: invalid locationID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				ingressLink: networking.IngressLink{
+				req: network.LinkUpdateRequest{
 					Name:          "name",
 					Description:   "description",
 					OwnerID:       uuid.New().String(),
@@ -509,11 +513,11 @@ func TestLinkUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.ingressLink)
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			linkID := uuid.New()
-			route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+			route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 			w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -526,16 +530,16 @@ func TestLinkUpdate(t *testing.T) {
 			desc = "desc"
 		)
 		var (
-			linkID  = arcade.LinkID(uuid.New())
-			ownerID = arcade.PlayerID(uuid.New())
-			locID   = arcade.RoomID(uuid.New())
-			destID  = arcade.RoomID(uuid.New())
+			linkID  = assets.LinkID(uuid.New())
+			ownerID = assets.PlayerID(uuid.New())
+			locID   = assets.RoomID(uuid.New())
+			destID  = assets.RoomID(uuid.New())
 		)
 
 		m := mockLinkManager{
-			t:            t,
-			updateLinkID: linkID,
-			updateLinkReq: arcade.IngressLink{
+			t:        t,
+			updateID: linkID,
+			updateReq: assets.LinkUpdateRequest{
 				Name:          name,
 				Description:   desc,
 				OwnerID:       ownerID,
@@ -545,17 +549,17 @@ func TestLinkUpdate(t *testing.T) {
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		ingressLink := networking.IngressLink{
+		updateReq := network.LinkUpdateRequest{
 			Name:          name,
 			Description:   desc,
 			OwnerID:       ownerID.String(),
 			LocationID:    locID.String(),
 			DestinationID: destID.String(),
 		}
-		body, err := json.Marshal(ingressLink)
+		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -567,25 +571,25 @@ func TestLinkUpdate(t *testing.T) {
 			desc = "description"
 		)
 		var (
-			linkID  = arcade.LinkID(uuid.New())
-			ownerID = arcade.PlayerID(uuid.New())
-			locID   = arcade.RoomID(uuid.New())
-			destID  = arcade.RoomID(uuid.New())
-			created = arcade.Timestamp{Time: time.Now()}
-			updated = arcade.Timestamp{Time: time.Now()}
+			linkID  = assets.LinkID(uuid.New())
+			ownerID = assets.PlayerID(uuid.New())
+			locID   = assets.RoomID(uuid.New())
+			destID  = assets.RoomID(uuid.New())
+			created = assets.Timestamp{Time: time.Now()}
+			updated = assets.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkManager{
-			t:            t,
-			updateLinkID: linkID,
-			updateLinkReq: arcade.IngressLink{
+			t:        t,
+			updateID: linkID,
+			updateReq: assets.LinkUpdateRequest{
 				Name:          name,
 				Description:   desc,
 				OwnerID:       ownerID,
 				LocationID:    locID,
 				DestinationID: destID,
 			},
-			updateLink: &arcade.Link{
+			updateLink: &assets.Link{
 				ID:            linkID,
 				Name:          name,
 				Description:   desc,
@@ -597,17 +601,17 @@ func TestLinkUpdate(t *testing.T) {
 			},
 		}
 
-		ingressLink := networking.IngressLink{
+		updateReq := network.LinkUpdateRequest{
 			Name:          name,
 			Description:   desc,
 			OwnerID:       ownerID.String(),
 			LocationID:    locID.String(),
 			DestinationID: destID.String(),
 		}
-		body, err := json.Marshal(ingressLink)
+		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 
@@ -618,10 +622,10 @@ func TestLinkUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var linkResp networking.EgressLink
+		var linkResp network.LinkResponse
 		assert.Nil(t, json.Unmarshal(respBody, &linkResp))
 
-		assert.Compare(t, linkResp, networking.EgressLink{Link: networking.Link{
+		assert.Compare(t, linkResp, network.LinkResponse{Link: network.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -635,15 +639,15 @@ func TestLinkUpdate(t *testing.T) {
 }
 
 func TestLinkRemove(t *testing.T) {
-	linkID := arcade.LinkID(uuid.New())
+	linkID := assets.LinkID(uuid.New())
 
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkManager{}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
-		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid linkID, not a well formed uuid: 'bad_linkID'")
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
 	t.Run("link manager remove eailure", func(t *testing.T) {
@@ -653,7 +657,7 @@ func TestLinkRemove(t *testing.T) {
 			removeErr:    fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -665,7 +669,7 @@ func TestLinkRemove(t *testing.T) {
 			removeLinkID: linkID,
 		}
 
-		route := fmt.Sprintf("%s/%s", networking.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
 
@@ -674,56 +678,88 @@ func TestLinkRemove(t *testing.T) {
 	})
 }
 
+// helper
+
+func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	if len(query)%2 != 0 {
+		t.Fatal("query param problem, must be divible by 2")
+	}
+
+	var b io.Reader
+	if body != nil {
+		b = bytes.NewBuffer(body)
+	}
+
+	router := mux.NewRouter()
+	s := server.LinksService{Manager: m}
+	s.Register(router)
+
+	r := httptest.NewRequest(method, target, b)
+	w := httptest.NewRecorder()
+
+	q := r.URL.Query()
+	for i := 0; i < len(query); i += 2 {
+		q.Add(query[i], query[i+1])
+	}
+	r.URL.RawQuery = q.Encode()
+
+	router.ServeHTTP(w, r)
+
+	return w
+}
+
 // mockLinkManager
 
 type (
 	mockLinkManager struct {
 		t *testing.T
 
-		filter  arcade.LinksFilter
-		list    []*arcade.Link
+		filter  assets.LinksFilter
+		list    []*assets.Link
 		listErr error
 
-		getLinkID arcade.LinkID
-		getLink   *arcade.Link
-		getErr    error
+		getID   assets.LinkID
+		getLink *assets.Link
+		getErr  error
 
-		createLinkReq arcade.IngressLink
-		createLink    *arcade.Link
-		createErr     error
+		createReq  assets.LinkCreateRequest
+		createLink *assets.Link
+		createErr  error
 
-		updateLinkID  arcade.LinkID
-		updateLinkReq arcade.IngressLink
-		updateLink    *arcade.Link
-		updateErr     error
+		updateID   assets.LinkID
+		updateReq  assets.LinkUpdateRequest
+		updateLink *assets.Link
+		updateErr  error
 
-		removeLinkID arcade.LinkID
+		removeLinkID assets.LinkID
 		removeErr    error
 	}
 )
 
-func (m mockLinkManager) List(ctx context.Context, filter arcade.LinksFilter) ([]*arcade.Link, error) {
+func (m mockLinkManager) List(ctx context.Context, filter assets.LinksFilter) ([]*assets.Link, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }
 
-func (m mockLinkManager) Get(ctx context.Context, linkID arcade.LinkID) (*arcade.Link, error) {
-	assert.Compare(m.t, linkID, m.getLinkID)
+func (m mockLinkManager) Get(ctx context.Context, id assets.LinkID) (*assets.Link, error) {
+	assert.Compare(m.t, id, m.getID)
 	return m.getLink, m.getErr
 }
 
-func (m mockLinkManager) Create(ctx context.Context, ingressLink arcade.IngressLink) (*arcade.Link, error) {
-	assert.Compare(m.t, ingressLink, m.createLinkReq)
+func (m mockLinkManager) Create(ctx context.Context, req assets.LinkCreateRequest) (*assets.Link, error) {
+	assert.Compare(m.t, req, m.createReq)
 	return m.createLink, m.createErr
 }
 
-func (m mockLinkManager) Update(ctx context.Context, linkID arcade.LinkID, ingressLink arcade.IngressLink) (*arcade.Link, error) {
-	assert.Compare(m.t, linkID, m.updateLinkID)
-	assert.Compare(m.t, ingressLink, m.updateLinkReq)
+func (m mockLinkManager) Update(ctx context.Context, id assets.LinkID, req assets.LinkUpdateRequest) (*assets.Link, error) {
+	assert.Compare(m.t, id, m.updateID)
+	assert.Compare(m.t, req, m.updateReq)
 	return m.updateLink, m.updateErr
 }
 
-func (m mockLinkManager) Remove(ctx context.Context, linkID arcade.LinkID) error {
-	assert.Compare(m.t, linkID, m.removeLinkID)
+func (m mockLinkManager) Remove(ctx context.Context, id assets.LinkID) error {
+	assert.Compare(m.t, id, m.removeLinkID)
 	return m.removeErr
 }

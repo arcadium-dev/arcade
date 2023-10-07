@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package arcade // import "arcadium.dev/arcade"
+package assets // import "arcadium.dev/arcade/assets"
 
 import (
 	"github.com/google/uuid"
@@ -64,8 +64,14 @@ type (
 		Limit uint
 	}
 
-	// IngressRoom is used to request a room be created or updated.
-	IngressRoom struct {
+	// RoomsCreateRequest is used to request an item to be created.
+	RoomCreateRequest = RoomRequest
+
+	// RoomsCreateRequest is used to request an item to be updated.
+	RoomUpdateRequest = RoomRequest
+
+	// RoomsRequest holds item information.
+	RoomRequest struct {
 		Name        string
 		Description string
 		OwnerID     PlayerID

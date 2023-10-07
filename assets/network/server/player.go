@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package networking // import "arcadium.dev/networking"
+package server // import "arcadium.dev/arcade/assets/network/server"
 
 import (
 	"context"
@@ -28,7 +28,8 @@ import (
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
+	"arcadium.dev/arcade/assets/network"
 )
 
 const (
@@ -43,85 +44,11 @@ type (
 
 	// PlayerManager defines the expected behavior of the player manager in the domain layer.
 	PlayerManager interface {
-		List(ctx context.Context, filter arcade.PlayersFilter) ([]*arcade.Player, error)
-		Get(ctx context.Context, playerID arcade.PlayerID) (*arcade.Player, error)
-		Create(ctx context.Context, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
-		Update(ctx context.Context, playerID arcade.PlayerID, ingressPlayer arcade.IngressPlayer) (*arcade.Player, error)
-		Remove(ctx context.Context, playerID arcade.PlayerID) error
-	}
-
-	// IngressPlayer is used to request a player be created or updated.
-	//
-	// swagger:parameters PlayerCreate PlayerUpdate
-	IngressPlayer struct {
-		// Name is the name of the player.
-		// in: body
-		// minimum length: 1
-		// maximum length: 256
-		Name string `json:"name"`
-
-		// Description is the description of the player.
-		// in: body
-		// minimum length: 1
-		// maximum length: 4096
-		Description string `json:"description"`
-
-		// HomeID is the ID of the home of the player.
-		// in: body
-		// minimum length: 1
-		// maximum length: 4096
-		HomeID string `json:"homeID"`
-
-		// LocationID is the ID of the location of the player.
-		// in: body
-		LocationID string `json:"locationID"`
-	}
-
-	// EgressPlayer returns a player.
-	EgressPlayer struct {
-		// Player returns the information about a player.
-		// in: body
-		Player Player `json:"player"`
-	}
-
-	// PlayersResponse returns multiple players.
-	EgressPlayers struct {
-		// Players returns the information about multiple players.
-		// in: body
-		Players []Player `json:"players"`
-	}
-
-	// Player holds a player's information, and is sent in a response.
-	//
-	// swagger:parameter
-	Player struct {
-		// ID is the player identifier.
-		// in: body
-		ID string `json:"id"`
-
-		// Name is the player name.
-		// in: body
-		Name string `json:"name"`
-
-		// Description is the player description.
-		// in: body
-		Description string `json:"description"`
-
-		// HomeID is the RoomID of the player's home.
-		// in:body
-		HomeID string `json:"homeID"`
-
-		// LocationID is the RoomID of the player's location.
-		// in: body
-		LocationID string `json:"locationID"`
-
-		// Created is the time of the player's creation.
-		// in: body
-		Created arcade.Timestamp `json:"created"`
-
-		// Updated is the time the player was last updated.
-		// in: body
-		Updated arcade.Timestamp `json:"updated"`
+		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
+		Get(context.Context, assets.PlayerID) (*assets.Player, error)
+		Create(context.Context, assets.PlayerCreateRequest) (*assets.Player, error)
+		Update(context.Context, assets.PlayerID, assets.PlayerUpdateRequest) (*assets.Player, error)
+		Remove(context.Context, assets.PlayerID) error
 	}
 )
 
@@ -129,10 +56,10 @@ type (
 func (s PlayersService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1PlayersRoute).Subrouter()
 	r.HandleFunc("", s.List).Methods(http.MethodGet)
-	r.HandleFunc("/{playerID}", s.Get).Methods(http.MethodGet)
+	r.HandleFunc("/{id}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)
-	r.HandleFunc("/{playerID}", s.Update).Methods(http.MethodPut)
-	r.HandleFunc("/{playerID}", s.Remove).Methods(http.MethodDelete)
+	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
+	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
 }
 
 // Name returns the name of the service.
@@ -145,7 +72,7 @@ func (PlayersService) Shutdown() {}
 
 // List handles a request to retrieve multiple players.
 func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/players List
+	// swagger:route GET /v1/players PlayerList
 	//
 	// List returns a list of players.
 	//
@@ -180,8 +107,8 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Translate from arcade players, to local players.
-	var players []Player
+	// Translate from assets players, to network players.
+	var players []network.Player
 	for _, aPlayer := range aPlayers {
 		players = append(players, TranslatePlayer(aPlayer))
 	}
@@ -190,7 +117,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressPlayers{Players: players})
+	err = json.NewEncoder(w).Encode(network.PlayersResponse{Players: players})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -201,7 +128,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles a request to retrieve a player.
 func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/players/{playerID} Get
+	// swagger:route GET /v1/players/{playerID} PlayerGet
 	//
 	// Get returns a player.
 	//
@@ -221,16 +148,16 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse the playerID from the uri.
-	playerID := mux.Vars(r)["playerID"]
-	aPlayerID, err := uuid.Parse(playerID)
+	id := mux.Vars(r)["id"]
+	playerID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid playerID, not a well formed uuid: '%s'", errors.ErrBadRequest, playerID)
+		err := fmt.Errorf("%w: invalid player id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Request the player from the player manager.
-	aPlayer, err := s.Manager.Get(ctx, arcade.PlayerID(aPlayerID))
+	player, err := s.Manager.Get(ctx, assets.PlayerID(playerID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -240,7 +167,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressPlayer{Player: TranslatePlayer(aPlayer)})
+	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -251,7 +178,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 
 // Create handles a request to create a player.
 func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
-	// swagger:route POST /v1/players
+	// swagger:route POST /v1/players PlayerCreate
 	//
 	// Create will create a new player based on the player request in the body of the
 	// request.
@@ -284,8 +211,8 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ingressPlayer IngressPlayer
-	err = json.Unmarshal(body, &ingressPlayer)
+	var createReq network.PlayerCreateRequest
+	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -294,13 +221,13 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the player request to the player manager.
-	aIngressPlayer, err := TranslateIngressPlayer(ingressPlayer)
+	req, err := TranslatePlayerRequest(createReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	aPlayer, err := s.Manager.Create(ctx, aIngressPlayer)
+	player, err := s.Manager.Create(ctx, req)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -310,7 +237,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressPlayer{Player: TranslatePlayer(aPlayer)})
+	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -321,7 +248,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update handles a request to update a player.
 func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
-	// swagger:route PUT /v1/players/{playerID}
+	// swagger:route PUT /v1/players/{id} PlayerUpdate
 	//
 	// Update will update player based on the playerID and the player\ request in the
 	// body of the request.
@@ -344,14 +271,13 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Grab the playerID from the uri.
-	playerID := mux.Vars(r)["playerID"]
-	u, err := uuid.Parse(playerID)
+	id := mux.Vars(r)["id"]
+	playerID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid playerID, not a well formed uuid: '%s'", errors.ErrBadRequest, playerID)
+		err := fmt.Errorf("%w: invalid player id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
-	aPlayerID := arcade.PlayerID(u)
 
 	// Process the request body.
 	body, err := io.ReadAll(r.Body)
@@ -370,9 +296,9 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Populate the ingress player from the body.
-	var ingressPlayer IngressPlayer
-	err = json.Unmarshal(body, &ingressPlayer)
+	// Populate the network player from the body.
+	var updateReq network.PlayerUpdateRequest
+	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: invalid body: %s", errors.ErrBadRequest, err,
@@ -381,14 +307,14 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the player request.
-	aIngressPlayer, err := TranslateIngressPlayer(ingressPlayer)
+	req, err := TranslatePlayerRequest(updateReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the player to the player manager.
-	aPlayer, err := s.Manager.Update(ctx, aPlayerID, aIngressPlayer)
+	player, err := s.Manager.Update(ctx, assets.PlayerID(playerID), req)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -397,7 +323,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(EgressPlayer{Player: TranslatePlayer(aPlayer)})
+	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -408,7 +334,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 
 // Remove handles a request to remove a player.
 func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
-	// swagger:route DELETE /v1/players/{playerID} Get
+	// swagger:route DELETE /v1/players/{id} PlayerRemove
 	//
 	// Remove deletes the player.
 	//
@@ -430,42 +356,41 @@ func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse the playerID from the uri.
-	playerID := mux.Vars(r)["playerID"]
-	aPlayerID, err := uuid.Parse(playerID)
+	id := mux.Vars(r)["id"]
+	playerID, err := uuid.Parse(id)
 	if err != nil {
-		err := fmt.Errorf("%w: invalid playerID, not a well formed uuid: '%s'", errors.ErrBadRequest, playerID)
+		err := fmt.Errorf("%w: invalid player id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the playerID to the player manager for removal.
-	err = s.Manager.Remove(ctx, arcade.PlayerID(aPlayerID))
+	err = s.Manager.Remove(ctx, assets.PlayerID(playerID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 }
 
-// NewPlayersFilter creates a PlayersFilter from the the given request's URL
-// query parameters.
-func NewPlayersFilter(r *http.Request) (arcade.PlayersFilter, error) {
+// NewPlayersFilter creates an assets players filter from the given request's URL query parameters.
+func NewPlayersFilter(r *http.Request) (assets.PlayersFilter, error) {
 	q := r.URL.Query()
-	filter := arcade.PlayersFilter{
-		Limit: arcade.DefaultPlayersFilterLimit,
+	filter := assets.PlayersFilter{
+		Limit: assets.DefaultPlayersFilterLimit,
 	}
 
 	if values := q["locationID"]; len(values) > 0 {
 		locationID, err := uuid.Parse(values[0])
 		if err != nil {
-			return arcade.PlayersFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
-		filter.LocationID = arcade.RoomID(locationID)
+		filter.LocationID = assets.RoomID(locationID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > arcade.MaxPlayersFilterLimit {
-			return arcade.PlayersFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxPlayersFilterLimit {
+			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}
@@ -473,7 +398,7 @@ func NewPlayersFilter(r *http.Request) (arcade.PlayersFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return arcade.PlayersFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}
@@ -481,48 +406,48 @@ func NewPlayersFilter(r *http.Request) (arcade.PlayersFilter, error) {
 	return filter, nil
 }
 
-// TranslatesIngressPlayer translates the player request from the http request to an arcade.PlayerRequest.
-func TranslateIngressPlayer(l IngressPlayer) (arcade.IngressPlayer, error) {
-	empty := arcade.IngressPlayer{}
+// TranslatesPlayerRequest translates a network request to an assets player request.
+func TranslatePlayerRequest(p network.PlayerRequest) (assets.PlayerRequest, error) {
+	empty := assets.PlayerRequest{}
 
-	if l.Name == "" {
+	if p.Name == "" {
 		return empty, fmt.Errorf("%w: empty player name", errors.ErrBadRequest)
 	}
-	if len(l.Name) > arcade.MaxPlayerNameLen {
+	if len(p.Name) > assets.MaxPlayerNameLen {
 		return empty, fmt.Errorf("%w: player name exceeds maximum length", errors.ErrBadRequest)
 	}
-	if l.Description == "" {
+	if p.Description == "" {
 		return empty, fmt.Errorf("%w: empty player description", errors.ErrBadRequest)
 	}
-	if len(l.Description) > arcade.MaxPlayerDescriptionLen {
+	if len(p.Description) > assets.MaxPlayerDescriptionLen {
 		return empty, fmt.Errorf("%w: player description exceeds maximum length", errors.ErrBadRequest)
 	}
-	homeID, err := uuid.Parse(l.HomeID)
+	homeID, err := uuid.Parse(p.HomeID)
 	if err != nil {
-		return empty, fmt.Errorf("%w: invalid homeID: '%s'", errors.ErrBadRequest, l.HomeID)
+		return empty, fmt.Errorf("%w: invalid homeID: '%s'", errors.ErrBadRequest, p.HomeID)
 	}
-	locID, err := uuid.Parse(l.LocationID)
+	locID, err := uuid.Parse(p.LocationID)
 	if err != nil {
-		return empty, fmt.Errorf("%w: invalid locationID: '%s', %s", errors.ErrBadRequest, l.LocationID, err)
+		return empty, fmt.Errorf("%w: invalid locationID: '%s', %s", errors.ErrBadRequest, p.LocationID, err)
 	}
 
-	return arcade.IngressPlayer{
-		Name:        l.Name,
-		Description: l.Description,
-		HomeID:      arcade.RoomID(homeID),
-		LocationID:  arcade.RoomID(locID),
+	return assets.PlayerRequest{
+		Name:        p.Name,
+		Description: p.Description,
+		HomeID:      assets.RoomID(homeID),
+		LocationID:  assets.RoomID(locID),
 	}, nil
 }
 
-// TranslatePlayer translates an arcade player to a local player.
-func TranslatePlayer(l *arcade.Player) Player {
-	return Player{
-		ID:          l.ID.String(),
-		Name:        l.Name,
-		Description: l.Description,
-		HomeID:      l.HomeID.String(),
-		LocationID:  l.LocationID.String(),
-		Created:     l.Created,
-		Updated:     l.Updated,
+// TranslatePlayer translates an arcade player to a network player.
+func TranslatePlayer(p *assets.Player) network.Player {
+	return network.Player{
+		ID:          p.ID.String(),
+		Name:        p.Name,
+		Description: p.Description,
+		HomeID:      p.HomeID.String(),
+		LocationID:  p.LocationID.String(),
+		Created:     p.Created,
+		Updated:     p.Updated,
 	}
 }

@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package arcade // import "arcadium.dev/arcade"
+package assets // import "arcadium.dev/arcade/assets"
 
 import (
 	"github.com/google/uuid"
@@ -66,8 +66,14 @@ type (
 		Limit uint
 	}
 
-	// IngressLink is used to request a link be created or updated.
-	IngressLink struct {
+	// LinkCreateRequest is used to request an item to be created.
+	LinkCreateRequest = LinkRequest
+
+	// LinkCreateRequest is used to request an item to be updated.
+	LinkUpdateRequest = LinkRequest
+
+	// LinkRequest holds item information.
+	LinkRequest struct {
 		Name          string
 		Description   string
 		OwnerID       PlayerID

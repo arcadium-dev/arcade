@@ -25,9 +25,12 @@ all: containers tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: containers assets_container migrate_container
+.PHONY: containers \
+	assets assets_container assets_migrate_container
 
-containers: assets_container migrate_container
+containers: assets
+
+assets: assets_container migrate_container
 
 assets_container: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -42,12 +45,12 @@ assets_container: Dockerfile.assets
 		--tag assets:latest \
 		..
 
-migrate_container: Dockerfile.migrate
+migrate_container: Dockerfile.assets-migrate
 	DOCKER_BUILDKIT=1 docker build \
     --file Dockerfile.migrate \
     --build-arg migrate_version=$(migrate_version) \
     --rm --force-rm \
-    --tag migrate:latest \
+    --tag assets-migrate:latest \
     ..
 
 # ____ tools _________________________________________________________________

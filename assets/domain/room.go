@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package domain // import "arcadium.dev/domain"
+package domain // import "arcadium.dev/arcade/assets/domain"
 
 import (
 	"context"
 
-	"arcadium.dev/arcade"
+	"arcadium.dev/arcade/assets"
 )
 
 type (
@@ -28,35 +28,35 @@ type (
 
 	// RoomStorage defines the interface to manage the persistent storage of items.
 	RoomStorage interface {
-		List(ctx context.Context, filter arcade.RoomsFilter) ([]*arcade.Room, error)
-		Get(ctx context.Context, roomID arcade.RoomID) (*arcade.Room, error)
-		Create(ctx context.Context, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
-		Update(ctx context.Context, roomID arcade.RoomID, ingressRoom arcade.IngressRoom) (*arcade.Room, error)
-		Remove(ctx context.Context, roomID arcade.RoomID) error
+		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
+		Get(context.Context, assets.RoomID) (*assets.Room, error)
+		Create(context.Context, assets.RoomCreateRequest) (*assets.Room, error)
+		Update(context.Context, assets.RoomID, assets.RoomUpdateRequest) (*assets.Room, error)
+		Remove(context.Context, assets.RoomID) error
 	}
 )
 
 // List returns a slice of rooms based on the value of the filter.
-func (m RoomManager) List(ctx context.Context, filter arcade.RoomsFilter) ([]*arcade.Room, error) {
+func (m RoomManager) List(ctx context.Context, filter assets.RoomsFilter) ([]*assets.Room, error) {
 	return m.Storage.List(ctx, filter)
 }
 
 // Get returns a single room given the roomID.
-func (m RoomManager) Get(ctx context.Context, roomID arcade.RoomID) (*arcade.Room, error) {
-	return m.Storage.Get(ctx, roomID)
+func (m RoomManager) Get(ctx context.Context, id assets.RoomID) (*assets.Room, error) {
+	return m.Storage.Get(ctx, id)
 }
 
 // Create creates a new room in persistent storage.
-func (m RoomManager) Create(ctx context.Context, ingressRoom arcade.IngressRoom) (*arcade.Room, error) {
-	return m.Storage.Create(ctx, ingressRoom)
+func (m RoomManager) Create(ctx context.Context, req assets.RoomCreateRequest) (*assets.Room, error) {
+	return m.Storage.Create(ctx, req)
 }
 
 // Update replaces the room in persistent storage.
-func (m RoomManager) Update(ctx context.Context, roomID arcade.RoomID, ingressRoom arcade.IngressRoom) (*arcade.Room, error) {
-	return m.Storage.Update(ctx, roomID, ingressRoom)
+func (m RoomManager) Update(ctx context.Context, id assets.RoomID, req assets.RoomUpdateRequest) (*assets.Room, error) {
+	return m.Storage.Update(ctx, id, req)
 }
 
 // Remove deletes the given room, based on the given roomID, from persistent storage.
-func (m RoomManager) Remove(ctx context.Context, roomID arcade.RoomID) error {
-	return m.Storage.Remove(ctx, roomID)
+func (m RoomManager) Remove(ctx context.Context, id assets.RoomID) error {
+	return m.Storage.Remove(ctx, id)
 }

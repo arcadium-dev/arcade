@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package arcade // import "arcadium.dev/arcade"
+package assets // import "arcadium.dev/arcade/assets"
 
 import (
 	"github.com/google/uuid"
@@ -61,8 +61,14 @@ type (
 		Limit uint
 	}
 
-	// IngressPlyaer is used to request a player be created or updated.
-	IngressPlayer struct {
+	// PlayerCreateRequest is used to request an item to be created.
+	PlayerCreateRequest = PlayerRequest
+
+	// PlayerCreateRequest is used to request an item to be updated.
+	PlayerUpdateRequest = PlayerRequest
+
+	// PlayerRequest holds item information.
+	PlayerRequest struct {
 		Name        string
 		Description string
 		HomeID      RoomID

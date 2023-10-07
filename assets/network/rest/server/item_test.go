@@ -19,8 +19,8 @@ import (
 	"arcadium.dev/core/errors"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
-	"arcadium.dev/arcade/assets/network/server"
+	"arcadium.dev/arcade/assets/network/rest"
+	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
 func TestItemsList(t *testing.T) {
@@ -112,16 +112,16 @@ func TestItemsList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemsResp network.ItemsResponse
+		var itemsResp rest.ItemsResponse
 		assert.Nil(t, json.Unmarshal(body, &itemsResp))
 
-		assert.Compare(t, itemsResp, network.ItemsResponse{Items: []network.Item{
+		assert.Compare(t, itemsResp, rest.ItemsResponse{Items: []rest.Item{
 			{
 				ID:          itemID.String(),
 				Name:        name,
 				Description: desc,
 				OwnerID:     ownerID.String(),
-				LocationID: network.ItemLocationID{
+				LocationID: rest.ItemLocationID{
 					ID:   locationID.String(),
 					Type: locationID.Type().String(),
 				},
@@ -194,15 +194,15 @@ func TestItemGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp network.ItemResponse
+		var itemResp rest.ItemResponse
 		assert.Nil(t, json.Unmarshal(body, &itemResp))
 
-		assert.Compare(t, itemResp, network.ItemResponse{Item: network.Item{
+		assert.Compare(t, itemResp, rest.ItemResponse{Item: rest.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
+			LocationID: rest.ItemLocationID{
 				ID:   locationID.String(),
 				Type: locationID.Type().String(),
 			},
@@ -236,26 +236,26 @@ func TestItemCreate(t *testing.T) {
 		m := mockItemManager{}
 
 		tests := []struct {
-			req    network.ItemCreateRequest
+			req    rest.ItemRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty item name",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: item name exceeds maximum length",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -263,7 +263,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: empty item description",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -271,7 +271,7 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: item description exceeds maximum length",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -280,11 +280,11 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
-					LocationID: network.ItemLocationID{
+					LocationID: rest.ItemLocationID{
 						ID: "bad location id",
 					},
 				},
@@ -292,11 +292,11 @@ func TestItemCreate(t *testing.T) {
 				errMsg: "bad request: invalid locationID.ID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				req: network.ItemCreateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
-					LocationID: network.ItemLocationID{
+					LocationID: rest.ItemLocationID{
 						ID:   uuid.New().String(),
 						Type: "bad location type",
 					},
@@ -307,7 +307,7 @@ func TestItemCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.ItemCreateRequest{ItemRequest: test.req})
 			assert.Nil(t, err)
 
 			w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
@@ -323,25 +323,29 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createReq: assets.ItemCreateRequest{
-				Name:        "name",
-				Description: "description",
-				OwnerID:     ownerID,
-				LocationID:  locID,
+			create: assets.ItemCreate{
+				ItemChange: assets.ItemChange{
+					Name:        "name",
+					Description: "description",
+					OwnerID:     ownerID,
+					LocationID:  locID,
+				},
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		createReq := network.ItemCreateRequest{
-			Name:        "name",
-			Description: "description",
-			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
-				ID:   locID.String(),
-				Type: locID.Type().String(),
+		create := rest.ItemCreateRequest{
+			ItemRequest: rest.ItemRequest{
+				Name:        "name",
+				Description: "description",
+				OwnerID:     ownerID.String(),
+				LocationID: rest.ItemLocationID{
+					ID:   locID.String(),
+					Type: locID.Type().String(),
+				},
 			},
 		}
-		body, err := json.Marshal(createReq)
+		body, err := json.Marshal(create)
 		assert.Nil(t, err)
 
 		w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
@@ -362,11 +366,13 @@ func TestItemCreate(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			createReq: assets.ItemCreateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				LocationID:  ownerID,
+			create: assets.ItemCreate{
+				ItemChange: assets.ItemChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					LocationID:  ownerID,
+				},
 			},
 			createItem: &assets.Item{
 				ID:          itemID,
@@ -379,13 +385,15 @@ func TestItemCreate(t *testing.T) {
 			},
 		}
 
-		createReq := network.ItemCreateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
-				ID:   ownerID.String(),
-				Type: ownerID.Type().String(),
+		createReq := rest.ItemCreateRequest{
+			ItemRequest: rest.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				LocationID: rest.ItemLocationID{
+					ID:   ownerID.String(),
+					Type: ownerID.Type().String(),
+				},
 			},
 		}
 		body, err := json.Marshal(createReq)
@@ -400,15 +408,15 @@ func TestItemCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp network.ItemResponse
+		var itemResp rest.ItemResponse
 		assert.Nil(t, json.Unmarshal(respBody, &itemResp))
 
-		assert.Compare(t, itemResp, network.ItemResponse{Item: network.Item{
+		assert.Compare(t, itemResp, rest.ItemResponse{Item: rest.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
+			LocationID: rest.ItemLocationID{
 				ID:   ownerID.String(),
 				Type: "player",
 			},
@@ -455,26 +463,26 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{}
 
 		tests := []struct {
-			req    network.ItemUpdateRequest
+			req    rest.ItemRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty item name",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: item name exceeds maximum length",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -482,7 +490,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: empty item description",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -490,7 +498,7 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: item description exceeds maximum length",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -499,11 +507,11 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
-					LocationID: network.ItemLocationID{
+					LocationID: rest.ItemLocationID{
 						ID: "bad location id",
 					},
 				},
@@ -511,11 +519,11 @@ func TestItemUpdate(t *testing.T) {
 				errMsg: "bad request: invalid locationID.ID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				req: network.ItemUpdateRequest{
+				req: rest.ItemRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
-					LocationID: network.ItemLocationID{
+					LocationID: rest.ItemLocationID{
 						ID:   uuid.New().String(),
 						Type: "bad location type",
 					},
@@ -526,7 +534,7 @@ func TestItemUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.ItemUpdateRequest{ItemRequest: test.req})
 			assert.Nil(t, err)
 
 			itemID := uuid.New()
@@ -551,22 +559,26 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:        t,
 			updateID: itemID,
-			updateReq: assets.ItemUpdateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				LocationID:  locID,
+			update: assets.ItemUpdate{
+				ItemChange: assets.ItemChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					LocationID:  locID,
+				},
 			},
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		updateReq := network.ItemUpdateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
-				ID:   locID.String(),
-				Type: locID.Type().String(),
+		updateReq := rest.ItemUpdateRequest{
+			ItemRequest: rest.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				LocationID: rest.ItemLocationID{
+					ID:   locID.String(),
+					Type: locID.Type().String(),
+				},
 			},
 		}
 		body, err := json.Marshal(updateReq)
@@ -593,11 +605,13 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemManager{
 			t:        t,
 			updateID: itemID,
-			updateReq: assets.ItemUpdateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				LocationID:  ownerID,
+			update: assets.ItemUpdate{
+				ItemChange: assets.ItemChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					LocationID:  ownerID,
+				},
 			},
 			updateItem: &assets.Item{
 				ID:          itemID,
@@ -610,13 +624,15 @@ func TestItemUpdate(t *testing.T) {
 			},
 		}
 
-		updateReq := network.ItemUpdateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
-				ID:   ownerID.String(),
-				Type: ownerID.Type().String(),
+		updateReq := rest.ItemUpdateRequest{
+			ItemRequest: rest.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				LocationID: rest.ItemLocationID{
+					ID:   ownerID.String(),
+					Type: ownerID.Type().String(),
+				},
 			},
 		}
 		body, err := json.Marshal(updateReq)
@@ -633,15 +649,15 @@ func TestItemUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var itemResp network.ItemResponse
+		var itemResp rest.ItemResponse
 		assert.Nil(t, json.Unmarshal(respBody, &itemResp))
 
-		assert.Compare(t, itemResp, network.ItemResponse{Item: network.Item{
+		assert.Compare(t, itemResp, rest.ItemResponse{Item: rest.Item{
 			ID:          itemID.String(),
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID.String(),
-			LocationID: network.ItemLocationID{
+			LocationID: rest.ItemLocationID{
 				ID:   ownerID.String(),
 				Type: ownerID.Type().String(),
 			},
@@ -737,12 +753,12 @@ type (
 		getItem *assets.Item
 		getErr  error
 
-		createReq  assets.ItemCreateRequest
+		create     assets.ItemCreate
 		createItem *assets.Item
 		createErr  error
 
 		updateID   assets.ItemID
-		updateReq  assets.ItemUpdateRequest
+		update     assets.ItemUpdate
 		updateItem *assets.Item
 		updateErr  error
 
@@ -773,16 +789,16 @@ func (m mockItemManager) Get(ctx context.Context, id assets.ItemID) (*assets.Ite
 	return m.getItem, m.getErr
 }
 
-func (m mockItemManager) Create(ctx context.Context, req assets.ItemCreateRequest) (*assets.Item, error) {
-	assert.Compare(m.t, req, m.createReq, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
-	cmpItemRequest(m.t, req, m.createReq)
+func (m mockItemManager) Create(ctx context.Context, create assets.ItemCreate) (*assets.Item, error) {
+	assert.Compare(m.t, create, m.create, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
+	cmpItemRequest(m.t, create.ItemChange, m.create.ItemChange)
 	return m.createItem, m.createErr
 }
 
-func (m mockItemManager) Update(ctx context.Context, id assets.ItemID, req assets.ItemUpdateRequest) (*assets.Item, error) {
+func (m mockItemManager) Update(ctx context.Context, id assets.ItemID, update assets.ItemUpdate) (*assets.Item, error) {
 	assert.Compare(m.t, id, m.updateID)
-	assert.Compare(m.t, req, m.updateReq, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
-	cmpItemRequest(m.t, req, m.updateReq)
+	assert.Compare(m.t, update, m.update, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
+	cmpItemRequest(m.t, update.ItemChange, m.update.ItemChange)
 	return m.updateItem, m.updateErr
 }
 
@@ -791,7 +807,7 @@ func (m mockItemManager) Remove(ctx context.Context, id assets.ItemID) error {
 	return m.removeErr
 }
 
-func cmpItemRequest(t *testing.T, actual, expected assets.ItemRequest) {
+func cmpItemRequest(t *testing.T, actual, expected assets.ItemChange) {
 	t.Helper()
 
 	if actual.LocationID == nil && expected.LocationID != nil {

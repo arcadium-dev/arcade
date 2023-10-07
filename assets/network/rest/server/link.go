@@ -29,7 +29,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/rest"
 )
 
 const (
@@ -46,8 +46,8 @@ type (
 	LinkManager interface {
 		List(context.Context, assets.LinksFilter) ([]*assets.Link, error)
 		Get(context.Context, assets.LinkID) (*assets.Link, error)
-		Create(context.Context, assets.LinkCreateRequest) (*assets.Link, error)
-		Update(context.Context, assets.LinkID, assets.LinkUpdateRequest) (*assets.Link, error)
+		Create(context.Context, assets.LinkCreate) (*assets.Link, error)
+		Update(context.Context, assets.LinkID, assets.LinkUpdate) (*assets.Link, error)
 		Remove(context.Context, assets.LinkID) error
 	}
 )
@@ -112,7 +112,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets links, to network links.
-	var links []network.Link
+	var links []rest.Link
 	for _, aLink := range aLinks {
 		links = append(links, TranslateLink(aLink))
 	}
@@ -121,7 +121,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.LinksResponse{Links: links})
+	err = json.NewEncoder(w).Encode(rest.LinksResponse{Links: links})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -171,7 +171,7 @@ func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.LinkResponse{Link: TranslateLink(link)})
+	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -215,7 +215,7 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq network.LinkCreateRequest
+	var createReq rest.LinkCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -225,13 +225,13 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the link request to the link manager.
-	req, err := TranslateLinkRequest(createReq)
+	change, err := TranslateLinkRequest(createReq.LinkRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	link, err := s.Manager.Create(ctx, req)
+	link, err := s.Manager.Create(ctx, assets.LinkCreate{LinkChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -241,7 +241,7 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.LinkResponse{Link: TranslateLink(link)})
+	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -300,7 +300,7 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updateReq network.LinkUpdateRequest
+	var updateReq rest.LinkUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -310,14 +310,14 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the link request.
-	req, err := TranslateLinkRequest(updateReq)
+	change, err := TranslateLinkRequest(updateReq.LinkRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the link to the link manager.
-	link, err := s.Manager.Update(ctx, assets.LinkID(linkID), req)
+	link, err := s.Manager.Update(ctx, assets.LinkID(linkID), assets.LinkUpdate{LinkChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -326,7 +326,7 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.LinkResponse{Link: TranslateLink(link)})
+	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -426,8 +426,8 @@ func NewLinksFilter(r *http.Request) (assets.LinksFilter, error) {
 }
 
 // TranslateLinkRequest translates a network link request to an assets link request.
-func TranslateLinkRequest(l network.LinkRequest) (assets.LinkRequest, error) {
-	empty := assets.LinkRequest{}
+func TranslateLinkRequest(l rest.LinkRequest) (assets.LinkChange, error) {
+	empty := assets.LinkChange{}
 
 	if l.Name == "" {
 		return empty, fmt.Errorf("%w: empty link name", errors.ErrBadRequest)
@@ -454,7 +454,7 @@ func TranslateLinkRequest(l network.LinkRequest) (assets.LinkRequest, error) {
 		return empty, fmt.Errorf("%w: invalid destinationID: '%s', %s", errors.ErrBadRequest, l.DestinationID, err)
 	}
 
-	return assets.LinkRequest{
+	return assets.LinkChange{
 		Name:          l.Name,
 		Description:   l.Description,
 		OwnerID:       assets.PlayerID(ownerID),
@@ -464,8 +464,8 @@ func TranslateLinkRequest(l network.LinkRequest) (assets.LinkRequest, error) {
 }
 
 // TranslateLink translates an asset link to a network link.
-func TranslateLink(l *assets.Link) network.Link {
-	return network.Link{
+func TranslateLink(l *assets.Link) rest.Link {
+	return rest.Link{
 		ID:            l.ID.String(),
 		Name:          l.Name,
 		Description:   l.Description,

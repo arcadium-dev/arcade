@@ -30,8 +30,8 @@ type (
 	LinkStorage interface {
 		List(context.Context, assets.LinksFilter) ([]*assets.Link, error)
 		Get(context.Context, assets.LinkID) (*assets.Link, error)
-		Create(context.Context, assets.LinkCreateRequest) (*assets.Link, error)
-		Update(context.Context, assets.LinkID, assets.LinkUpdateRequest) (*assets.Link, error)
+		Create(context.Context, assets.LinkCreate) (*assets.Link, error)
+		Update(context.Context, assets.LinkID, assets.LinkUpdate) (*assets.Link, error)
 		Remove(context.Context, assets.LinkID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m LinkManager) Get(ctx context.Context, id assets.LinkID) (*assets.Link, e
 }
 
 // Create creates a new link in persistent storage.
-func (m LinkManager) Create(ctx context.Context, req assets.LinkCreateRequest) (*assets.Link, error) {
-	return m.Storage.Create(ctx, req)
+func (m LinkManager) Create(ctx context.Context, create assets.LinkCreate) (*assets.Link, error) {
+	return m.Storage.Create(ctx, create)
 }
 
 // Update replaces the link in persistent storage.
-func (m LinkManager) Update(ctx context.Context, id assets.LinkID, req assets.LinkUpdateRequest) (*assets.Link, error) {
-	return m.Storage.Update(ctx, id, req)
+func (m LinkManager) Update(ctx context.Context, id assets.LinkID, update assets.LinkUpdate) (*assets.Link, error) {
+	return m.Storage.Update(ctx, id, update)
 }
 
 // Remove deletes the given link, based on the given linkID, from persistent storage.

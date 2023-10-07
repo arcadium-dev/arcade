@@ -66,14 +66,18 @@ type (
 		Limit uint
 	}
 
-	// LinkCreateRequest is used to request an item to be created.
-	LinkCreateRequest = LinkRequest
+	// LinkCreate is used to create an item.
+	LinkCreate struct {
+		LinkChange
+	}
 
-	// LinkCreateRequest is used to request an item to be updated.
-	LinkUpdateRequest = LinkRequest
+	// LinkUpdate is used to update an item.
+	LinkUpdate struct {
+		LinkChange
+	}
 
-	// LinkRequest holds item information.
-	LinkRequest struct {
+	// LinkChange holds information to change an item.
+	LinkChange struct {
 		Name          string
 		Description   string
 		OwnerID       PlayerID

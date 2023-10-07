@@ -64,14 +64,18 @@ type (
 		Limit uint
 	}
 
-	// ItemCreateRequest is used to request an item to be created.
-	ItemCreateRequest = ItemRequest
+	// ItemCreate is used to create an item.
+	ItemCreate struct {
+		ItemChange
+	}
 
-	// ItemCreateRequest is used to request an item to be updated.
-	ItemUpdateRequest = ItemRequest
+	// ItemUpdate is used to update an item.
+	ItemUpdate struct {
+		ItemChange
+	}
 
-	// ItemRequest holds item information.
-	ItemRequest struct {
+	// ItemChange holds information to change an item.
+	ItemChange struct {
 		Name        string
 		Description string
 		OwnerID     PlayerID

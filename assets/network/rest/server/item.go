@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package server // import "arcadium.dev/arcade/assets/network/server"
+package server // import "arcadium.dev/arcade/assets/network/rest/server"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/rest"
 )
 
 const (
@@ -47,8 +47,8 @@ type (
 	ItemManager interface {
 		List(context.Context, assets.ItemsFilter) ([]*assets.Item, error)
 		Get(context.Context, assets.ItemID) (*assets.Item, error)
-		Create(context.Context, assets.ItemCreateRequest) (*assets.Item, error)
-		Update(context.Context, assets.ItemID, assets.ItemUpdateRequest) (*assets.Item, error)
+		Create(context.Context, assets.ItemCreate) (*assets.Item, error)
+		Update(context.Context, assets.ItemID, assets.ItemUpdate) (*assets.Item, error)
 		Remove(context.Context, assets.ItemID) error
 	}
 )
@@ -113,7 +113,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets items, to network items.
-	var items []network.Item
+	var items []rest.Item
 	for _, aItem := range aItems {
 		items = append(items, TranslateItem(aItem))
 	}
@@ -122,7 +122,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.ItemsResponse{Items: items})
+	err = json.NewEncoder(w).Encode(rest.ItemsResponse{Items: items})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -172,7 +172,7 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.ItemResponse{Item: TranslateItem(item)})
+	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -216,7 +216,7 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq network.ItemCreateRequest
+	var createReq rest.ItemCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -226,13 +226,13 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the item request to the item manager.
-	req, err := TranslateItemRequest(createReq)
+	change, err := TranslateItemRequest(createReq.ItemRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	item, err := s.Manager.Create(ctx, req)
+	item, err := s.Manager.Create(ctx, assets.ItemCreate{ItemChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -242,7 +242,7 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.ItemResponse{Item: TranslateItem(item)})
+	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -302,7 +302,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Populate the network item from the body.
-	var updateReq network.ItemUpdateRequest
+	var updateReq rest.ItemUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -312,14 +312,14 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the item request.
-	req, err := TranslateItemRequest(updateReq)
+	change, err := TranslateItemRequest(updateReq.ItemRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the item to the item manager.
-	item, err := s.Manager.Update(ctx, assets.ItemID(itemID), req)
+	item, err := s.Manager.Update(ctx, assets.ItemID(itemID), assets.ItemUpdate{ItemChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -328,7 +328,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.ItemResponse{Item: TranslateItem(item)})
+	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -442,8 +442,8 @@ func NewItemsFilter(r *http.Request) (assets.ItemsFilter, error) {
 }
 
 // TranslateItemRequest translates a network asset item request to an assets item request.
-func TranslateItemRequest(i network.ItemRequest) (assets.ItemRequest, error) {
-	empty := assets.ItemRequest{}
+func TranslateItemRequest(i rest.ItemRequest) (assets.ItemChange, error) {
+	empty := assets.ItemChange{}
 
 	if i.Name == "" {
 		return empty, fmt.Errorf("%w: empty item name", errors.ErrBadRequest)
@@ -470,7 +470,7 @@ func TranslateItemRequest(i network.ItemRequest) (assets.ItemRequest, error) {
 		return empty, fmt.Errorf("%w: invalid locationID.Type: '%s'", errors.ErrBadRequest, i.LocationID.Type)
 	}
 
-	itemReq := assets.ItemRequest{
+	itemReq := assets.ItemChange{
 		Name:        i.Name,
 		Description: i.Description,
 		OwnerID:     assets.PlayerID(ownerID),
@@ -489,13 +489,13 @@ func TranslateItemRequest(i network.ItemRequest) (assets.ItemRequest, error) {
 }
 
 // TranslateItem translates an assets item to a network item.
-func TranslateItem(i *assets.Item) network.Item {
-	return network.Item{
+func TranslateItem(i *assets.Item) rest.Item {
+	return rest.Item{
 		ID:          i.ID.String(),
 		Name:        i.Name,
 		Description: i.Description,
 		OwnerID:     i.OwnerID.String(),
-		LocationID: network.ItemLocationID{
+		LocationID: rest.ItemLocationID{
 			ID:   i.LocationID.ID().String(),
 			Type: i.LocationID.Type().String(),
 		},

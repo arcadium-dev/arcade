@@ -19,8 +19,8 @@ import (
 	"arcadium.dev/core/errors"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
-	"arcadium.dev/arcade/assets/network/server"
+	"arcadium.dev/arcade/assets/network/rest"
+	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
 func TestLinksList(t *testing.T) {
@@ -109,10 +109,10 @@ func TestLinksList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressLinks network.LinksResponse
+		var egressLinks rest.LinksResponse
 		assert.Nil(t, json.Unmarshal(body, &egressLinks))
 
-		assert.Compare(t, egressLinks, network.LinksResponse{Links: []network.Link{
+		assert.Compare(t, egressLinks, rest.LinksResponse{Links: []rest.Link{
 			{
 				ID:            linkID.String(),
 				Name:          name,
@@ -191,10 +191,10 @@ func TestLinkGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressLink network.LinkResponse
+		var egressLink rest.LinkResponse
 		assert.Nil(t, json.Unmarshal(body, &egressLink))
 
-		assert.Compare(t, egressLink, network.LinkResponse{Link: network.Link{
+		assert.Compare(t, egressLink, rest.LinkResponse{Link: rest.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -231,26 +231,26 @@ func TestLinkCreate(t *testing.T) {
 		m := mockLinkManager{}
 
 		tests := []struct {
-			req    network.LinkCreateRequest
+			req    rest.LinkRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty link name",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: link name exceeds maximum length",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -258,7 +258,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: empty link description",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -266,7 +266,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: link description exceeds maximum length",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -275,7 +275,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -285,7 +285,7 @@ func TestLinkCreate(t *testing.T) {
 				errMsg: "bad request: invalid locationID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				req: network.LinkCreateRequest{
+				req: rest.LinkRequest{
 					Name:          "name",
 					Description:   "description",
 					OwnerID:       uuid.New().String(),
@@ -298,7 +298,7 @@ func TestLinkCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.LinkCreateRequest{LinkRequest: test.req})
 			assert.Nil(t, err)
 
 			w := invokeLinksEndpoint(t, m, http.MethodPost, route, body)
@@ -315,22 +315,26 @@ func TestLinkCreate(t *testing.T) {
 
 		m := mockLinkManager{
 			t: t,
-			createReq: assets.LinkCreateRequest{
-				Name:          "name",
-				Description:   "description",
-				OwnerID:       ownerID,
-				LocationID:    locID,
-				DestinationID: destID,
+			create: assets.LinkCreate{
+				LinkChange: assets.LinkChange{
+					Name:          "name",
+					Description:   "description",
+					OwnerID:       ownerID,
+					LocationID:    locID,
+					DestinationID: destID,
+				},
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		createReq := network.LinkCreateRequest{
-			Name:          "name",
-			Description:   "description",
-			OwnerID:       ownerID.String(),
-			LocationID:    locID.String(),
-			DestinationID: destID.String(),
+		createReq := rest.LinkCreateRequest{
+			LinkRequest: rest.LinkRequest{
+				Name:          "name",
+				Description:   "description",
+				OwnerID:       ownerID.String(),
+				LocationID:    locID.String(),
+				DestinationID: destID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -355,12 +359,14 @@ func TestLinkCreate(t *testing.T) {
 
 		m := mockLinkManager{
 			t: t,
-			createReq: assets.LinkCreateRequest{
-				Name:          name,
-				Description:   desc,
-				OwnerID:       ownerID,
-				LocationID:    locID,
-				DestinationID: destID,
+			create: assets.LinkCreate{
+				LinkChange: assets.LinkChange{
+					Name:          name,
+					Description:   desc,
+					OwnerID:       ownerID,
+					LocationID:    locID,
+					DestinationID: destID,
+				},
 			},
 			createLink: &assets.Link{
 				ID:            linkID,
@@ -374,12 +380,14 @@ func TestLinkCreate(t *testing.T) {
 			},
 		}
 
-		createReq := network.LinkCreateRequest{
-			Name:          name,
-			Description:   desc,
-			OwnerID:       ownerID.String(),
-			LocationID:    locID.String(),
-			DestinationID: destID.String(),
+		createReq := rest.LinkCreateRequest{
+			LinkRequest: rest.LinkRequest{
+				Name:          name,
+				Description:   desc,
+				OwnerID:       ownerID.String(),
+				LocationID:    locID.String(),
+				DestinationID: destID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -393,10 +401,10 @@ func TestLinkCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var linkResp network.LinkResponse
+		var linkResp rest.LinkResponse
 		assert.Nil(t, json.Unmarshal(respBody, &linkResp))
 
-		assert.Compare(t, linkResp, network.LinkResponse{Link: network.Link{
+		assert.Compare(t, linkResp, rest.LinkResponse{Link: rest.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -446,26 +454,26 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkManager{}
 
 		tests := []struct {
-			req    network.LinkUpdateRequest
+			req    rest.LinkRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty link name",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: link name exceeds maximum length",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -473,7 +481,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: empty link description",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -481,7 +489,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: link description exceeds maximum length",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -490,7 +498,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -500,7 +508,7 @@ func TestLinkUpdate(t *testing.T) {
 				errMsg: "bad request: invalid locationID: 'bad location id', invalid UUID length: 15",
 			},
 			{
-				req: network.LinkUpdateRequest{
+				req: rest.LinkRequest{
 					Name:          "name",
 					Description:   "description",
 					OwnerID:       uuid.New().String(),
@@ -513,7 +521,7 @@ func TestLinkUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.LinkUpdateRequest{LinkRequest: test.req})
 			assert.Nil(t, err)
 
 			linkID := uuid.New()
@@ -539,22 +547,26 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkManager{
 			t:        t,
 			updateID: linkID,
-			updateReq: assets.LinkUpdateRequest{
-				Name:          name,
-				Description:   desc,
-				OwnerID:       ownerID,
-				LocationID:    locID,
-				DestinationID: destID,
+			update: assets.LinkUpdate{
+				LinkChange: assets.LinkChange{
+					Name:          name,
+					Description:   desc,
+					OwnerID:       ownerID,
+					LocationID:    locID,
+					DestinationID: destID,
+				},
 			},
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		updateReq := network.LinkUpdateRequest{
-			Name:          name,
-			Description:   desc,
-			OwnerID:       ownerID.String(),
-			LocationID:    locID.String(),
-			DestinationID: destID.String(),
+		updateReq := rest.LinkUpdateRequest{
+			LinkRequest: rest.LinkRequest{
+				Name:          name,
+				Description:   desc,
+				OwnerID:       ownerID.String(),
+				LocationID:    locID.String(),
+				DestinationID: destID.String(),
+			},
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -582,12 +594,14 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkManager{
 			t:        t,
 			updateID: linkID,
-			updateReq: assets.LinkUpdateRequest{
-				Name:          name,
-				Description:   desc,
-				OwnerID:       ownerID,
-				LocationID:    locID,
-				DestinationID: destID,
+			update: assets.LinkUpdate{
+				LinkChange: assets.LinkChange{
+					Name:          name,
+					Description:   desc,
+					OwnerID:       ownerID,
+					LocationID:    locID,
+					DestinationID: destID,
+				},
 			},
 			updateLink: &assets.Link{
 				ID:            linkID,
@@ -601,12 +615,14 @@ func TestLinkUpdate(t *testing.T) {
 			},
 		}
 
-		updateReq := network.LinkUpdateRequest{
-			Name:          name,
-			Description:   desc,
-			OwnerID:       ownerID.String(),
-			LocationID:    locID.String(),
-			DestinationID: destID.String(),
+		updateReq := rest.LinkUpdateRequest{
+			LinkRequest: rest.LinkRequest{
+				Name:          name,
+				Description:   desc,
+				OwnerID:       ownerID.String(),
+				LocationID:    locID.String(),
+				DestinationID: destID.String(),
+			},
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -622,10 +638,10 @@ func TestLinkUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var linkResp network.LinkResponse
+		var linkResp rest.LinkResponse
 		assert.Nil(t, json.Unmarshal(respBody, &linkResp))
 
-		assert.Compare(t, linkResp, network.LinkResponse{Link: network.Link{
+		assert.Compare(t, linkResp, rest.LinkResponse{Link: rest.Link{
 			ID:            linkID.String(),
 			Name:          name,
 			Description:   desc,
@@ -724,12 +740,12 @@ type (
 		getLink *assets.Link
 		getErr  error
 
-		createReq  assets.LinkCreateRequest
+		create     assets.LinkCreate
 		createLink *assets.Link
 		createErr  error
 
 		updateID   assets.LinkID
-		updateReq  assets.LinkUpdateRequest
+		update     assets.LinkUpdate
 		updateLink *assets.Link
 		updateErr  error
 
@@ -748,14 +764,14 @@ func (m mockLinkManager) Get(ctx context.Context, id assets.LinkID) (*assets.Lin
 	return m.getLink, m.getErr
 }
 
-func (m mockLinkManager) Create(ctx context.Context, req assets.LinkCreateRequest) (*assets.Link, error) {
-	assert.Compare(m.t, req, m.createReq)
+func (m mockLinkManager) Create(ctx context.Context, create assets.LinkCreate) (*assets.Link, error) {
+	assert.Compare(m.t, create, m.create)
 	return m.createLink, m.createErr
 }
 
-func (m mockLinkManager) Update(ctx context.Context, id assets.LinkID, req assets.LinkUpdateRequest) (*assets.Link, error) {
+func (m mockLinkManager) Update(ctx context.Context, id assets.LinkID, update assets.LinkUpdate) (*assets.Link, error) {
 	assert.Compare(m.t, id, m.updateID)
-	assert.Compare(m.t, req, m.updateReq)
+	assert.Compare(m.t, update, m.update)
 	return m.updateLink, m.updateErr
 }
 

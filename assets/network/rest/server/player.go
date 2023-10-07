@@ -29,7 +29,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/rest"
 )
 
 const (
@@ -46,8 +46,8 @@ type (
 	PlayerManager interface {
 		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
 		Get(context.Context, assets.PlayerID) (*assets.Player, error)
-		Create(context.Context, assets.PlayerCreateRequest) (*assets.Player, error)
-		Update(context.Context, assets.PlayerID, assets.PlayerUpdateRequest) (*assets.Player, error)
+		Create(context.Context, assets.PlayerCreate) (*assets.Player, error)
+		Update(context.Context, assets.PlayerID, assets.PlayerUpdate) (*assets.Player, error)
 		Remove(context.Context, assets.PlayerID) error
 	}
 )
@@ -108,7 +108,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets players, to network players.
-	var players []network.Player
+	var players []rest.Player
 	for _, aPlayer := range aPlayers {
 		players = append(players, TranslatePlayer(aPlayer))
 	}
@@ -117,7 +117,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.PlayersResponse{Players: players})
+	err = json.NewEncoder(w).Encode(rest.PlayersResponse{Players: players})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -167,7 +167,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
+	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -211,7 +211,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq network.PlayerCreateRequest
+	var createReq rest.PlayerCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -221,13 +221,13 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the player request to the player manager.
-	req, err := TranslatePlayerRequest(createReq)
+	change, err := TranslatePlayerRequest(createReq.PlayerRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	player, err := s.Manager.Create(ctx, req)
+	player, err := s.Manager.Create(ctx, assets.PlayerCreate{PlayerChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -237,7 +237,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
+	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -297,7 +297,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Populate the network player from the body.
-	var updateReq network.PlayerUpdateRequest
+	var updateReq rest.PlayerUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -307,14 +307,14 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the player request.
-	req, err := TranslatePlayerRequest(updateReq)
+	change, err := TranslatePlayerRequest(updateReq.PlayerRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the player to the player manager.
-	player, err := s.Manager.Update(ctx, assets.PlayerID(playerID), req)
+	player, err := s.Manager.Update(ctx, assets.PlayerID(playerID), assets.PlayerUpdate{PlayerChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -323,7 +323,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.PlayerResponse{Player: TranslatePlayer(player)})
+	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -407,8 +407,8 @@ func NewPlayersFilter(r *http.Request) (assets.PlayersFilter, error) {
 }
 
 // TranslatesPlayerRequest translates a network request to an assets player request.
-func TranslatePlayerRequest(p network.PlayerRequest) (assets.PlayerRequest, error) {
-	empty := assets.PlayerRequest{}
+func TranslatePlayerRequest(p rest.PlayerRequest) (assets.PlayerChange, error) {
+	empty := assets.PlayerChange{}
 
 	if p.Name == "" {
 		return empty, fmt.Errorf("%w: empty player name", errors.ErrBadRequest)
@@ -431,7 +431,7 @@ func TranslatePlayerRequest(p network.PlayerRequest) (assets.PlayerRequest, erro
 		return empty, fmt.Errorf("%w: invalid locationID: '%s', %s", errors.ErrBadRequest, p.LocationID, err)
 	}
 
-	return assets.PlayerRequest{
+	return assets.PlayerChange{
 		Name:        p.Name,
 		Description: p.Description,
 		HomeID:      assets.RoomID(homeID),
@@ -440,8 +440,8 @@ func TranslatePlayerRequest(p network.PlayerRequest) (assets.PlayerRequest, erro
 }
 
 // TranslatePlayer translates an arcade player to a network player.
-func TranslatePlayer(p *assets.Player) network.Player {
-	return network.Player{
+func TranslatePlayer(p *assets.Player) rest.Player {
+	return rest.Player{
 		ID:          p.ID.String(),
 		Name:        p.Name,
 		Description: p.Description,

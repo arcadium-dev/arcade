@@ -19,8 +19,8 @@ import (
 	"arcadium.dev/core/errors"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
-	"arcadium.dev/arcade/assets/network/server"
+	"arcadium.dev/arcade/assets/network/rest"
+	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
 func TestRoomsList(t *testing.T) {
@@ -103,10 +103,10 @@ func TestRoomsList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var roomsResp network.RoomsResponse
+		var roomsResp rest.RoomsResponse
 		assert.Nil(t, json.Unmarshal(body, &roomsResp))
 
-		assert.Compare(t, roomsResp, network.RoomsResponse{Rooms: []network.Room{
+		assert.Compare(t, roomsResp, rest.RoomsResponse{Rooms: []rest.Room{
 			{
 				ID:          roomID.String(),
 				Name:        name,
@@ -182,10 +182,10 @@ func TestRoomGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var roomResp network.RoomResponse
+		var roomResp rest.RoomResponse
 		assert.Nil(t, json.Unmarshal(body, &roomResp))
 
-		assert.Compare(t, roomResp, network.RoomResponse{Room: network.Room{
+		assert.Compare(t, roomResp, rest.RoomResponse{Room: rest.Room{
 			ID:          roomID.String(),
 			Name:        name,
 			Description: desc,
@@ -221,26 +221,26 @@ func TestRoomCreate(t *testing.T) {
 		m := mockRoomManager{}
 
 		tests := []struct {
-			req    network.RoomCreateRequest
+			req    rest.RoomRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty room name",
 			},
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: room name exceeds maximum length",
 			},
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -248,7 +248,7 @@ func TestRoomCreate(t *testing.T) {
 				errMsg: "bad request: empty room description",
 			},
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -256,7 +256,7 @@ func TestRoomCreate(t *testing.T) {
 				errMsg: "bad request: room description exceeds maximum length",
 			},
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -265,7 +265,7 @@ func TestRoomCreate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.RoomCreateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -277,7 +277,7 @@ func TestRoomCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.RoomCreateRequest{RoomRequest: test.req})
 			assert.Nil(t, err)
 
 			w := invokeRoomsEndpoint(t, m, http.MethodPost, route, body)
@@ -293,20 +293,24 @@ func TestRoomCreate(t *testing.T) {
 
 		m := mockRoomManager{
 			t: t,
-			createReq: assets.RoomCreateRequest{
-				Name:        "name",
-				Description: "description",
-				OwnerID:     ownerID,
-				ParentID:    parentID,
+			create: assets.RoomCreate{
+				RoomChange: assets.RoomChange{
+					Name:        "name",
+					Description: "description",
+					OwnerID:     ownerID,
+					ParentID:    parentID,
+				},
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		createReq := network.RoomCreateRequest{
-			Name:        "name",
-			Description: "description",
-			OwnerID:     ownerID.String(),
-			ParentID:    parentID.String(),
+		createReq := rest.RoomCreateRequest{
+			RoomRequest: rest.RoomRequest{
+				Name:        "name",
+				Description: "description",
+				OwnerID:     ownerID.String(),
+				ParentID:    parentID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -330,11 +334,13 @@ func TestRoomCreate(t *testing.T) {
 
 		m := mockRoomManager{
 			t: t,
-			createReq: assets.RoomCreateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				ParentID:    parentID,
+			create: assets.RoomCreate{
+				RoomChange: assets.RoomChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					ParentID:    parentID,
+				},
 			},
 			createRoom: &assets.Room{
 				ID:          roomID,
@@ -347,11 +353,13 @@ func TestRoomCreate(t *testing.T) {
 			},
 		}
 
-		createReq := network.RoomCreateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			ParentID:    parentID.String(),
+		createReq := rest.RoomCreateRequest{
+			RoomRequest: rest.RoomRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				ParentID:    parentID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -365,10 +373,10 @@ func TestRoomCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var roomResp network.RoomResponse
+		var roomResp rest.RoomResponse
 		assert.Nil(t, json.Unmarshal(respBody, &roomResp))
 
-		assert.Compare(t, roomResp, network.RoomResponse{Room: network.Room{
+		assert.Compare(t, roomResp, rest.RoomResponse{Room: rest.Room{
 			ID:          roomID.String(),
 			Name:        name,
 			Description: desc,
@@ -417,26 +425,26 @@ func TestRoomUpdate(t *testing.T) {
 		m := mockRoomManager{}
 
 		tests := []struct {
-			req    network.RoomUpdateRequest
+			req    rest.RoomRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty room name",
 			},
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: room name exceeds maximum length",
 			},
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -444,7 +452,7 @@ func TestRoomUpdate(t *testing.T) {
 				errMsg: "bad request: empty room description",
 			},
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -452,7 +460,7 @@ func TestRoomUpdate(t *testing.T) {
 				errMsg: "bad request: room description exceeds maximum length",
 			},
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					OwnerID:     "bad owner id",
@@ -461,7 +469,7 @@ func TestRoomUpdate(t *testing.T) {
 				errMsg: "bad request: invalid ownerID: 'bad owner id'",
 			},
 			{
-				req: network.RoomUpdateRequest{
+				req: rest.RoomRequest{
 					Name:        "name",
 					Description: "description",
 					OwnerID:     uuid.New().String(),
@@ -473,7 +481,7 @@ func TestRoomUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.RoomUpdateRequest{RoomRequest: test.req})
 			assert.Nil(t, err)
 
 			roomID := uuid.New()
@@ -498,20 +506,24 @@ func TestRoomUpdate(t *testing.T) {
 		m := mockRoomManager{
 			t:        t,
 			updateID: roomID,
-			updateReq: assets.RoomUpdateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				ParentID:    parentID,
+			update: assets.RoomUpdate{
+				RoomChange: assets.RoomChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					ParentID:    parentID,
+				},
 			},
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		updateReq := network.RoomUpdateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			ParentID:    parentID.String(),
+		updateReq := rest.RoomUpdateRequest{
+			RoomRequest: rest.RoomRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				ParentID:    parentID.String(),
+			},
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -538,11 +550,13 @@ func TestRoomUpdate(t *testing.T) {
 		m := mockRoomManager{
 			t:        t,
 			updateID: roomID,
-			updateReq: assets.RoomUpdateRequest{
-				Name:        name,
-				Description: desc,
-				OwnerID:     ownerID,
-				ParentID:    parentID,
+			update: assets.RoomUpdate{
+				RoomChange: assets.RoomChange{
+					Name:        name,
+					Description: desc,
+					OwnerID:     ownerID,
+					ParentID:    parentID,
+				},
 			},
 			updateRoom: &assets.Room{
 				ID:          roomID,
@@ -555,11 +569,13 @@ func TestRoomUpdate(t *testing.T) {
 			},
 		}
 
-		updateReq := network.RoomUpdateRequest{
-			Name:        name,
-			Description: desc,
-			OwnerID:     ownerID.String(),
-			ParentID:    parentID.String(),
+		updateReq := rest.RoomUpdateRequest{
+			RoomRequest: rest.RoomRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID.String(),
+				ParentID:    parentID.String(),
+			},
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -575,10 +591,10 @@ func TestRoomUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var roomResp network.RoomResponse
+		var roomResp rest.RoomResponse
 		assert.Nil(t, json.Unmarshal(respBody, &roomResp))
 
-		assert.Compare(t, roomResp, network.RoomResponse{Room: network.Room{
+		assert.Compare(t, roomResp, rest.RoomResponse{Room: rest.Room{
 			ID:          roomID.String(),
 			Name:        name,
 			Description: desc,
@@ -676,12 +692,12 @@ type (
 		getRoom *assets.Room
 		getErr  error
 
-		createReq  assets.RoomCreateRequest
+		create     assets.RoomCreate
 		createRoom *assets.Room
 		createErr  error
 
 		updateID   assets.RoomID
-		updateReq  assets.RoomUpdateRequest
+		update     assets.RoomUpdate
 		updateRoom *assets.Room
 		updateErr  error
 
@@ -701,14 +717,14 @@ func (m mockRoomManager) Get(ctx context.Context, id assets.RoomID) (*assets.Roo
 	return m.getRoom, m.getErr
 }
 
-func (m mockRoomManager) Create(ctx context.Context, req assets.RoomCreateRequest) (*assets.Room, error) {
-	assert.Compare(m.t, req, m.createReq)
+func (m mockRoomManager) Create(ctx context.Context, create assets.RoomCreate) (*assets.Room, error) {
+	assert.Compare(m.t, create, m.create)
 	return m.createRoom, m.createErr
 }
 
-func (m mockRoomManager) Update(ctx context.Context, id assets.RoomID, req assets.RoomUpdateRequest) (*assets.Room, error) {
+func (m mockRoomManager) Update(ctx context.Context, id assets.RoomID, update assets.RoomUpdate) (*assets.Room, error) {
 	assert.Compare(m.t, id, m.updateID)
-	assert.Compare(m.t, req, m.updateReq)
+	assert.Compare(m.t, update, m.update)
 	return m.updateRoom, m.updateErr
 }
 

@@ -19,8 +19,8 @@ import (
 	"arcadium.dev/core/errors"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
-	"arcadium.dev/arcade/assets/network/server"
+	"arcadium.dev/arcade/assets/network/rest"
+	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
 func TestPlayersList(t *testing.T) {
@@ -99,10 +99,10 @@ func TestPlayersList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var egressPlayers network.PlayersResponse
+		var egressPlayers rest.PlayersResponse
 		assert.Nil(t, json.Unmarshal(body, &egressPlayers))
 
-		assert.Compare(t, egressPlayers, network.PlayersResponse{Players: []network.Player{
+		assert.Compare(t, egressPlayers, rest.PlayersResponse{Players: []rest.Player{
 			{
 				ID:          playerID.String(),
 				Name:        name,
@@ -178,10 +178,10 @@ func TestPlayerGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var playerResp network.PlayerResponse
+		var playerResp rest.PlayerResponse
 		assert.Nil(t, json.Unmarshal(body, &playerResp))
 
-		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
+		assert.Compare(t, playerResp, rest.PlayerResponse{Player: rest.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -217,26 +217,26 @@ func TestPlayerCreate(t *testing.T) {
 		m := mockPlayerManager{}
 
 		tests := []struct {
-			req    network.PlayerCreateRequest
+			req    rest.PlayerRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty player name",
 			},
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: player name exceeds maximum length",
 			},
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -244,7 +244,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: empty player description",
 			},
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -252,7 +252,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: player description exceeds maximum length",
 			},
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					HomeID:      "bad owner id",
@@ -261,7 +261,7 @@ func TestPlayerCreate(t *testing.T) {
 				errMsg: "bad request: invalid homeID: 'bad owner id'",
 			},
 			{
-				req: network.PlayerCreateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: "description",
 					HomeID:      uuid.New().String(),
@@ -273,7 +273,7 @@ func TestPlayerCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.PlayerCreateRequest{PlayerRequest: test.req})
 			assert.Nil(t, err)
 
 			w := invokePlayersEndpoint(t, m, http.MethodPost, route, body)
@@ -289,20 +289,24 @@ func TestPlayerCreate(t *testing.T) {
 
 		m := mockPlayerManager{
 			t: t,
-			createReq: assets.PlayerRequest{
-				Name:        "name",
-				Description: "description",
-				HomeID:      homeID,
-				LocationID:  locID,
+			create: assets.PlayerCreate{
+				PlayerChange: assets.PlayerChange{
+					Name:        "name",
+					Description: "description",
+					HomeID:      homeID,
+					LocationID:  locID,
+				},
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		createReq := network.PlayerCreateRequest{
-			Name:        "name",
-			Description: "description",
-			HomeID:      homeID.String(),
-			LocationID:  locID.String(),
+		createReq := rest.PlayerCreateRequest{
+			PlayerRequest: rest.PlayerRequest{
+				Name:        "name",
+				Description: "description",
+				HomeID:      homeID.String(),
+				LocationID:  locID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -326,11 +330,13 @@ func TestPlayerCreate(t *testing.T) {
 
 		m := mockPlayerManager{
 			t: t,
-			createReq: assets.PlayerCreateRequest{
-				Name:        name,
-				Description: desc,
-				HomeID:      homeID,
-				LocationID:  locID,
+			create: assets.PlayerCreate{
+				PlayerChange: assets.PlayerChange{
+					Name:        name,
+					Description: desc,
+					HomeID:      homeID,
+					LocationID:  locID,
+				},
 			},
 			createPlayer: &assets.Player{
 				ID:          playerID,
@@ -343,11 +349,13 @@ func TestPlayerCreate(t *testing.T) {
 			},
 		}
 
-		createReq := network.PlayerCreateRequest{
-			Name:        name,
-			Description: desc,
-			HomeID:      homeID.String(),
-			LocationID:  locID.String(),
+		createReq := rest.PlayerCreateRequest{
+			PlayerRequest: rest.PlayerRequest{
+				Name:        name,
+				Description: desc,
+				HomeID:      homeID.String(),
+				LocationID:  locID.String(),
+			},
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -361,10 +369,10 @@ func TestPlayerCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var playerResp network.PlayerResponse
+		var playerResp rest.PlayerResponse
 		assert.Nil(t, json.Unmarshal(respBody, &playerResp))
 
-		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
+		assert.Compare(t, playerResp, rest.PlayerResponse{Player: rest.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -413,26 +421,26 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerManager{}
 
 		tests := []struct {
-			req    network.PlayerUpdateRequest
+			req    rest.PlayerRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty player name",
 			},
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: player name exceeds maximum length",
 			},
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: "",
 				},
@@ -440,7 +448,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: empty player description",
 			},
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: randString(4097),
 				},
@@ -448,7 +456,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: player description exceeds maximum length",
 			},
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name:        randString(256),
 					Description: randString(4096),
 					HomeID:      "bad owner id",
@@ -457,7 +465,7 @@ func TestPlayerUpdate(t *testing.T) {
 				errMsg: "bad request: invalid homeID: 'bad owner id'",
 			},
 			{
-				req: network.PlayerUpdateRequest{
+				req: rest.PlayerRequest{
 					Name:        "name",
 					Description: "description",
 					HomeID:      uuid.New().String(),
@@ -469,7 +477,7 @@ func TestPlayerUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(test.req)
+			body, err := json.Marshal(rest.PlayerUpdateRequest{PlayerRequest: test.req})
 			assert.Nil(t, err)
 
 			playerID := uuid.New()
@@ -494,20 +502,24 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerManager{
 			t:        t,
 			updateID: playerID,
-			updateReq: assets.PlayerUpdateRequest{
-				Name:        name,
-				Description: desc,
-				HomeID:      homeID,
-				LocationID:  locID,
+			update: assets.PlayerUpdate{
+				PlayerChange: assets.PlayerChange{
+					Name:        name,
+					Description: desc,
+					HomeID:      homeID,
+					LocationID:  locID,
+				},
 			},
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		playerReq := network.PlayerUpdateRequest{
-			Name:        name,
-			Description: desc,
-			HomeID:      homeID.String(),
-			LocationID:  locID.String(),
+		playerReq := rest.PlayerUpdateRequest{
+			PlayerRequest: rest.PlayerRequest{
+				Name:        name,
+				Description: desc,
+				HomeID:      homeID.String(),
+				LocationID:  locID.String(),
+			},
 		}
 		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
@@ -534,11 +546,13 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerManager{
 			t:        t,
 			updateID: playerID,
-			updateReq: assets.PlayerUpdateRequest{
-				Name:        name,
-				Description: desc,
-				HomeID:      homeID,
-				LocationID:  locID,
+			update: assets.PlayerUpdate{
+				PlayerChange: assets.PlayerChange{
+					Name:        name,
+					Description: desc,
+					HomeID:      homeID,
+					LocationID:  locID,
+				},
 			},
 			updatePlayer: &assets.Player{
 				ID:          playerID,
@@ -551,11 +565,13 @@ func TestPlayerUpdate(t *testing.T) {
 			},
 		}
 
-		playerReq := network.PlayerUpdateRequest{
-			Name:        name,
-			Description: desc,
-			HomeID:      homeID.String(),
-			LocationID:  locID.String(),
+		playerReq := rest.PlayerUpdateRequest{
+			PlayerRequest: rest.PlayerRequest{
+				Name:        name,
+				Description: desc,
+				HomeID:      homeID.String(),
+				LocationID:  locID.String(),
+			},
 		}
 		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
@@ -571,10 +587,10 @@ func TestPlayerUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var playerResp network.PlayerResponse
+		var playerResp rest.PlayerResponse
 		assert.Nil(t, json.Unmarshal(respBody, &playerResp))
 
-		assert.Compare(t, playerResp, network.PlayerResponse{Player: network.Player{
+		assert.Compare(t, playerResp, rest.PlayerResponse{Player: rest.Player{
 			ID:          playerID.String(),
 			Name:        name,
 			Description: desc,
@@ -672,12 +688,12 @@ type (
 		getPlayer *assets.Player
 		getErr    error
 
-		createReq    assets.PlayerCreateRequest
+		create       assets.PlayerCreate
 		createPlayer *assets.Player
 		createErr    error
 
 		updateID     assets.PlayerID
-		updateReq    assets.PlayerUpdateRequest
+		update       assets.PlayerUpdate
 		updatePlayer *assets.Player
 		updateErr    error
 
@@ -696,14 +712,14 @@ func (m mockPlayerManager) Get(ctx context.Context, id assets.PlayerID) (*assets
 	return m.getPlayer, m.getErr
 }
 
-func (m mockPlayerManager) Create(ctx context.Context, req assets.PlayerCreateRequest) (*assets.Player, error) {
-	assert.Compare(m.t, req, m.createReq)
+func (m mockPlayerManager) Create(ctx context.Context, create assets.PlayerCreate) (*assets.Player, error) {
+	assert.Compare(m.t, create, m.create)
 	return m.createPlayer, m.createErr
 }
 
-func (m mockPlayerManager) Update(ctx context.Context, id assets.PlayerID, req assets.PlayerUpdateRequest) (*assets.Player, error) {
+func (m mockPlayerManager) Update(ctx context.Context, id assets.PlayerID, update assets.PlayerUpdate) (*assets.Player, error) {
 	assert.Compare(m.t, id, m.updateID)
-	assert.Compare(m.t, req, m.updateReq)
+	assert.Compare(m.t, update, m.update)
 	return m.updatePlayer, m.updateErr
 }
 

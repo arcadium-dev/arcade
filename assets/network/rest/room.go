@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package network // import "arcadium.dev/arcade/assets/network"
+package rest // import "arcadium.dev/arcade/assets/network/rest"
 
 import (
 	"arcadium.dev/arcade/assets"
@@ -22,12 +22,16 @@ type (
 	// RoomCreateRequest is used to request an room be created.
 	//
 	// swagger:parameters ItemCreate
-	RoomCreateRequest = RoomRequest
+	RoomCreateRequest struct {
+		RoomRequest
+	}
 
 	// RoomUpdateRequest is used to request an room be updated.
 	//
 	// swagger:parameters RoomUpdate
-	RoomUpdateRequest = RoomRequest
+	RoomUpdateRequest struct {
+		RoomRequest
+	}
 
 	// RoomRequest is used to request an item be created or updated.
 	RoomRequest struct {

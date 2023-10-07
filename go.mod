@@ -1,6 +1,6 @@
 module arcadium.dev/arcade
 
-go 1.21.1
+go 1.21
 
 require (
 	arcadium.dev/core v0.0.7

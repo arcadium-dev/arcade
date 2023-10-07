@@ -30,8 +30,8 @@ type (
 	ItemStorage interface {
 		List(context.Context, assets.ItemsFilter) ([]*assets.Item, error)
 		Get(context.Context, assets.ItemID) (*assets.Item, error)
-		Create(context.Context, assets.ItemCreateRequest) (*assets.Item, error)
-		Update(context.Context, assets.ItemID, assets.ItemUpdateRequest) (*assets.Item, error)
+		Create(context.Context, assets.ItemCreate) (*assets.Item, error)
+		Update(context.Context, assets.ItemID, assets.ItemUpdate) (*assets.Item, error)
 		Remove(context.Context, assets.ItemID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m ItemManager) Get(ctx context.Context, id assets.ItemID) (*assets.Item, e
 }
 
 // Create creates a new item in persistent storage.
-func (m ItemManager) Create(ctx context.Context, req assets.ItemCreateRequest) (*assets.Item, error) {
-	return m.Storage.Create(ctx, req)
+func (m ItemManager) Create(ctx context.Context, create assets.ItemCreate) (*assets.Item, error) {
+	return m.Storage.Create(ctx, create)
 }
 
 // Update replaces the item in persistent storage.
-func (m ItemManager) Update(ctx context.Context, id assets.ItemID, req assets.ItemUpdateRequest) (*assets.Item, error) {
-	return m.Storage.Update(ctx, id, req)
+func (m ItemManager) Update(ctx context.Context, id assets.ItemID, update assets.ItemUpdate) (*assets.Item, error) {
+	return m.Storage.Update(ctx, id, update)
 }
 
 // Remove deletes the given item, based on the given itemID, from persistent storage.

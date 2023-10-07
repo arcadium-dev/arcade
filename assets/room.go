@@ -64,14 +64,18 @@ type (
 		Limit uint
 	}
 
-	// RoomsCreateRequest is used to request an item to be created.
-	RoomCreateRequest = RoomRequest
+	// RoomCreate is used to create an item.
+	RoomCreate struct {
+		RoomChange
+	}
 
-	// RoomsCreateRequest is used to request an item to be updated.
-	RoomUpdateRequest = RoomRequest
+	// RoomUpdate is used to update an item.
+	RoomUpdate struct {
+		RoomChange
+	}
 
-	// RoomsRequest holds item information.
-	RoomRequest struct {
+	// RoomChange holds information to change an item.
+	RoomChange struct {
 		Name        string
 		Description string
 		OwnerID     PlayerID

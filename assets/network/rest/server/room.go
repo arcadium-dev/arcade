@@ -29,7 +29,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network"
+	"arcadium.dev/arcade/assets/network/rest"
 )
 
 const (
@@ -46,8 +46,8 @@ type (
 	RoomManager interface {
 		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
 		Get(context.Context, assets.RoomID) (*assets.Room, error)
-		Create(context.Context, assets.RoomCreateRequest) (*assets.Room, error)
-		Update(context.Context, assets.RoomID, assets.RoomUpdateRequest) (*assets.Room, error)
+		Create(context.Context, assets.RoomCreate) (*assets.Room, error)
+		Update(context.Context, assets.RoomID, assets.RoomUpdate) (*assets.Room, error)
 		Remove(context.Context, assets.RoomID) error
 	}
 )
@@ -110,7 +110,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets rooms, to network rooms.
-	var rooms []network.Room
+	var rooms []rest.Room
 	for _, aRoom := range aRooms {
 		rooms = append(rooms, TranslateRoom(aRoom))
 	}
@@ -119,7 +119,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.RoomsResponse{Rooms: rooms})
+	err = json.NewEncoder(w).Encode(rest.RoomsResponse{Rooms: rooms})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -169,7 +169,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
+	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -213,7 +213,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq network.RoomCreateRequest
+	var createReq rest.RoomCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -223,13 +223,13 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the room request to the room manager.
-	req, err := TranslateRoomRequest(createReq)
+	change, err := TranslateRoomRequest(createReq.RoomRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
-	room, err := s.Manager.Create(ctx, req)
+	room, err := s.Manager.Create(ctx, assets.RoomCreate{RoomChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -239,7 +239,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
+	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -299,7 +299,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Populate the network room from the body.
-	var updateReq network.RoomUpdateRequest
+	var updateReq rest.RoomUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -309,14 +309,14 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the room request.
-	req, err := TranslateRoomRequest(updateReq)
+	change, err := TranslateRoomRequest(updateReq.RoomRequest)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
 	}
 
 	// Send the room to the room manager.
-	room, err := s.Manager.Update(ctx, assets.RoomID(roomID), req)
+	room, err := s.Manager.Update(ctx, assets.RoomID(roomID), assets.RoomUpdate{RoomChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -325,7 +325,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(network.RoomResponse{Room: TranslateRoom(room)})
+	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -417,8 +417,8 @@ func NewRoomsFilter(r *http.Request) (assets.RoomsFilter, error) {
 }
 
 // TranslateRoomRequest translates a network room request to an assets room request.
-func TranslateRoomRequest(r network.RoomRequest) (assets.RoomRequest, error) {
-	empty := assets.RoomRequest{}
+func TranslateRoomRequest(r rest.RoomRequest) (assets.RoomChange, error) {
+	empty := assets.RoomChange{}
 
 	if r.Name == "" {
 		return empty, fmt.Errorf("%w: empty room name", errors.ErrBadRequest)
@@ -441,7 +441,7 @@ func TranslateRoomRequest(r network.RoomRequest) (assets.RoomRequest, error) {
 		return empty, fmt.Errorf("%w: invalid parentID: '%s', %s", errors.ErrBadRequest, r.ParentID, err)
 	}
 
-	return assets.RoomRequest{
+	return assets.RoomChange{
 		Name:        r.Name,
 		Description: r.Description,
 		OwnerID:     assets.PlayerID(ownerID),
@@ -450,8 +450,8 @@ func TranslateRoomRequest(r network.RoomRequest) (assets.RoomRequest, error) {
 }
 
 // TranslateRoom translates an assets room to a network room.
-func TranslateRoom(r *assets.Room) network.Room {
-	return network.Room{
+func TranslateRoom(r *assets.Room) rest.Room {
+	return rest.Room{
 		ID:          r.ID.String(),
 		Name:        r.Name,
 		Description: r.Description,

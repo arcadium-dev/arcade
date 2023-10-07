@@ -30,8 +30,8 @@ type (
 	RoomStorage interface {
 		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
 		Get(context.Context, assets.RoomID) (*assets.Room, error)
-		Create(context.Context, assets.RoomCreateRequest) (*assets.Room, error)
-		Update(context.Context, assets.RoomID, assets.RoomUpdateRequest) (*assets.Room, error)
+		Create(context.Context, assets.RoomCreate) (*assets.Room, error)
+		Update(context.Context, assets.RoomID, assets.RoomUpdate) (*assets.Room, error)
 		Remove(context.Context, assets.RoomID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m RoomManager) Get(ctx context.Context, id assets.RoomID) (*assets.Room, e
 }
 
 // Create creates a new room in persistent storage.
-func (m RoomManager) Create(ctx context.Context, req assets.RoomCreateRequest) (*assets.Room, error) {
-	return m.Storage.Create(ctx, req)
+func (m RoomManager) Create(ctx context.Context, create assets.RoomCreate) (*assets.Room, error) {
+	return m.Storage.Create(ctx, create)
 }
 
 // Update replaces the room in persistent storage.
-func (m RoomManager) Update(ctx context.Context, id assets.RoomID, req assets.RoomUpdateRequest) (*assets.Room, error) {
-	return m.Storage.Update(ctx, id, req)
+func (m RoomManager) Update(ctx context.Context, id assets.RoomID, update assets.RoomUpdate) (*assets.Room, error) {
+	return m.Storage.Update(ctx, id, update)
 }
 
 // Remove deletes the given room, based on the given roomID, from persistent storage.

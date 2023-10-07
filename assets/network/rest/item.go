@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package network // import "arcadium.dev/arcade/assets/network"
+package rest // import "arcadium.dev/arcade/assets/network/rest"
 
 import (
 	"arcadium.dev/arcade/assets"
@@ -22,12 +22,16 @@ type (
 	// ItemCreateRequest is used to request an item be created.
 	//
 	// swagger:parameters ItemCreate
-	ItemCreateRequest = ItemRequest
+	ItemCreateRequest struct {
+		ItemRequest
+	}
 
 	// ItemUpdateRequest is used to request an item be updated.
 	//
 	// swagger:parameters ItemUpdate
-	ItemUpdateRequest = ItemRequest
+	ItemUpdateRequest struct {
+		ItemRequest
+	}
 
 	// ItemRequest is used to request an item be created or updated.
 	ItemRequest struct {

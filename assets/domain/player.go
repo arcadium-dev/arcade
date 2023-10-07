@@ -30,8 +30,8 @@ type (
 	PlayerStorage interface {
 		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
 		Get(context.Context, assets.PlayerID) (*assets.Player, error)
-		Create(context.Context, assets.PlayerCreateRequest) (*assets.Player, error)
-		Update(context.Context, assets.PlayerID, assets.PlayerUpdateRequest) (*assets.Player, error)
+		Create(context.Context, assets.PlayerCreate) (*assets.Player, error)
+		Update(context.Context, assets.PlayerID, assets.PlayerUpdate) (*assets.Player, error)
 		Remove(context.Context, assets.PlayerID) error
 	}
 )
@@ -47,13 +47,13 @@ func (m PlayerManager) Get(ctx context.Context, id assets.PlayerID) (*assets.Pla
 }
 
 // Create creates a new player in persistent storage.
-func (m PlayerManager) Create(ctx context.Context, req assets.PlayerCreateRequest) (*assets.Player, error) {
-	return m.Storage.Create(ctx, req)
+func (m PlayerManager) Create(ctx context.Context, create assets.PlayerCreate) (*assets.Player, error) {
+	return m.Storage.Create(ctx, create)
 }
 
 // Update replaces the player in persistent storage.
-func (m PlayerManager) Update(ctx context.Context, id assets.PlayerID, req assets.PlayerUpdateRequest) (*assets.Player, error) {
-	return m.Storage.Update(ctx, id, req)
+func (m PlayerManager) Update(ctx context.Context, id assets.PlayerID, update assets.PlayerUpdate) (*assets.Player, error) {
+	return m.Storage.Update(ctx, id, update)
 }
 
 // Remove deletes the given player, based on the given playerID, from persistent storage.

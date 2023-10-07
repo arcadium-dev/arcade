@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package network // import "arcadium.dev/arcade/assets/network"
+package rest // import "arcadium.dev/arcade/assets/network/rest"
 
 import "arcadium.dev/arcade/assets"
 
@@ -20,12 +20,16 @@ type (
 	// LinkCreateRequest is used to request an link be created.
 	//
 	// swagger:parameters LinkCreate
-	LinkCreateRequest = LinkRequest
+	LinkCreateRequest struct {
+		LinkRequest
+	}
 
 	// LinkUpdateRequest is used to request an link be updated.
 	//
 	// swagger:parameters LinkUpdate
-	LinkUpdateRequest = LinkRequest
+	LinkUpdateRequest struct {
+		LinkRequest
+	}
 
 	// LinkRequest is used to request an link be created or updated.
 	LinkRequest struct {

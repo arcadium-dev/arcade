@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package network // import "arcadium.dev/arcade/assets/network"
+package rest // import "arcadium.dev/arcade/assets/network/rest"
 
 import (
 	"arcadium.dev/arcade/assets"
@@ -22,12 +22,16 @@ type (
 	// PlayerCreateRequest is used to request an player be created.
 	//
 	// swagger:parameters PlayerCreate
-	PlayerCreateRequest = PlayerRequest
+	PlayerCreateRequest struct {
+		PlayerRequest
+	}
 
 	// PlayerUpdateRequest is used to request an player be updated.
 	//
 	// swagger:parameters PlayerUpdate
-	PlayerUpdateRequest = PlayerRequest
+	PlayerUpdateRequest struct {
+		PlayerRequest
+	}
 
 	// PlayerRequest is used to request an player be created or updated.
 	PlayerRequest struct {

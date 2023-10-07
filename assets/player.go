@@ -61,14 +61,18 @@ type (
 		Limit uint
 	}
 
-	// PlayerCreateRequest is used to request an item to be created.
-	PlayerCreateRequest = PlayerRequest
+	// PlayerCreate is used to create an item.
+	PlayerCreate struct {
+		PlayerChange
+	}
 
-	// PlayerCreateRequest is used to request an item to be updated.
-	PlayerUpdateRequest = PlayerRequest
+	// PlayerUpdate is used to update an item.
+	PlayerUpdate struct {
+		PlayerChange
+	}
 
-	// PlayerRequest holds item information.
-	PlayerRequest struct {
+	// PlayerChange holds information to change an item.
+	PlayerChange struct {
 		Name        string
 		Description string
 		HomeID      RoomID

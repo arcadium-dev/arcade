@@ -20,19 +20,19 @@ mkcert_version := v1.4.4
 
 .PHONY: all
 
-all: containers tools
+all: images tools
 	docker image ls
 
 # ____ application ___________________________________________________________
 
-.PHONY: containers \
-	assets assets_container assets_migrate_container
+.PHONY: images \
+	assets assets assets_migrate
 
-containers: assets
+images: assets
 
-assets: assets_container migrate_container
+assets: assets migrate
 
-assets_container: Dockerfile.assets
+assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
 		--file Dockerfile.assets \
 		--ssh default \
@@ -45,9 +45,9 @@ assets_container: Dockerfile.assets
 		--tag assets:latest \
 		..
 
-migrate_container: Dockerfile.assets-migrate
+migrate: Dockerfile.assets-migrate
 	DOCKER_BUILDKIT=1 docker build \
-    --file Dockerfile.migrate \
+    --file Dockerfile.assets-migrate \
     --build-arg migrate_version=$(migrate_version) \
     --rm --force-rm \
     --tag assets-migrate:latest \

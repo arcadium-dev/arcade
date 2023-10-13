@@ -51,7 +51,7 @@ RUN apk update && \
 COPY --from=builder --chown=arcadium:arcadium /src/dist/assets /arcadium/assets
 
 USER  arcadium:arcadium
-EXPOSE 443
+EXPOSE 4202
 VOLUME "/etc/certs"
 WORKDIR /arcadium
 ENTRYPOINT ["/arcadium/assets"]

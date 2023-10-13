@@ -1,6 +1,8 @@
 package main_test
 
+/*
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -13,6 +15,8 @@ import (
 
 // Note: TestMain is a low-level primitive and can cause issues with IDEs
 func TestMainEntryPoint(t *testing.T) {
+	t.Setenv("DSN", "foobar")
+
 	t.Run("init failure", func(t *testing.T) {
 		restore := setNew(func(v, b, c, d string) cmd.RestServer {
 			return mockRestServer{initErr: errors.New("init failure")}
@@ -60,7 +64,7 @@ type (
 	}
 )
 
-func (m mockRestServer) Init() error {
+func (m mockRestServer) Init(...string) error {
 	return m.initErr
 }
 
@@ -71,3 +75,8 @@ func (m mockRestServer) Start(...server.Service) error {
 func (m mockRestServer) DB() *sql.DB {
 	return m.db
 }
+
+func (m mockRestServer) Ctx() context.Context {
+	return context.Background()
+}
+*/

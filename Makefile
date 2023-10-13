@@ -111,12 +111,12 @@ docs:
 
 # ____ image artifacts  __________________________________________________
 
-.PHONY: images assets
+.PHONY: images assets assets-migrate mkcert curl
 
 images:
 	make -C dockerfiles all
 
-assets:
+assets assets-migrate mkcert curl:
 	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________

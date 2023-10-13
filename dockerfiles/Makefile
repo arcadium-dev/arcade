@@ -25,12 +25,9 @@ all: images tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: images \
-	assets assets assets_migrate
+.PHONY: images assets assets-migrate
 
-images: assets
-
-assets: assets migrate
+images: assets assets-migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -45,7 +42,7 @@ assets: Dockerfile.assets
 		--tag assets:latest \
 		..
 
-migrate: Dockerfile.assets-migrate
+assets-migrate: Dockerfile.assets-migrate
 	DOCKER_BUILDKIT=1 docker build \
     --file Dockerfile.assets-migrate \
     --build-arg migrate_version=$(migrate_version) \

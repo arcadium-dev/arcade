@@ -179,7 +179,7 @@ func (i ItemStorage) Create(ctx context.Context, create assets.ItemCreate) (*ass
 	// in the rooms table, thus we will return an invalid argument error.
 	if i.Driver.IsForeignKeyViolation(err) {
 		return nil, fmt.Errorf(
-			"%s: %w: the given ownerID or locationID does not exist: homeID '%s', locationID '%s (%s)'",
+			"%s: %w: the given ownerID or locationID does not exist: ownerID '%s', locationID '%s (%s)'",
 			failMsg, errors.ErrBadRequest, create.OwnerID, create.LocationID.ID(), create.LocationID.Type(),
 		)
 	}
@@ -243,7 +243,7 @@ func (i ItemStorage) Update(ctx context.Context, itemID assets.ItemID, update as
 	// in the rooms table, thus we will return an invalid argument error.
 	if i.Driver.IsForeignKeyViolation(err) {
 		return nil, fmt.Errorf(
-			"%s: %w: the given ownerID or locationID does not exist: homeID '%s', locationID '%s (%s)'",
+			"%s: %w: the given ownerID or locationID does not exist: ownerID '%s', locationID '%s (%s)'",
 			failMsg, errors.ErrBadRequest, update.OwnerID, update.LocationID.ID(), update.LocationID.Type(),
 		)
 	}

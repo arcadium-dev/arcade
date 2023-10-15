@@ -40,11 +40,11 @@ const (
 type (
 	// ItemService services item related network requests.
 	ItemsService struct {
-		Manager ItemManager
+		Storage ItemStorage
 	}
 
-	// ItemManager defines the expected behavior of the item manager in the domain layer.
-	ItemManager interface {
+	// ItemStorage defines the expected behavior of the item manager in the domain layer.
+	ItemStorage interface {
 		List(context.Context, assets.ItemFilter) ([]*assets.Item, error)
 		Get(context.Context, assets.ItemID) (*assets.Item, error)
 		Create(context.Context, assets.ItemCreate) (*assets.Item, error)
@@ -106,7 +106,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read list of items.
-	aItems, err := s.Manager.List(ctx, filter)
+	aItems, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -162,7 +162,7 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request the item from the item manager.
-	item, err := s.Manager.Get(ctx, assets.ItemID(itemID))
+	item, err := s.Storage.Get(ctx, assets.ItemID(itemID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -232,7 +232,7 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := s.Manager.Create(ctx, assets.ItemCreate{ItemChange: change})
+	item, err := s.Storage.Create(ctx, assets.ItemCreate{ItemChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -319,7 +319,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the item to the item manager.
-	item, err := s.Manager.Update(ctx, assets.ItemID(itemID), assets.ItemUpdate{ItemChange: change})
+	item, err := s.Storage.Update(ctx, assets.ItemID(itemID), assets.ItemUpdate{ItemChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -370,7 +370,7 @@ func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the itemID to the item manager for removal.
-	err = s.Manager.Remove(ctx, assets.ItemID(itemID))
+	err = s.Storage.Remove(ctx, assets.ItemID(itemID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return

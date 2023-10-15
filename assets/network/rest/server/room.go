@@ -39,11 +39,11 @@ const (
 type (
 	// RoomService services room related network requests.
 	RoomsService struct {
-		Manager RoomManager
+		Storage RoomStorage
 	}
 
-	// RoomManager defines the expected behavior of the room manager in the domain layer.
-	RoomManager interface {
+	// RoomStorage defines the expected behavior of the room manager in the domain layer.
+	RoomStorage interface {
 		List(context.Context, assets.RoomFilter) ([]*assets.Room, error)
 		Get(context.Context, assets.RoomID) (*assets.Room, error)
 		Create(context.Context, assets.RoomCreate) (*assets.Room, error)
@@ -103,7 +103,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read list of rooms.
-	aRooms, err := s.Manager.List(ctx, filter)
+	aRooms, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -159,7 +159,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request the room from the room manager.
-	room, err := s.Manager.Get(ctx, assets.RoomID(roomID))
+	room, err := s.Storage.Get(ctx, assets.RoomID(roomID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -229,7 +229,7 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room, err := s.Manager.Create(ctx, assets.RoomCreate{RoomChange: change})
+	room, err := s.Storage.Create(ctx, assets.RoomCreate{RoomChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -316,7 +316,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the room to the room manager.
-	room, err := s.Manager.Update(ctx, assets.RoomID(roomID), assets.RoomUpdate{RoomChange: change})
+	room, err := s.Storage.Update(ctx, assets.RoomID(roomID), assets.RoomUpdate{RoomChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -367,7 +367,7 @@ func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the roomID to the room manager for removal.
-	err = s.Manager.Remove(ctx, assets.RoomID(roomID))
+	err = s.Storage.Remove(ctx, assets.RoomID(roomID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return

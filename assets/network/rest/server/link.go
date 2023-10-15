@@ -39,11 +39,11 @@ const (
 type (
 	// LinkService services link related network requests.
 	LinksService struct {
-		Manager LinkManager
+		Storage LinkStorage
 	}
 
-	// LinkManager defines the expected behavior of the link manager in the domain layer.
-	LinkManager interface {
+	// LinkStorage defines the expected behavior of the link manager in the domain layer.
+	LinkStorage interface {
 		List(context.Context, assets.LinkFilter) ([]*assets.Link, error)
 		Get(context.Context, assets.LinkID) (*assets.Link, error)
 		Create(context.Context, assets.LinkCreate) (*assets.Link, error)
@@ -105,7 +105,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read list of links.
-	aLinks, err := s.Manager.List(ctx, filter)
+	aLinks, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -161,7 +161,7 @@ func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request the link from the link manager.
-	link, err := s.Manager.Get(ctx, assets.LinkID(linkID))
+	link, err := s.Storage.Get(ctx, assets.LinkID(linkID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -231,7 +231,7 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := s.Manager.Create(ctx, assets.LinkCreate{LinkChange: change})
+	link, err := s.Storage.Create(ctx, assets.LinkCreate{LinkChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -317,7 +317,7 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the link to the link manager.
-	link, err := s.Manager.Update(ctx, assets.LinkID(linkID), assets.LinkUpdate{LinkChange: change})
+	link, err := s.Storage.Update(ctx, assets.LinkID(linkID), assets.LinkUpdate{LinkChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -368,7 +368,7 @@ func (s LinksService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the linkID to the link manager for removal.
-	err = s.Manager.Remove(ctx, assets.LinkID(linkID))
+	err = s.Storage.Remove(ctx, assets.LinkID(linkID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return

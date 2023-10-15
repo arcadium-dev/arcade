@@ -39,11 +39,11 @@ const (
 type (
 	// PlayerService services player related network requests.
 	PlayersService struct {
-		Manager PlayerManager
+		Storage PlayerStorage
 	}
 
-	// PlayerManager defines the expected behavior of the player manager in the domain layer.
-	PlayerManager interface {
+	// PlayerStorage defines the expected behavior of the player manager in the domain layer.
+	PlayerStorage interface {
 		List(context.Context, assets.PlayerFilter) ([]*assets.Player, error)
 		Get(context.Context, assets.PlayerID) (*assets.Player, error)
 		Create(context.Context, assets.PlayerCreate) (*assets.Player, error)
@@ -101,7 +101,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read list of players.
-	aPlayers, err := s.Manager.List(ctx, filter)
+	aPlayers, err := s.Storage.List(ctx, filter)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -157,7 +157,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request the player from the player manager.
-	player, err := s.Manager.Get(ctx, assets.PlayerID(playerID))
+	player, err := s.Storage.Get(ctx, assets.PlayerID(playerID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -227,7 +227,7 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := s.Manager.Create(ctx, assets.PlayerCreate{PlayerChange: change})
+	player, err := s.Storage.Create(ctx, assets.PlayerCreate{PlayerChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -314,7 +314,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the player to the player manager.
-	player, err := s.Manager.Update(ctx, assets.PlayerID(playerID), assets.PlayerUpdate{PlayerChange: change})
+	player, err := s.Storage.Update(ctx, assets.PlayerID(playerID), assets.PlayerUpdate{PlayerChange: change})
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -365,7 +365,7 @@ func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the playerID to the player manager for removal.
-	err = s.Manager.Remove(ctx, assets.PlayerID(playerID))
+	err = s.Storage.Remove(ctx, assets.PlayerID(playerID))
 	if err != nil {
 		server.Response(ctx, w, err)
 		return

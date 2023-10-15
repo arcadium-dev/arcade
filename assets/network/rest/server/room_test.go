@@ -28,7 +28,7 @@ func TestRoomsList(t *testing.T) {
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		// ownerID failure
 		w := invokeRoomsEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
@@ -48,7 +48,7 @@ func TestRoomsList(t *testing.T) {
 	})
 
 	t.Run("room manager list failure", func(t *testing.T) {
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t: t,
 			filter: assets.RoomFilter{
 				ParentID: assets.RoomID(id),
@@ -75,7 +75,7 @@ func TestRoomsList(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t: t,
 			filter: assets.RoomFilter{
 				Offset: 25,
@@ -124,7 +124,7 @@ func TestRoomGet(t *testing.T) {
 	roomID := assets.RoomID(uuid.New())
 
 	t.Run("roomID failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
 
@@ -133,7 +133,7 @@ func TestRoomGet(t *testing.T) {
 	})
 
 	t.Run("room manager get failure", func(t *testing.T) {
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:      t,
 			getID:  roomID,
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -157,7 +157,7 @@ func TestRoomGet(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:     t,
 			getID: roomID,
 			getRoom: &assets.Room{
@@ -201,7 +201,7 @@ func TestRoomCreate(t *testing.T) {
 	route := server.V1RoomsRoute
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPost, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -211,14 +211,14 @@ func TestRoomCreate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
 	t.Run("create room req failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		tests := []struct {
 			req    rest.RoomRequest
@@ -291,7 +291,7 @@ func TestRoomCreate(t *testing.T) {
 			parentID = assets.RoomID(uuid.New())
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t: t,
 			create: assets.RoomCreate{
 				RoomChange: assets.RoomChange{
@@ -332,7 +332,7 @@ func TestRoomCreate(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t: t,
 			create: assets.RoomCreate{
 				RoomChange: assets.RoomChange{
@@ -390,7 +390,7 @@ func TestRoomCreate(t *testing.T) {
 
 func TestRoomUpdate(t *testing.T) {
 	t.Run("roomID failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
 
@@ -399,7 +399,7 @@ func TestRoomUpdate(t *testing.T) {
 	})
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		roomID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
@@ -412,7 +412,7 @@ func TestRoomUpdate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		roomID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
@@ -422,7 +422,7 @@ func TestRoomUpdate(t *testing.T) {
 	})
 
 	t.Run("update room req failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		tests := []struct {
 			req    rest.RoomRequest
@@ -503,7 +503,7 @@ func TestRoomUpdate(t *testing.T) {
 			parentID = assets.RoomID(uuid.New())
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:        t,
 			updateID: roomID,
 			update: assets.RoomUpdate{
@@ -547,7 +547,7 @@ func TestRoomUpdate(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:        t,
 			updateID: roomID,
 			update: assets.RoomUpdate{
@@ -610,7 +610,7 @@ func TestRoomRemove(t *testing.T) {
 	roomID := assets.RoomID(uuid.New())
 
 	t.Run("roomID failure", func(t *testing.T) {
-		m := mockRoomManager{}
+		m := mockRoomStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
 
@@ -619,7 +619,7 @@ func TestRoomRemove(t *testing.T) {
 	})
 
 	t.Run("room manager remove eailure", func(t *testing.T) {
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:         t,
 			removeID:  roomID,
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -632,7 +632,7 @@ func TestRoomRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := mockRoomManager{
+		m := mockRoomStorage{
 			t:        t,
 			removeID: roomID,
 		}
@@ -648,7 +648,7 @@ func TestRoomRemove(t *testing.T) {
 
 // helper
 
-func invokeRoomsEndpoint(t *testing.T, m mockRoomManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+func invokeRoomsEndpoint(t *testing.T, m mockRoomStorage, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	if len(query)%2 != 0 {
@@ -661,7 +661,7 @@ func invokeRoomsEndpoint(t *testing.T, m mockRoomManager, method, target string,
 	}
 
 	router := mux.NewRouter()
-	s := server.RoomsService{Manager: m}
+	s := server.RoomsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, b)
@@ -678,10 +678,10 @@ func invokeRoomsEndpoint(t *testing.T, m mockRoomManager, method, target string,
 	return w
 }
 
-// mockRoomManager
+// mockRoomStorage
 
 type (
-	mockRoomManager struct {
+	mockRoomStorage struct {
 		t *testing.T
 
 		filter  assets.RoomFilter
@@ -706,29 +706,29 @@ type (
 	}
 )
 
-func (m mockRoomManager) List(ctx context.Context, filter assets.RoomFilter) ([]*assets.Room, error) {
+func (m mockRoomStorage) List(ctx context.Context, filter assets.RoomFilter) ([]*assets.Room, error) {
 	m.t.Helper()
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }
 
-func (m mockRoomManager) Get(ctx context.Context, id assets.RoomID) (*assets.Room, error) {
+func (m mockRoomStorage) Get(ctx context.Context, id assets.RoomID) (*assets.Room, error) {
 	assert.Compare(m.t, id, m.getID)
 	return m.getRoom, m.getErr
 }
 
-func (m mockRoomManager) Create(ctx context.Context, create assets.RoomCreate) (*assets.Room, error) {
+func (m mockRoomStorage) Create(ctx context.Context, create assets.RoomCreate) (*assets.Room, error) {
 	assert.Compare(m.t, create, m.create)
 	return m.createRoom, m.createErr
 }
 
-func (m mockRoomManager) Update(ctx context.Context, id assets.RoomID, update assets.RoomUpdate) (*assets.Room, error) {
+func (m mockRoomStorage) Update(ctx context.Context, id assets.RoomID, update assets.RoomUpdate) (*assets.Room, error) {
 	assert.Compare(m.t, id, m.updateID)
 	assert.Compare(m.t, update, m.update)
 	return m.updateRoom, m.updateErr
 }
 
-func (m mockRoomManager) Remove(ctx context.Context, id assets.RoomID) error {
+func (m mockRoomStorage) Remove(ctx context.Context, id assets.RoomID) error {
 	assert.Compare(m.t, id, m.removeID)
 	return m.removeErr
 }

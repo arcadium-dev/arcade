@@ -28,7 +28,7 @@ func TestItemsList(t *testing.T) {
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		// ownerID failure
 		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
@@ -56,7 +56,7 @@ func TestItemsList(t *testing.T) {
 	})
 
 	t.Run("item manager list failure", func(t *testing.T) {
-		m := mockItemManager{
+		m := mockItemStorage{
 			t: t,
 			filter: assets.ItemFilter{
 				LocationID: assets.ItemID(id),
@@ -83,7 +83,7 @@ func TestItemsList(t *testing.T) {
 			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t: t,
 			filter: assets.ItemFilter{
 				LocationID: locationID,
@@ -136,7 +136,7 @@ func TestItemGet(t *testing.T) {
 	itemID := assets.ItemID(uuid.New())
 
 	t.Run("itemID failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
 
@@ -145,7 +145,7 @@ func TestItemGet(t *testing.T) {
 	})
 
 	t.Run("item manager get failure", func(t *testing.T) {
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:      t,
 			getID:  itemID,
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -169,7 +169,7 @@ func TestItemGet(t *testing.T) {
 			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:     t,
 			getID: itemID,
 			getItem: &assets.Item{
@@ -216,7 +216,7 @@ func TestItemCreate(t *testing.T) {
 	route := server.V1ItemsRoute
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		w := invokeItemsEndpoint(t, m, http.MethodPost, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -226,14 +226,14 @@ func TestItemCreate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		w := invokeItemsEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
 	t.Run("create item req failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		tests := []struct {
 			req    rest.ItemRequest
@@ -321,7 +321,7 @@ func TestItemCreate(t *testing.T) {
 			locID   = assets.RoomID(uuid.New())
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t: t,
 			create: assets.ItemCreate{
 				ItemChange: assets.ItemChange{
@@ -364,7 +364,7 @@ func TestItemCreate(t *testing.T) {
 			updated = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t: t,
 			create: assets.ItemCreate{
 				ItemChange: assets.ItemChange{
@@ -428,7 +428,7 @@ func TestItemCreate(t *testing.T) {
 
 func TestItemUpdate(t *testing.T) {
 	t.Run("itemID failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
 
@@ -437,7 +437,7 @@ func TestItemUpdate(t *testing.T) {
 	})
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		itemID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
@@ -450,7 +450,7 @@ func TestItemUpdate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		itemID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
@@ -460,7 +460,7 @@ func TestItemUpdate(t *testing.T) {
 	})
 
 	t.Run("update item req failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		tests := []struct {
 			req    rest.ItemRequest
@@ -556,7 +556,7 @@ func TestItemUpdate(t *testing.T) {
 			locID   = assets.ItemID(uuid.New())
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:        t,
 			updateID: itemID,
 			update: assets.ItemUpdate{
@@ -602,7 +602,7 @@ func TestItemUpdate(t *testing.T) {
 			updated = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:        t,
 			updateID: itemID,
 			update: assets.ItemUpdate{
@@ -671,7 +671,7 @@ func TestItemRemove(t *testing.T) {
 	itemID := assets.ItemID(uuid.New())
 
 	t.Run("itemID failure", func(t *testing.T) {
-		m := mockItemManager{}
+		m := mockItemStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
 
@@ -680,7 +680,7 @@ func TestItemRemove(t *testing.T) {
 	})
 
 	t.Run("item manager remove eailure", func(t *testing.T) {
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:         t,
 			removeID:  itemID,
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -693,7 +693,7 @@ func TestItemRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := mockItemManager{
+		m := mockItemStorage{
 			t:        t,
 			removeID: itemID,
 		}
@@ -709,7 +709,7 @@ func TestItemRemove(t *testing.T) {
 
 // helper
 
-func invokeItemsEndpoint(t *testing.T, m mockItemManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+func invokeItemsEndpoint(t *testing.T, m mockItemStorage, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	if len(query)%2 != 0 {
@@ -722,7 +722,7 @@ func invokeItemsEndpoint(t *testing.T, m mockItemManager, method, target string,
 	}
 
 	router := mux.NewRouter()
-	s := server.ItemsService{Manager: m}
+	s := server.ItemsService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, b)
@@ -739,10 +739,10 @@ func invokeItemsEndpoint(t *testing.T, m mockItemManager, method, target string,
 	return w
 }
 
-// mockItemManager
+// mockItemStorage
 
 type (
-	mockItemManager struct {
+	mockItemStorage struct {
 		t *testing.T
 
 		filter  assets.ItemFilter
@@ -767,7 +767,7 @@ type (
 	}
 )
 
-func (m mockItemManager) List(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
+func (m mockItemStorage) List(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
 	assert.Compare(m.t, filter, m.filter, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
 
 	if filter.LocationID == nil && m.filter.LocationID != nil {
@@ -784,25 +784,25 @@ func (m mockItemManager) List(ctx context.Context, filter assets.ItemFilter) ([]
 	return m.list, m.listErr
 }
 
-func (m mockItemManager) Get(ctx context.Context, id assets.ItemID) (*assets.Item, error) {
+func (m mockItemStorage) Get(ctx context.Context, id assets.ItemID) (*assets.Item, error) {
 	assert.Compare(m.t, id, m.getID)
 	return m.getItem, m.getErr
 }
 
-func (m mockItemManager) Create(ctx context.Context, create assets.ItemCreate) (*assets.Item, error) {
+func (m mockItemStorage) Create(ctx context.Context, create assets.ItemCreate) (*assets.Item, error) {
 	assert.Compare(m.t, create, m.create, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
 	cmpItemRequest(m.t, create.ItemChange, m.create.ItemChange)
 	return m.createItem, m.createErr
 }
 
-func (m mockItemManager) Update(ctx context.Context, id assets.ItemID, update assets.ItemUpdate) (*assets.Item, error) {
+func (m mockItemStorage) Update(ctx context.Context, id assets.ItemID, update assets.ItemUpdate) (*assets.Item, error) {
 	assert.Compare(m.t, id, m.updateID)
 	assert.Compare(m.t, update, m.update, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
 	cmpItemRequest(m.t, update.ItemChange, m.update.ItemChange)
 	return m.updateItem, m.updateErr
 }
 
-func (m mockItemManager) Remove(ctx context.Context, id assets.ItemID) error {
+func (m mockItemStorage) Remove(ctx context.Context, id assets.ItemID) error {
 	assert.Compare(m.t, id, m.removeID)
 	return m.removeErr
 }

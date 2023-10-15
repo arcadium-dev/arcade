@@ -283,7 +283,9 @@ func TestPlayersCreate(t *testing.T) {
 			assert.Nil(t, err)
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
-			create := assets.PlayerCreate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			create := assets.PlayerCreate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, homeID, locationID).WillReturnRows(test.rows).WillReturnError(test.err)
 
 			_, err = p.Create(ctx, create)
@@ -313,7 +315,9 @@ func TestPlayersCreate(t *testing.T) {
 			assert.Nil(t, err)
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
-			create := assets.PlayerCreate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			create := assets.PlayerCreate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, homeID, locationID).WillReturnRows(test.rows)
 
 			_, err = p.Create(ctx, create)
@@ -343,7 +347,9 @@ func TestPlayersCreate(t *testing.T) {
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
 
-			create := assets.PlayerCreate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			create := assets.PlayerCreate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, homeID, locationID).WillReturnRows(test.rows)
 
 			player, err := p.Create(ctx, create)
@@ -421,7 +427,9 @@ func TestPlayersUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
-			update := assets.PlayerUpdate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			update := assets.PlayerUpdate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, homeID, locationID).WillReturnRows(test.rows).WillReturnError(test.err)
 
 			_, err = p.Update(ctx, id, update)
@@ -451,7 +459,9 @@ func TestPlayersUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
-			update := assets.PlayerUpdate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			update := assets.PlayerUpdate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, homeID, locationID).WillReturnRows(test.rows)
 
 			_, err = p.Update(ctx, id, update)
@@ -480,7 +490,9 @@ func TestPlayersUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
-			update := assets.PlayerUpdate{assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID}}
+			update := assets.PlayerUpdate{
+				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
+			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, homeID, locationID).WillReturnRows(test.rows)
 
 			player, err := p.Update(ctx, id, update)

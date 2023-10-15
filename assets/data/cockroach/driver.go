@@ -211,7 +211,19 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (RoomDriver) ListQuery(assets.RoomFilter) string { return RoomListQuery }
+func (RoomDriver) ListQuery(filter assets.RoomFilter) string {
+	fq := ""
+	if filter.OwnerID != assets.PlayerID(uuid.Nil) {
+		fq += fmt.Sprintf(" WHERE owner_id = '%s'", filter.OwnerID)
+		if filter.ParentID != assets.RoomID(uuid.Nil) {
+			fq += fmt.Sprintf(" AND parent_id = '%s'", filter.ParentID)
+		}
+	} else if filter.ParentID != assets.RoomID(uuid.Nil) {
+		fq += fmt.Sprintf(" WHERE parent_id = '%s'", filter.ParentID)
+	}
+	fq += limitAndOffset(filter.Limit, filter.Offset)
+	return RoomListQuery + fq
+}
 
 // GetQuery returns the Get query string.
 func (RoomDriver) GetQuery() string { return RoomGetQuery }

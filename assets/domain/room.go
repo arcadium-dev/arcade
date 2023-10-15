@@ -28,7 +28,7 @@ type (
 
 	// RoomStorage defines the interface to manage the persistent storage of items.
 	RoomStorage interface {
-		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
+		List(context.Context, assets.RoomFilter) ([]*assets.Room, error)
 		Get(context.Context, assets.RoomID) (*assets.Room, error)
 		Create(context.Context, assets.RoomCreate) (*assets.Room, error)
 		Update(context.Context, assets.RoomID, assets.RoomUpdate) (*assets.Room, error)
@@ -37,7 +37,7 @@ type (
 )
 
 // List returns a slice of rooms based on the value of the filter.
-func (m RoomManager) List(ctx context.Context, filter assets.RoomsFilter) ([]*assets.Room, error) {
+func (m RoomManager) List(ctx context.Context, filter assets.RoomFilter) ([]*assets.Room, error) {
 	return m.Storage.List(ctx, filter)
 }
 

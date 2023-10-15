@@ -105,7 +105,7 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (ItemDriver) ListQuery(assets.ItemsFilter) string { return ItemListQuery }
+func (ItemDriver) ListQuery(assets.ItemFilter) string { return ItemListQuery }
 
 // GetQuery returns the Get query string.
 func (ItemDriver) GetQuery() string { return ItemGetQuery }
@@ -138,7 +138,7 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (LinkDriver) ListQuery(assets.LinksFilter) string { return LinkListQuery }
+func (LinkDriver) ListQuery(assets.LinkFilter) string { return LinkListQuery }
 
 // GetQuery returns the Get query string.
 func (LinkDriver) GetQuery() string { return LinkGetQuery }
@@ -171,7 +171,7 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (PlayerDriver) ListQuery(filter assets.PlayersFilter) string {
+func (PlayerDriver) ListQuery(filter assets.PlayerFilter) string {
 	fq := ""
 	if filter.LocationID != assets.RoomID(uuid.Nil) {
 		fq += fmt.Sprintf(" WHERE location_id = '%s'", filter.LocationID)
@@ -211,7 +211,7 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (RoomDriver) ListQuery(assets.RoomsFilter) string { return RoomListQuery }
+func (RoomDriver) ListQuery(assets.RoomFilter) string { return RoomListQuery }
 
 // GetQuery returns the Get query string.
 func (RoomDriver) GetQuery() string { return RoomGetQuery }

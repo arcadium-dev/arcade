@@ -58,7 +58,7 @@ func TestItemsList(t *testing.T) {
 	t.Run("item manager list failure", func(t *testing.T) {
 		m := mockItemManager{
 			t: t,
-			filter: assets.ItemsFilter{
+			filter: assets.ItemFilter{
 				LocationID: assets.ItemID(id),
 				Offset:     10,
 				Limit:      10,
@@ -85,7 +85,7 @@ func TestItemsList(t *testing.T) {
 
 		m := mockItemManager{
 			t: t,
-			filter: assets.ItemsFilter{
+			filter: assets.ItemFilter{
 				LocationID: locationID,
 				Offset:     25,
 				Limit:      100,
@@ -745,7 +745,7 @@ type (
 	mockItemManager struct {
 		t *testing.T
 
-		filter  assets.ItemsFilter
+		filter  assets.ItemFilter
 		list    []*assets.Item
 		listErr error
 
@@ -767,7 +767,7 @@ type (
 	}
 )
 
-func (m mockItemManager) List(ctx context.Context, filter assets.ItemsFilter) ([]*assets.Item, error) {
+func (m mockItemManager) List(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
 	assert.Compare(m.t, filter, m.filter, cmpopts.IgnoreInterfaces(struct{ assets.ItemLocationID }{}))
 
 	if filter.LocationID == nil && m.filter.LocationID != nil {

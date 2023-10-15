@@ -24,8 +24,8 @@ const (
 	MaxItemNameLen        = 256
 	MaxItemDescriptionLen = 4096
 
-	DefaultItemsFilterLimit = 50
-	MaxItemsFilterLimit     = 100
+	DefaultItemFilterLimit = 50
+	MaxItemFilterLimit     = 100
 )
 
 type (
@@ -51,8 +51,8 @@ type (
 		Updated     Timestamp
 	}
 
-	// ItemsFilter is used to filter results from a list of all items.
-	ItemsFilter struct {
+	// ItemFilter is used to filter results from a list of all items.
+	ItemFilter struct {
 		// OwnerID filters for items owned by the given player.
 		OwnerID PlayerID
 

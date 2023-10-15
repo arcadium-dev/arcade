@@ -44,7 +44,7 @@ type (
 
 	// LinkManager defines the expected behavior of the link manager in the domain layer.
 	LinkManager interface {
-		List(context.Context, assets.LinksFilter) ([]*assets.Link, error)
+		List(context.Context, assets.LinkFilter) ([]*assets.Link, error)
 		Get(context.Context, assets.LinkID) (*assets.Link, error)
 		Create(context.Context, assets.LinkCreate) (*assets.Link, error)
 		Update(context.Context, assets.LinkID, assets.LinkUpdate) (*assets.Link, error)
@@ -98,7 +98,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewLinksFilter(r)
+	filter, err := NewLinkFilter(r)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -375,17 +375,17 @@ func (s LinksService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewLinksFilter creates an assets links filter from the the given request's URL query parameters.
-func NewLinksFilter(r *http.Request) (assets.LinksFilter, error) {
+// NewLinkFilter creates an assets links filter from the the given request's URL query parameters.
+func NewLinkFilter(r *http.Request) (assets.LinkFilter, error) {
 	q := r.URL.Query()
-	filter := assets.LinksFilter{
-		Limit: assets.DefaultLinksFilterLimit,
+	filter := assets.LinkFilter{
+		Limit: assets.DefaultLinkFilterLimit,
 	}
 
 	if values := q["ownerID"]; len(values) > 0 {
 		ownerID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.LinksFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.LinkFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.OwnerID = assets.PlayerID(ownerID)
 	}
@@ -393,7 +393,7 @@ func NewLinksFilter(r *http.Request) (assets.LinksFilter, error) {
 	if values := q["locationID"]; len(values) > 0 {
 		locationID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.LinksFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.LinkFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.LocationID = assets.RoomID(locationID)
 	}
@@ -401,7 +401,7 @@ func NewLinksFilter(r *http.Request) (assets.LinksFilter, error) {
 	if values := q["destinationID"]; len(values) > 0 {
 		destinationID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.LinksFilter{}, fmt.Errorf("%w: invalid destinationID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.LinkFilter{}, fmt.Errorf("%w: invalid destinationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.DestinationID = assets.RoomID(destinationID)
 	}
@@ -409,15 +409,15 @@ func NewLinksFilter(r *http.Request) (assets.LinksFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return assets.LinksFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.LinkFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > assets.MaxLinksFilterLimit {
-			return assets.LinksFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxLinkFilterLimit {
+			return assets.LinkFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}

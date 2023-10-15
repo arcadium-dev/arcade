@@ -18,7 +18,7 @@ type (
 	// RoomDriver represents the SQL driver specific functionality.
 	RoomDriver interface {
 		Driver
-		ListQuery(assets.RoomsFilter) string
+		ListQuery(assets.RoomFilter) string
 		GetQuery() string
 		CreateQuery() string
 		UpdateQuery() string
@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func (i RoomStorage) List(context.Context, assets.RoomsFilter) ([]*assets.Room, error) {
+func (i RoomStorage) List(context.Context, assets.RoomFilter) ([]*assets.Room, error) {
 	return nil, errors.ErrNotImplemented
 }
 

@@ -24,8 +24,8 @@ const (
 	MaxPlayerNameLen        = 256
 	MaxPlayerDescriptionLen = 4096
 
-	DefaultPlayersFilterLimit = 50
-	MaxPlayersFilterLimit     = 100
+	DefaultPlayerFilterLimit = 50
+	MaxPlayerFilterLimit     = 100
 )
 
 type (
@@ -51,8 +51,8 @@ type (
 		Updated     Timestamp
 	}
 
-	// PlayersFilter is used to filter results from List.
-	PlayersFilter struct {
+	// PlayerFilter is used to filter results from List.
+	PlayerFilter struct {
 		// LocationID filters for players in a given location.
 		LocationID RoomID
 

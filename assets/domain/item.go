@@ -28,7 +28,7 @@ type (
 
 	// ItemStorage defines the interface to manage the persistent storage of items.
 	ItemStorage interface {
-		List(context.Context, assets.ItemsFilter) ([]*assets.Item, error)
+		List(context.Context, assets.ItemFilter) ([]*assets.Item, error)
 		Get(context.Context, assets.ItemID) (*assets.Item, error)
 		Create(context.Context, assets.ItemCreate) (*assets.Item, error)
 		Update(context.Context, assets.ItemID, assets.ItemUpdate) (*assets.Item, error)
@@ -37,7 +37,7 @@ type (
 )
 
 // List returns a slice of items based on the value of the filter.
-func (m ItemManager) List(ctx context.Context, filter assets.ItemsFilter) ([]*assets.Item, error) {
+func (m ItemManager) List(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
 	return m.Storage.List(ctx, filter)
 }
 

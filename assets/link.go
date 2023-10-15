@@ -24,8 +24,8 @@ const (
 	MaxLinkNameLen        = 256
 	MaxLinkDescriptionLen = 4096
 
-	DefaultLinksFilterLimit = 50
-	MaxLinksFilterLimit     = 100
+	DefaultLinkFilterLimit = 50
+	MaxLinkFilterLimit     = 100
 )
 
 type (
@@ -50,8 +50,8 @@ type (
 		Updated       Timestamp
 	}
 
-	// LinksFilter is used to filter results from a List.
-	LinksFilter struct {
+	// LinkFilter is used to filter results from a List.
+	LinkFilter struct {
 		// OwnerID filters for links owned by a given link.
 		OwnerID PlayerID
 

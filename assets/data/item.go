@@ -18,7 +18,7 @@ type (
 	// ItemDriver represents the SQL driver specific functionality.
 	ItemDriver interface {
 		Driver
-		ListQuery(assets.ItemsFilter) string
+		ListQuery(assets.ItemFilter) string
 		GetQuery() string
 		CreateQuery() string
 		UpdateQuery() string
@@ -31,7 +31,7 @@ type (
 	}
 )
 
-func (i ItemStorage) List(context.Context, assets.ItemsFilter) ([]*assets.Item, error) {
+func (i ItemStorage) List(context.Context, assets.ItemFilter) ([]*assets.Item, error) {
 	return nil, errors.ErrNotImplemented
 }
 

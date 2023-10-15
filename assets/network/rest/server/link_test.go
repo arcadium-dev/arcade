@@ -54,7 +54,7 @@ func TestLinksList(t *testing.T) {
 	t.Run("link manager list failure", func(t *testing.T) {
 		m := mockLinkManager{
 			t: t,
-			filter: assets.LinksFilter{
+			filter: assets.LinkFilter{
 				LocationID: assets.RoomID(id),
 				Offset:     10,
 				Limit:      10,
@@ -82,7 +82,7 @@ func TestLinksList(t *testing.T) {
 
 		m := mockLinkManager{
 			t: t,
-			filter: assets.LinksFilter{
+			filter: assets.LinkFilter{
 				Offset: 25,
 				Limit:  100,
 			},
@@ -732,7 +732,7 @@ type (
 	mockLinkManager struct {
 		t *testing.T
 
-		filter  assets.LinksFilter
+		filter  assets.LinkFilter
 		list    []*assets.Link
 		listErr error
 
@@ -754,7 +754,7 @@ type (
 	}
 )
 
-func (m mockLinkManager) List(ctx context.Context, filter assets.LinksFilter) ([]*assets.Link, error) {
+func (m mockLinkManager) List(ctx context.Context, filter assets.LinkFilter) ([]*assets.Link, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }

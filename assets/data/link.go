@@ -18,7 +18,7 @@ type (
 	// LinkDriver represents the SQL driver specific functionality.
 	LinkDriver interface {
 		Driver
-		ListQuery(assets.LinksFilter) string
+		ListQuery(assets.LinkFilter) string
 		GetQuery() string
 		CreateQuery() string
 		UpdateQuery() string
@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func (i LinkStorage) List(context.Context, assets.LinksFilter) ([]*assets.Link, error) {
+func (i LinkStorage) List(context.Context, assets.LinkFilter) ([]*assets.Link, error) {
 	return nil, errors.ErrNotImplemented
 }
 

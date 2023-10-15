@@ -50,7 +50,7 @@ func TestRoomsList(t *testing.T) {
 	t.Run("room manager list failure", func(t *testing.T) {
 		m := mockRoomManager{
 			t: t,
-			filter: assets.RoomsFilter{
+			filter: assets.RoomFilter{
 				ParentID: assets.RoomID(id),
 				Offset:   10,
 				Limit:    10,
@@ -77,7 +77,7 @@ func TestRoomsList(t *testing.T) {
 
 		m := mockRoomManager{
 			t: t,
-			filter: assets.RoomsFilter{
+			filter: assets.RoomFilter{
 				Offset: 25,
 				Limit:  100,
 			},
@@ -684,7 +684,7 @@ type (
 	mockRoomManager struct {
 		t *testing.T
 
-		filter  assets.RoomsFilter
+		filter  assets.RoomFilter
 		list    []*assets.Room
 		listErr error
 
@@ -706,7 +706,7 @@ type (
 	}
 )
 
-func (m mockRoomManager) List(ctx context.Context, filter assets.RoomsFilter) ([]*assets.Room, error) {
+func (m mockRoomManager) List(ctx context.Context, filter assets.RoomFilter) ([]*assets.Room, error) {
 	m.t.Helper()
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr

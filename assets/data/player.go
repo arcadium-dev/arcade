@@ -36,7 +36,7 @@ type (
 	// PlayerDriver abstracts away the SQL driver specific functionality.
 	PlayerDriver interface {
 		Driver
-		ListQuery(assets.PlayersFilter) string
+		ListQuery(assets.PlayerFilter) string
 		GetQuery() string
 		CreateQuery() string
 		UpdateQuery() string
@@ -45,7 +45,7 @@ type (
 )
 
 // List returns a slice of players based on the balue of the filter.
-func (p PlayerStorage) List(ctx context.Context, filter assets.PlayersFilter) ([]*assets.Player, error) {
+func (p PlayerStorage) List(ctx context.Context, filter assets.PlayerFilter) ([]*assets.Player, error) {
 	failMsg := "failed to list players"
 	logger := zerolog.Ctx(ctx)
 

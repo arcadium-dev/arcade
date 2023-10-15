@@ -45,7 +45,7 @@ type (
 
 	// ItemManager defines the expected behavior of the item manager in the domain layer.
 	ItemManager interface {
-		List(context.Context, assets.ItemsFilter) ([]*assets.Item, error)
+		List(context.Context, assets.ItemFilter) ([]*assets.Item, error)
 		Get(context.Context, assets.ItemID) (*assets.Item, error)
 		Create(context.Context, assets.ItemCreate) (*assets.Item, error)
 		Update(context.Context, assets.ItemID, assets.ItemUpdate) (*assets.Item, error)
@@ -99,7 +99,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewItemsFilter(r)
+	filter, err := NewItemFilter(r)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -377,17 +377,17 @@ func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewItemsFilter creates an assets items filter from the the given request's query parameters.
-func NewItemsFilter(r *http.Request) (assets.ItemsFilter, error) {
+// NewItemFilter creates an assets items filter from the the given request's query parameters.
+func NewItemFilter(r *http.Request) (assets.ItemFilter, error) {
 	q := r.URL.Query()
-	filter := assets.ItemsFilter{
-		Limit: assets.DefaultItemsFilterLimit,
+	filter := assets.ItemFilter{
+		Limit: assets.DefaultItemFilterLimit,
 	}
 
 	if values := q["ownerID"]; len(values) > 0 {
 		ownerID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.ItemsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.ItemFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.OwnerID = assets.PlayerID(ownerID)
 	}
@@ -399,7 +399,7 @@ func NewItemsFilter(r *http.Request) (assets.ItemsFilter, error) {
 		u, err := uuid.Parse(values[0])
 		locationUUID = &u
 		if err != nil {
-			return assets.ItemsFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.ItemFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 	}
 
@@ -414,10 +414,10 @@ func NewItemsFilter(r *http.Request) (assets.ItemsFilter, error) {
 			case "item":
 				location = assets.ItemID(*locationUUID)
 			default:
-				return assets.ItemsFilter{}, fmt.Errorf("%w: invalid locationType query parameter: '%s'", errors.ErrBadRequest, values[0])
+				return assets.ItemFilter{}, fmt.Errorf("%w: invalid locationType query parameter: '%s'", errors.ErrBadRequest, values[0])
 			}
 		} else {
-			return assets.ItemsFilter{}, fmt.Errorf("%w: locationType required when locationID is set", errors.ErrBadRequest)
+			return assets.ItemFilter{}, fmt.Errorf("%w: locationType required when locationID is set", errors.ErrBadRequest)
 		}
 		filter.LocationID = location
 	}
@@ -425,15 +425,15 @@ func NewItemsFilter(r *http.Request) (assets.ItemsFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return assets.ItemsFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.ItemFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > assets.MaxItemsFilterLimit {
-			return assets.ItemsFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxItemFilterLimit {
+			return assets.ItemFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}

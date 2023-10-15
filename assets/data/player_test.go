@@ -57,7 +57,7 @@ func TestPlayersList(t *testing.T) {
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
-			_, err = p.List(ctx, assets.PlayersFilter{})
+			_, err = p.List(ctx, assets.PlayerFilter{})
 
 			assert.Error(t, err, `failed to list players: internal server error: query error`)
 			assert.MockExpectationsMet(t, mock)
@@ -86,7 +86,7 @@ func TestPlayersList(t *testing.T) {
 			p := data.PlayerStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
-			_, err = p.List(context.Background(), assets.PlayersFilter{})
+			_, err = p.List(context.Background(), assets.PlayerFilter{})
 
 			assert.Error(t, err, `failed to list players: internal server error: scan error`)
 			assert.MockExpectationsMet(t, mock)
@@ -96,7 +96,7 @@ func TestPlayersList(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		tests := []struct {
 			query  string
-			filter assets.PlayersFilter
+			filter assets.PlayerFilter
 			driver data.PlayerDriver
 			rows   *sqlmock.Rows
 		}{
@@ -108,9 +108,9 @@ func TestPlayersList(t *testing.T) {
 			},
 			{
 				query: cockroachListWithFilterQ,
-				filter: assets.PlayersFilter{
+				filter: assets.PlayerFilter{
 					LocationID: locationID,
-					Limit:      assets.DefaultPlayersFilterLimit,
+					Limit:      assets.DefaultPlayerFilterLimit,
 					Offset:     10,
 				},
 				driver: cockroach.PlayerDriver{},

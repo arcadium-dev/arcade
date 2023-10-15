@@ -28,7 +28,7 @@ type (
 
 	// PlayerStorage defines the interface to manage the persistent storage of items.
 	PlayerStorage interface {
-		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
+		List(context.Context, assets.PlayerFilter) ([]*assets.Player, error)
 		Get(context.Context, assets.PlayerID) (*assets.Player, error)
 		Create(context.Context, assets.PlayerCreate) (*assets.Player, error)
 		Update(context.Context, assets.PlayerID, assets.PlayerUpdate) (*assets.Player, error)
@@ -37,7 +37,7 @@ type (
 )
 
 // List returns a slice of players based on the value of the filter.
-func (m PlayerManager) List(ctx context.Context, filter assets.PlayersFilter) ([]*assets.Player, error) {
+func (m PlayerManager) List(ctx context.Context, filter assets.PlayerFilter) ([]*assets.Player, error) {
 	return m.Storage.List(ctx, filter)
 }
 

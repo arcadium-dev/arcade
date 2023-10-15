@@ -112,7 +112,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets links, to network links.
-	var links []rest.Link
+	links := make([]rest.Link, 0)
 	for _, aLink := range aLinks {
 		links = append(links, TranslateLink(aLink))
 	}

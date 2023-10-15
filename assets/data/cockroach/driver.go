@@ -93,19 +93,41 @@ type (
 )
 
 const (
-	ItemListQuery   = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
-	ItemGetQuery    = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE id = $1`
-	ItemCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
-		`VALUES ($1, $2, $3, $4, $5) ` +
-		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
-	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
+	ItemListQuery   = `SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items`
+	ItemGetQuery    = `SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items WHERE id = $1`
+	ItemCreateQuery = `INSERT INTO items (name, description, owner_id, location_item_id, location_player_id, location_room_id) ` +
+		`VALUES ($1, $2, $3, $4, $5, $6) ` +
+		`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated`
+	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_item_id = $5, location_player_id = $6, location_room_id = $7, updated = now() ` +
 		`WHERE id = $1 ` +
-		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
+		`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated`
 	ItemRemoveQuery = `DELETE FROM items WHERE id = $1`
 )
 
 // ListQuery returns the List query string given the filter.
-func (ItemDriver) ListQuery(assets.ItemFilter) string { return ItemListQuery }
+func (ItemDriver) ListQuery(filter assets.ItemFilter) string {
+	fq := ""
+	cmd := "WHERE"
+	if filter.OwnerID != assets.PlayerID(uuid.Nil) {
+		fq += fmt.Sprintf(" %s owner_id = '%s'", cmd, filter.OwnerID)
+		cmd = "AND"
+	}
+	if filter.LocationID != nil {
+		locationID := filter.LocationID.ID()
+		if locationID != assets.LocationID(uuid.Nil) {
+			switch filter.LocationID.Type() {
+			case assets.LocationTypeItem:
+				fq += fmt.Sprintf(" %s location_item_id = '%s'", cmd, locationID)
+			case assets.LocationTypePlayer:
+				fq += fmt.Sprintf(" %s location_player_id = '%s'", cmd, locationID)
+			case assets.LocationTypeRoom:
+				fq += fmt.Sprintf(" %s location_room_id = '%s'", cmd, locationID)
+			}
+		}
+	}
+	fq += limitAndOffset(filter.Limit, filter.Offset)
+	return ItemListQuery + fq
+}
 
 // GetQuery returns the Get query string.
 func (ItemDriver) GetQuery() string { return ItemGetQuery }

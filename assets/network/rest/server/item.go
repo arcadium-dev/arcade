@@ -113,7 +113,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets items, to network items.
-	var items []rest.Item
+	items := make([]rest.Item, 0)
 	for _, aItem := range aItems {
 		items = append(items, TranslateItem(aItem))
 	}

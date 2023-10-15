@@ -108,7 +108,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets players, to network players.
-	var players []rest.Player
+	players := make([]rest.Player, 0)
 	for _, aPlayer := range aPlayers {
 		players = append(players, TranslatePlayer(aPlayer))
 	}

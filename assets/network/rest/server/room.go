@@ -44,7 +44,7 @@ type (
 
 	// RoomManager defines the expected behavior of the room manager in the domain layer.
 	RoomManager interface {
-		List(context.Context, assets.RoomsFilter) ([]*assets.Room, error)
+		List(context.Context, assets.RoomFilter) ([]*assets.Room, error)
 		Get(context.Context, assets.RoomID) (*assets.Room, error)
 		Create(context.Context, assets.RoomCreate) (*assets.Room, error)
 		Update(context.Context, assets.RoomID, assets.RoomUpdate) (*assets.Room, error)
@@ -96,7 +96,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewRoomsFilter(r)
+	filter, err := NewRoomFilter(r)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -374,17 +374,17 @@ func (s RoomsService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewRoomsFilter creates an assets rooms filter from the given request's URL query parameters.
-func NewRoomsFilter(r *http.Request) (assets.RoomsFilter, error) {
+// NewRoomFilter creates an assets rooms filter from the given request's URL query parameters.
+func NewRoomFilter(r *http.Request) (assets.RoomFilter, error) {
 	q := r.URL.Query()
-	filter := assets.RoomsFilter{
-		Limit: assets.DefaultRoomsFilterLimit,
+	filter := assets.RoomFilter{
+		Limit: assets.DefaultRoomFilterLimit,
 	}
 
 	if values := q["ownerID"]; len(values) > 0 {
 		ownerID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomFilter{}, fmt.Errorf("%w: invalid ownerID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.OwnerID = assets.PlayerID(ownerID)
 	}
@@ -392,15 +392,15 @@ func NewRoomsFilter(r *http.Request) (assets.RoomsFilter, error) {
 	if values := q["parentID"]; len(values) > 0 {
 		parentID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomFilter{}, fmt.Errorf("%w: invalid parentID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.ParentID = assets.RoomID(parentID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > assets.MaxRoomsFilterLimit {
-			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxRoomFilterLimit {
+			return assets.RoomFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}
@@ -408,7 +408,7 @@ func NewRoomsFilter(r *http.Request) (assets.RoomsFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return assets.RoomsFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.RoomFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}

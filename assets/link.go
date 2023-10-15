@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -22,8 +24,8 @@ const (
 	MaxLinkNameLen        = 256
 	MaxLinkDescriptionLen = 4096
 
-	DefaultLinksFilterLimit = 50
-	MaxLinksFilterLimit     = 100
+	DefaultLinkFilterLimit = 50
+	MaxLinkFilterLimit     = 100
 )
 
 type (
@@ -31,7 +33,9 @@ type (
 	LinkID uuid.UUID
 )
 
-func (l LinkID) String() string { return uuid.UUID(l).String() }
+func (l LinkID) String() string               { return uuid.UUID(l).String() }
+func (l *LinkID) Scan(src any) error          { return (*uuid.UUID)(l).Scan(src) }
+func (l LinkID) Value() (driver.Value, error) { return uuid.UUID(l).Value() }
 
 type (
 	// Link is the internal representation of a link.
@@ -46,8 +50,8 @@ type (
 		Updated       Timestamp
 	}
 
-	// LinksFilter is used to filter results from a List.
-	LinksFilter struct {
+	// LinkFilter is used to filter results from a List.
+	LinkFilter struct {
 		// OwnerID filters for links owned by a given link.
 		OwnerID PlayerID
 

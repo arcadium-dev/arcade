@@ -5,7 +5,7 @@ services:
     image: assets:latest
     container_name: assets
     env_file:
-      - env/assets
+      - env/arcade
     volumes:
       - certificates_volume:/etc/certs
     networks:
@@ -55,7 +55,7 @@ services:
       - arcadium_network
 
   migrate:
-    image: migrate:latest
+    image: assets-migrate:latest
     depends_on:
       - cockroach
     env_file:

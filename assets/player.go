@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -22,8 +24,8 @@ const (
 	MaxPlayerNameLen        = 256
 	MaxPlayerDescriptionLen = 4096
 
-	DefaultPlayersFilterLimit = 50
-	MaxPlayersFilterLimit     = 100
+	DefaultPlayerFilterLimit = 50
+	MaxPlayerFilterLimit     = 100
 )
 
 type (
@@ -31,9 +33,11 @@ type (
 	PlayerID uuid.UUID
 )
 
-func (p PlayerID) ID() LocationID     { return LocationID(p) }
-func (p PlayerID) Type() LocationType { return LocationTypePlayer }
-func (p PlayerID) String() string     { return uuid.UUID(p).String() }
+func (p PlayerID) ID() LocationID               { return LocationID(p) }
+func (p PlayerID) Type() LocationType           { return LocationTypePlayer }
+func (p PlayerID) String() string               { return uuid.UUID(p).String() }
+func (p *PlayerID) Scan(src any) error          { return (*uuid.UUID)(p).Scan(src) }
+func (p PlayerID) Value() (driver.Value, error) { return uuid.UUID(p).Value() }
 
 type (
 	// Player is the internal representation of the data related to a player.
@@ -47,8 +51,8 @@ type (
 		Updated     Timestamp
 	}
 
-	// PlayersFilter is used to filter results from List.
-	PlayersFilter struct {
+	// PlayerFilter is used to filter results from List.
+	PlayerFilter struct {
 		// LocationID filters for players in a given location.
 		LocationID RoomID
 

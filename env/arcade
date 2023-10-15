@@ -1,14 +1,17 @@
 # LOG_LEVEL defines the level of logging.
-LOG_LEVEL="info"
+ASSETS_LOG_LEVEL="info"
 
 # SERVER_ADDR defines the address the arcade API service will listen to.
 # This is required.
-SERVER_ADDR=":443"
+ASSETS_SERVER_ADDR=":4202"
 
 # TLS_CERT and TLS_KEY define the file path where the certificates used to
 # serve https traffic are stored. These are optional.
-TLS_CERT="/etc/certs/arcade.pem"
-TLS_KEY="/etc/certs/arcade_key.pem"
+ASSETS_TLS_KEY="/etc/certs/assets_key.pem"
+ASSETS_TLS_CERT="/etc/certs/assets.pem"
+
+
+ASSETS_DSN="postgres://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=/etc/certs/ca.crt&sslcert=/etc/certs/client.arcadium.crt&sslkey=/etc/certs/client.arcadium.key"
 
 # TLS_CACERT and MTLS_ENABLED are used to require MTLS communication.
 # TLS_CACERT="/etc/certs/rootCA.pem"

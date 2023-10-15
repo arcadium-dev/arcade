@@ -15,10 +15,20 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	l "log"
 
-	"arcadium.dev/core/http/server"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/kelseyhightower/envconfig"
+
+	httpserver "arcadium.dev/core/http/server"
 	"arcadium.dev/core/rest"
+
+	"arcadium.dev/arcade/assets/data"
+	"arcadium.dev/arcade/assets/data/cockroach"
+	"arcadium.dev/arcade/assets/domain"
+	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
 var (
@@ -31,8 +41,13 @@ var (
 type (
 	// RestServer defines the expected behavior of a rest server.
 	RestServer interface {
-		Init() error
-		Start(...server.Service) error
+		Init(...string) error
+		Start(...httpserver.Service) error
+		Ctx() context.Context
+	}
+
+	Config struct {
+		DSN string `required:"true"`
 	}
 )
 
@@ -44,14 +59,69 @@ var New = func(v, b, c, d string) RestServer {
 
 // Main is the testable entry point into the assets server.
 func Main() error {
-	server := New(Version, Branch, Commit, Date)
-	if err := server.Init(); err != nil {
+	s := New(Version, Branch, Commit, Date)
+
+	prefix := "assets"
+
+	cfg := Config{}
+	if err := envconfig.Process(prefix, &cfg); err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	if err := s.Init(prefix); err != nil {
 		return err
 	}
 
-	// TODO: Setup assets service here.
+	db, err := cockroach.Open(s.Ctx(), cfg.DSN)
+	if err != nil {
+		return err
+	}
 
-	if err := server.Start(); err != nil {
+	items := server.ItemsService{
+		Manager: domain.ItemManager{
+			Storage: data.ItemStorage{
+				DB: db,
+				Driver: cockroach.ItemDriver{
+					Driver: cockroach.Driver{},
+				},
+			},
+		},
+	}
+
+	links := server.LinksService{
+		Manager: domain.LinkManager{
+			Storage: data.LinkStorage{
+				DB: db,
+				Driver: cockroach.LinkDriver{
+					Driver: cockroach.Driver{},
+				},
+			},
+		},
+	}
+
+	players := server.PlayersService{
+		Manager: domain.PlayerManager{
+			Storage: data.PlayerStorage{
+				DB: db,
+				Driver: cockroach.PlayerDriver{
+					Driver: cockroach.Driver{},
+				},
+			},
+		},
+	}
+
+	rooms := server.RoomsService{
+		Manager: domain.RoomManager{
+			Storage: data.RoomStorage{
+				DB: db,
+				Driver: cockroach.RoomDriver{
+					Driver: cockroach.Driver{},
+				},
+			},
+		},
+	}
+
+	if err := s.Start(items, links, players, rooms); err != nil {
 		return err
 	}
 

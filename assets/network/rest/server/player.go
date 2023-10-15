@@ -44,7 +44,7 @@ type (
 
 	// PlayerManager defines the expected behavior of the player manager in the domain layer.
 	PlayerManager interface {
-		List(context.Context, assets.PlayersFilter) ([]*assets.Player, error)
+		List(context.Context, assets.PlayerFilter) ([]*assets.Player, error)
 		Get(context.Context, assets.PlayerID) (*assets.Player, error)
 		Create(context.Context, assets.PlayerCreate) (*assets.Player, error)
 		Update(context.Context, assets.PlayerID, assets.PlayerUpdate) (*assets.Player, error)
@@ -94,7 +94,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewPlayersFilter(r)
+	filter, err := NewPlayerFilter(r)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -372,25 +372,25 @@ func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewPlayersFilter creates an assets players filter from the given request's URL query parameters.
-func NewPlayersFilter(r *http.Request) (assets.PlayersFilter, error) {
+// NewPlayerFilter creates an assets players filter from the given request's URL query parameters.
+func NewPlayerFilter(r *http.Request) (assets.PlayerFilter, error) {
 	q := r.URL.Query()
-	filter := assets.PlayersFilter{
-		Limit: assets.DefaultPlayersFilterLimit,
+	filter := assets.PlayerFilter{
+		Limit: assets.DefaultPlayerFilterLimit,
 	}
 
 	if values := q["locationID"]; len(values) > 0 {
 		locationID, err := uuid.Parse(values[0])
 		if err != nil {
-			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.PlayerFilter{}, fmt.Errorf("%w: invalid locationID query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.LocationID = assets.RoomID(locationID)
 	}
 
 	if values := q["limit"]; len(values) > 0 {
 		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > assets.MaxPlayersFilterLimit {
-			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
+		if err != nil || limit <= 0 || limit > assets.MaxPlayerFilterLimit {
+			return assets.PlayerFilter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Limit = uint(limit)
 	}
@@ -398,7 +398,7 @@ func NewPlayersFilter(r *http.Request) (assets.PlayersFilter, error) {
 	if values := q["offset"]; len(values) > 0 {
 		offset, err := strconv.Atoi(values[0])
 		if err != nil || offset <= 0 {
-			return assets.PlayersFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
+			return assets.PlayerFilter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
 		}
 		filter.Offset = uint(offset)
 	}

@@ -28,7 +28,7 @@ type (
 
 	// LinkStorage defines the interface to manage the persistent storage of links.
 	LinkStorage interface {
-		List(context.Context, assets.LinksFilter) ([]*assets.Link, error)
+		List(context.Context, assets.LinkFilter) ([]*assets.Link, error)
 		Get(context.Context, assets.LinkID) (*assets.Link, error)
 		Create(context.Context, assets.LinkCreate) (*assets.Link, error)
 		Update(context.Context, assets.LinkID, assets.LinkUpdate) (*assets.Link, error)
@@ -37,7 +37,7 @@ type (
 )
 
 // List returns a slice of links based on the value of the filter.
-func (m LinkManager) List(ctx context.Context, filter assets.LinksFilter) ([]*assets.Link, error) {
+func (m LinkManager) List(ctx context.Context, filter assets.LinkFilter) ([]*assets.Link, error) {
 	return m.Storage.List(ctx, filter)
 }
 

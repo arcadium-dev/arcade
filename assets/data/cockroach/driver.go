@@ -1,4 +1,4 @@
-//  Copyright 2022 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,197 +12,223 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package cockroach // import "arcadium.dev/cockroach"
+package cockroach // import "arcadium.dev/arcade/assets/data/cockroach"
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/arcade/assets"
 )
 
-const (
-	/*
-		// Item Queries
+// Open opens a database.
+func Open(ctx context.Context, dsn string) (*sql.DB, error) {
+	logger := zerolog.Ctx(ctx)
 
-		ItemsListQuery   = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
-		ItemsGetQuery    = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE item_id = $1`
-		ItemsCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
-			`VALUES ($1, $2, $3, $4, $5) ` +
-			`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
-		ItemsUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
-			`WHERE item_id = $1 ` +
-			`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
-		ItemsRemoveQuery = `DELETE FROM items WHERE item_id = $1`
+	if dsn == "" {
+		return nil, errors.New("failed to open database: dsn required")
+	}
 
-		// Link Queries
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(20)
 
-		LinksListQuery   = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
-		LinksGetQuery    = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE link_id = $1`
-		LinksCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
-			`VALUES ($1, $2, $3, $4, $5) ` +
-			`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
-		LinksUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
-			`WHERE link_id = $1 ` +
-			`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
-		LinksRemoveQuery = `DELETE FROM links WHERE link_id = $1`
-	*/
+	if err := connect(ctx, db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
 
-	// Player Queries
+	logger.Info().Msg("database connected")
 
-	PlayersListQuery   = `SELECT id, name, description, home_id, location_id, created, updated FROM players`
-	PlayersGetQuery    = `SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE player_id = $1`
-	PlayersCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
-		`VALUES ($1, $2, $3, $4) ` +
-		`RETURNING player_id, name, description, home_id, location_id, created, updated`
-	PlayersUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
-		`WHERE player_id = $1 ` +
-		`RETURNING player_id, name, description, home_id, location_id, created, updated`
-	PlayersRemoveQuery = `DELETE FROM players WHERE player_id = $1`
+	return db, nil
+}
 
-	/*
-		// Room Queries
+// connect allows for insertion of mock connect functions.
+var connect = func(ctx context.Context, db *sql.DB) error {
+	logger := zerolog.Ctx(ctx)
 
-		RoomsListQuery   = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms`
-		RoomsGetQuery    = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE room_id = $1`
-		RoomsCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
-			`VALUES ($1, $2, $3, $4) ` +
-			`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
-		RoomsUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
-			`WHERE room_id = $1 ` +
-			`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
-		RoomsRemoveQuery = `DELETE FROM rooms WHERE room_id = $1`
-	*/
-)
+	count := 0
+	timeout := 600 * time.Second
+
+	retryCtx, retryCancel := context.WithTimeout(ctx, timeout)
+	defer retryCancel()
+
+	prevRetry, currRetry := time.Duration(1), time.Duration(1)
+	for done := false; !done; {
+		select {
+		case <-time.After(currRetry * time.Second):
+			nextRetry := currRetry + prevRetry
+			prevRetry, currRetry = currRetry, nextRetry
+
+			if err := db.PingContext(retryCtx); err != nil {
+				count++
+				logger.Info().Msgf("ping failed, error: %s, count: %d, retrying...", err, count)
+				continue
+			}
+			done = true
+
+		case <-retryCtx.Done():
+			return retryCtx.Err()
+		}
+	}
+	return nil
+}
 
 type (
-	Driver struct{}
+	ItemDriver struct {
+		Driver
+	}
 )
 
-func limitAndOffset(limit, offset uint) string {
-	fq := ""
-	if limit > 0 {
-		fq += fmt.Sprintf(" LIMIT %d", limit)
+const (
+	ItemListQuery   = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
+	ItemGetQuery    = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE id = $1`
+	ItemCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
+		`VALUES ($1, $2, $3, $4, $5) ` +
+		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
+	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
+	ItemRemoveQuery = `DELETE FROM items WHERE id = $1`
+)
+
+// ListQuery returns the List query string given the filter.
+func (ItemDriver) ListQuery(assets.ItemFilter) string { return ItemListQuery }
+
+// GetQuery returns the Get query string.
+func (ItemDriver) GetQuery() string { return ItemGetQuery }
+
+// CreateQuery returns the Create query string.
+func (ItemDriver) CreateQuery() string { return ItemCreateQuery }
+
+// UpdateQuery returns the Update query string.
+func (ItemDriver) UpdateQuery() string { return ItemUpdateQuery }
+
+// RemoveQuery returns the Remove query string.
+func (ItemDriver) RemoveQuery() string { return ItemRemoveQuery }
+
+type (
+	LinkDriver struct {
+		Driver
 	}
-	if offset > 0 {
-		fq += fmt.Sprintf(" OFFSET %d", offset)
+)
+
+const (
+	LinkListQuery   = `SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
+	LinkGetQuery    = `SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE id = $1`
+	LinkCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
+		`VALUES ($1, $2, $3, $4, $5) ` +
+		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
+	LinkUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
+	LinkRemoveQuery = `DELETE FROM links WHERE id = $1`
+)
+
+// ListQuery returns the List query string given the filter.
+func (LinkDriver) ListQuery(assets.LinkFilter) string { return LinkListQuery }
+
+// GetQuery returns the Get query string.
+func (LinkDriver) GetQuery() string { return LinkGetQuery }
+
+// CreateQuery returns the Create query string.
+func (LinkDriver) CreateQuery() string { return LinkCreateQuery }
+
+// UpdateQuery returns the Update query string.
+func (LinkDriver) UpdateQuery() string { return LinkUpdateQuery }
+
+// RemoveQuery returns the Remove query string.
+func (LinkDriver) RemoveQuery() string { return LinkRemoveQuery }
+
+type (
+	PlayerDriver struct {
+		Driver
 	}
-	return fq
-}
+)
 
-/*
-// ItemsListQuery returns the List query string given the filter.
-func (Driver) ItemsListQuery(arcade.ItemsFilter) string {
-	return ItemsListQuery
-}
+const (
+	PlayerListQuery   = `SELECT id, name, description, home_id, location_id, created, updated FROM players`
+	PlayerGetQuery    = `SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE id = $1`
+	PlayerCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
+		`VALUES ($1, $2, $3, $4) ` +
+		`RETURNING id, name, description, home_id, location_id, created, updated`
+	PlayerUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, home_id, location_id, created, updated`
+	PlayerRemoveQuery = `DELETE FROM players WHERE id = $1`
+)
 
-// ItemsGetQuery returns the Get query string.
-func (Driver) ItemsGetQuery() string {
-	return ItemsGetQuery
-}
-
-// ItemsCreateQuery returns the Create query string.
-func (Driver) ItemsCreateQuery() string {
-	return ItemsCreateQuery
-}
-
-// ItemsUpdateQuery returns the Update query string.
-func (Driver) ItemsUpdateQuery() string {
-	return ItemsUpdateQuery
-}
-
-// ItemsRemoveQuery returns the Remove query string.
-func (Driver) ItemsRemoveQuery() string {
-	return ItemsRemoveQuery
-}
-*/
-
-/*
-// LinksListQuery returns the List query string given the filter.
-func (Driver) LinksListQuery(arcade.LinksFilter) string {
-	return LinksListQuery
-}
-
-// LinksGetQuery returns the Get query string.
-func (Driver) LinksGetQuery() string {
-	return LinksGetQuery
-}
-
-// LinksCreateQuery returns the Create query string.
-func (Driver) LinksCreateQuery() string {
-	return LinksCreateQuery
-}
-
-// LinksUpdateQuery returns the Update query string.
-func (Driver) LinksUpdateQuery() string {
-	return LinksUpdateQuery
-}
-
-// LinksRemoveQuery returns the Remove query string.
-func (Driver) LinksRemoveQuery() string {
-	return LinksRemoveQuery
-}
-*/
-
-// PlayersListQuery returns the List query string given the filter.
-func (Driver) PlayersListQuery(filter assets.PlayersFilter) string {
+// ListQuery returns the List query string given the filter.
+func (PlayerDriver) ListQuery(filter assets.PlayerFilter) string {
 	fq := ""
 	if filter.LocationID != assets.RoomID(uuid.Nil) {
 		fq += fmt.Sprintf(" WHERE location_id = '%s'", filter.LocationID)
 	}
 	fq += limitAndOffset(filter.Limit, filter.Offset)
-	return PlayersListQuery + fq
+	return PlayerListQuery + fq
 }
 
-// PlayersGetQuery returns the Get query string.
-func (Driver) PlayersGetQuery() string {
-	return PlayersGetQuery
-}
+// GetQuery returns the Get query string.
+func (PlayerDriver) GetQuery() string { return PlayerGetQuery }
 
-// PlayersCreateQuery returns the Create query string.
-func (Driver) PlayersCreateQuery() string {
-	return PlayersCreateQuery
-}
+// CreateQuery returns the Create query string.
+func (PlayerDriver) CreateQuery() string { return PlayerCreateQuery }
 
-// PlayersUpdateQuery returns the update query string.
-func (Driver) PlayersUpdateQuery() string {
-	return PlayersUpdateQuery
-}
+// UpdateQuery returns the update query string.
+func (PlayerDriver) UpdateQuery() string { return PlayerUpdateQuery }
 
-// PlayersRemoveQuery returns the Remove query string.
-func (Driver) PlayersRemoveQuery() string {
-	return PlayersRemoveQuery
-}
+// RemoveQuery returns the Remove query string.
+func (PlayerDriver) RemoveQuery() string { return PlayerRemoveQuery }
 
-/*
-// RoomListQuery returns the List query string given the filter.
-func (Driver) RoomsListQuery(arcade.RoomsFilter) string {
-	return RoomsListQuery
-}
+type (
+	RoomDriver struct {
+		Driver
+	}
+)
 
-// RoomsGetQuery returns the Get query string.
-func (Driver) RoomsGetQuery() string {
-	return RoomsGetQuery
-}
+const (
+	RoomListQuery   = `SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms`
+	RoomGetQuery    = `SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE id = $1`
+	RoomCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
+		`VALUES ($1, $2, $3, $4) ` +
+		`RETURNING id, name, description, owner_id, parent_id, created, updated`
+	RoomUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, parent_id, created, updated`
+	RoomRemoveQuery = `DELETE FROM rooms WHERE id = $1`
+)
 
-// RoomsCreateQuery returns the Create query string.
-func (Driver) RoomsCreateQuery() string {
-	return RoomsCreateQuery
-}
+// ListQuery returns the List query string given the filter.
+func (RoomDriver) ListQuery(assets.RoomFilter) string { return RoomListQuery }
 
-// RoomsUpdateQuery returns the Update query string.
-func (Driver) RoomsUpdateQuery() string {
-	return RoomsUpdateQuery
-}
+// GetQuery returns the Get query string.
+func (RoomDriver) GetQuery() string { return RoomGetQuery }
+
+// CreateQuery returns the Create query string.
+func (RoomDriver) CreateQuery() string { return RoomCreateQuery }
+
+// UpdateQuery returns the Update query string.
+func (RoomDriver) UpdateQuery() string { return RoomUpdateQuery }
 
 // RoomsRemoveQuery returns the Remove query string.
-func (Driver) RoomsRemoveQuery() string {
-	return RoomsRemoveQuery
-}
-*/
+func (RoomDriver) RemoveQuery() string { return RoomRemoveQuery }
 
-/*
+type (
+	Driver struct{}
+)
+
 // IsForeignKeyViolation returns true if the given error is a foreign key violation error.
 func (Driver) IsForeignKeyViolation(err error) bool {
 	var pgErr *pgconn.PgError
@@ -220,4 +246,14 @@ func (Driver) IsUniqueViolation(err error) bool {
 	}
 	return false
 }
-*/
+
+func limitAndOffset(limit, offset uint) string {
+	fq := ""
+	if limit > 0 {
+		fq += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	if offset > 0 {
+		fq += fmt.Sprintf(" OFFSET %d", offset)
+	}
+	return fq
+}

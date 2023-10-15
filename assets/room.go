@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -22,8 +24,8 @@ const (
 	MaxRoomNameLen        = 256
 	MaxRoomDescriptionLen = 4096
 
-	DefaultRoomsFilterLimit = 50
-	MaxRoomsFilterLimit     = 100
+	DefaultRoomFilterLimit = 50
+	MaxRoomFilterLimit     = 100
 )
 
 type (
@@ -31,9 +33,11 @@ type (
 	RoomID uuid.UUID
 )
 
-func (r RoomID) ID() LocationID     { return LocationID(r) }
-func (r RoomID) Type() LocationType { return LocationTypeRoom }
-func (r RoomID) String() string     { return uuid.UUID(r).String() }
+func (r RoomID) ID() LocationID               { return LocationID(r) }
+func (r RoomID) Type() LocationType           { return LocationTypeRoom }
+func (r RoomID) String() string               { return uuid.UUID(r).String() }
+func (r *RoomID) Scan(src any) error          { return (*uuid.UUID)(r).Scan(src) }
+func (r RoomID) Value() (driver.Value, error) { return uuid.UUID(r).Value() }
 
 type (
 	// Room is the internal representation of the data related to a room.
@@ -47,8 +51,8 @@ type (
 		Updated     Timestamp
 	}
 
-	// RoomsFilter is used to filter results from a List.
-	RoomsFilter struct {
+	// RoomFilter is used to filter results from a List.
+	RoomFilter struct {
 		// OwnerID filters for rooms owned by a given room.
 		OwnerID PlayerID
 

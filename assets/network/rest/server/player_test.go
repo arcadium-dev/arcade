@@ -46,7 +46,7 @@ func TestPlayersList(t *testing.T) {
 	t.Run("player manager list failure", func(t *testing.T) {
 		m := mockPlayerManager{
 			t: t,
-			filter: assets.PlayersFilter{
+			filter: assets.PlayerFilter{
 				LocationID: assets.RoomID(id),
 				Offset:     10,
 				Limit:      10,
@@ -73,7 +73,7 @@ func TestPlayersList(t *testing.T) {
 
 		m := mockPlayerManager{
 			t: t,
-			filter: assets.PlayersFilter{
+			filter: assets.PlayerFilter{
 				Offset: 25,
 				Limit:  100,
 			},
@@ -680,7 +680,7 @@ type (
 	mockPlayerManager struct {
 		t *testing.T
 
-		filter  assets.PlayersFilter
+		filter  assets.PlayerFilter
 		list    []*assets.Player
 		listErr error
 
@@ -702,7 +702,7 @@ type (
 	}
 )
 
-func (m mockPlayerManager) List(ctx context.Context, filter assets.PlayersFilter) ([]*assets.Player, error) {
+func (m mockPlayerManager) List(ctx context.Context, filter assets.PlayerFilter) ([]*assets.Player, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }

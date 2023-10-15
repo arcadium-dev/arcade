@@ -109,12 +109,15 @@ docs:
 	@printf "\nRunning swagger...\n"
 	$$(go env GOPATH)/bin/swagger generate spec -o ./docs/swagger.json
 
-# ____ container artifacts  __________________________________________________
+# ____ image artifacts  __________________________________________________
 
-.PHONY: containers
+.PHONY: images assets assets-migrate mkcert curl
 
-containers:
+images:
 	make -C dockerfiles all
+
+assets assets-migrate mkcert curl:
+	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________
 

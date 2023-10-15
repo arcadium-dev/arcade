@@ -35,8 +35,8 @@ func TestRoomsList(t *testing.T) {
 	var (
 		ctx      = context.Background()
 		id       = assets.RoomID(uuid.New())
-		name     = "Nobody"
-		desc     = "No one of importance."
+		name     = "Nowhere"
+		desc     = "A place of no importance."
 		ownerID  = assets.PlayerID(uuid.New())
 		parentID = assets.RoomID(uuid.New())
 		created  = assets.Timestamp{Time: time.Now()}
@@ -58,10 +58,10 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
-			_, err = p.List(ctx, assets.RoomFilter{})
+			_, err = r.List(ctx, assets.RoomFilter{})
 
 			assert.Error(t, err, `failed to list rooms: internal server error: query error`)
 			assert.MockExpectationsMet(t, mock)
@@ -87,10 +87,10 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
-			_, err = p.List(context.Background(), assets.RoomFilter{})
+			_, err = r.List(context.Background(), assets.RoomFilter{})
 
 			assert.Error(t, err, `failed to list rooms: internal server error: scan error`)
 			assert.MockExpectationsMet(t, mock)
@@ -150,10 +150,10 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
-			rooms, err := p.List(context.Background(), test.filter)
+			rooms, err := r.List(context.Background(), test.filter)
 
 			assert.Nil(t, err)
 			assert.Equal(t, len(rooms), 1)
@@ -179,8 +179,8 @@ func TestRoomsGet(t *testing.T) {
 	var (
 		ctx      = context.Background()
 		id       = assets.RoomID(uuid.New())
-		name     = "Nobody"
-		desc     = "No one of importance."
+		name     = "Nowhere"
+		desc     = "A place of no importance."
 		ownerID  = assets.PlayerID(uuid.New())
 		parentID = assets.RoomID(uuid.New())
 		created  = assets.Timestamp{Time: time.Now()}
@@ -212,10 +212,10 @@ func TestRoomsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WithArgs(id).WillReturnError(test.err)
 
-			_, err = p.Get(ctx, id)
+			_, err = r.Get(ctx, id)
 
 			assert.Error(t, err, test.msg)
 			assert.MockExpectationsMet(t, mock)
@@ -240,10 +240,10 @@ func TestRoomsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows)
 
-			room, err := p.Get(ctx, id)
+			room, err := r.Get(ctx, id)
 
 			assert.Nil(t, err)
 			assert.Compare(t, *room, assets.Room{
@@ -270,8 +270,8 @@ func TestRoomsCreate(t *testing.T) {
 	var (
 		ctx      = context.Background()
 		id       = assets.RoomID(uuid.New())
-		name     = "Nobody"
-		desc     = "No one of importance."
+		name     = "Nowhere"
+		desc     = "A place of no importance."
 		ownerID  = assets.PlayerID(uuid.New())
 		parentID = assets.RoomID(uuid.New())
 		created  = assets.Timestamp{Time: time.Now()}
@@ -301,7 +301,7 @@ func TestRoomsCreate(t *testing.T) {
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
-				msg: "failed to create room: bad request: room name 'Nobody' already exists",
+				msg: "failed to create room: bad request: room name 'Nowhere' already exists",
 			},
 		}
 
@@ -309,13 +309,13 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, ownerID, parentID).WillReturnRows(test.rows).WillReturnError(test.err)
 
-			_, err = p.Create(ctx, create)
+			_, err = r.Create(ctx, create)
 
 			assert.Error(t, err, test.msg)
 			assert.MockExpectationsMet(t, mock)
@@ -341,13 +341,13 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, ownerID, parentID).WillReturnRows(test.rows)
 
-			_, err = p.Create(ctx, create)
+			_, err = r.Create(ctx, create)
 
 			assert.Error(t, err, "failed to create room: internal server error: scan error")
 			assert.MockExpectationsMet(t, mock)
@@ -372,14 +372,14 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(name, desc, ownerID, parentID).WillReturnRows(test.rows)
 
-			room, err := p.Create(ctx, create)
+			room, err := r.Create(ctx, create)
 
 			assert.Nil(t, err)
 			assert.Compare(t, *room, assets.Room{
@@ -406,8 +406,8 @@ func TestRoomsUpdate(t *testing.T) {
 	var (
 		ctx      = context.Background()
 		id       = assets.RoomID(uuid.New())
-		name     = "Nobody"
-		desc     = "No one of importance."
+		name     = "Nowhere"
+		desc     = "A place of no importance."
 		ownerID  = assets.PlayerID(uuid.New())
 		parentID = assets.RoomID(uuid.New())
 		created  = assets.Timestamp{Time: time.Now()}
@@ -445,7 +445,7 @@ func TestRoomsUpdate(t *testing.T) {
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
-				msg: "failed to update room: bad request: room name 'Nobody' already exists",
+				msg: "failed to update room: bad request: room name 'Nowhere' already exists",
 			},
 		}
 
@@ -453,13 +453,13 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, ownerID, parentID).WillReturnRows(test.rows).WillReturnError(test.err)
 
-			_, err = p.Update(ctx, id, update)
+			_, err = r.Update(ctx, id, update)
 
 			assert.Error(t, err, test.msg)
 			assert.MockExpectationsMet(t, mock)
@@ -485,13 +485,13 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, ownerID, parentID).WillReturnRows(test.rows)
 
-			_, err = p.Update(ctx, id, update)
+			_, err = r.Update(ctx, id, update)
 
 			assert.Error(t, err, "failed to update room: internal server error: scan error")
 			assert.MockExpectationsMet(t, mock)
@@ -516,13 +516,13 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
 			mock.ExpectQuery(test.query).WithArgs(id, name, desc, ownerID, parentID).WillReturnRows(test.rows)
 
-			room, err := p.Update(ctx, id, update)
+			room, err := r.Update(ctx, id, update)
 
 			assert.Nil(t, err)
 			assert.Compare(t, *room, assets.Room{
@@ -574,10 +574,10 @@ func TestRoomsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnError(test.err)
 
-			err = p.Remove(ctx, id)
+			err = r.Remove(ctx, id)
 
 			assert.Error(t, err, test.msg)
 			assert.MockExpectationsMet(t, mock)
@@ -599,10 +599,10 @@ func TestRoomsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: db, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 
-			err = p.Remove(ctx, id)
+			err = r.Remove(ctx, id)
 
 			assert.Nil(t, err)
 			assert.MockExpectationsMet(t, mock)

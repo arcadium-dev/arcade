@@ -29,6 +29,7 @@ import (
 	"arcadium.dev/arcade/assets"
 )
 
+// Open opens a database.
 func Open(ctx context.Context, dsn string) (*sql.DB, error) {
 	logger := zerolog.Ctx(ctx)
 
@@ -40,6 +41,9 @@ func Open(ctx context.Context, dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(20)
 
 	if err := connect(ctx, db); err != nil {
 		db.Close()
@@ -89,41 +93,31 @@ type (
 )
 
 const (
-	ItemListQuery   = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
-	ItemGetQuery    = `SELECT item_id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE item_id = $1`
+	ItemListQuery   = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items`
+	ItemGetQuery    = `SELECT id, name, description, owner_id, location_id, inventory_id, created, updated FROM items WHERE id = $1`
 	ItemCreateQuery = `INSERT INTO items (name, description, owner_id, location_id, inventory_id) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
-		`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
+		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
 	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_id = $5, inventory_id = $6,  updated = now() ` +
-		`WHERE item_id = $1 ` +
-		`RETURNING item_id, name, description, owner_id, location_id, inventory_id, created, updated`
-	ItemRemoveQuery = `DELETE FROM items WHERE item_id = $1`
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, location_id, inventory_id, created, updated`
+	ItemRemoveQuery = `DELETE FROM items WHERE id = $1`
 )
 
 // ListQuery returns the List query string given the filter.
-func (ItemDriver) ListQuery(assets.ItemsFilter) string {
-	return ItemListQuery
-}
+func (ItemDriver) ListQuery(assets.ItemsFilter) string { return ItemListQuery }
 
 // GetQuery returns the Get query string.
-func (ItemDriver) GetQuery() string {
-	return ItemGetQuery
-}
+func (ItemDriver) GetQuery() string { return ItemGetQuery }
 
 // CreateQuery returns the Create query string.
-func (ItemDriver) CreateQuery() string {
-	return ItemCreateQuery
-}
+func (ItemDriver) CreateQuery() string { return ItemCreateQuery }
 
 // UpdateQuery returns the Update query string.
-func (ItemDriver) UpdateQuery() string {
-	return ItemUpdateQuery
-}
+func (ItemDriver) UpdateQuery() string { return ItemUpdateQuery }
 
 // RemoveQuery returns the Remove query string.
-func (ItemDriver) RemoveQuery() string {
-	return ItemRemoveQuery
-}
+func (ItemDriver) RemoveQuery() string { return ItemRemoveQuery }
 
 type (
 	LinkDriver struct {
@@ -132,41 +126,31 @@ type (
 )
 
 const (
-	LinkListQuery   = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
-	LinkGetQuery    = `SELECT link_id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE link_id = $1`
+	LinkListQuery   = `SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links`
+	LinkGetQuery    = `SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE id = $1`
 	LinkCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
-		`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
+		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
 	LinkUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
-		`WHERE link_id = $1 ` +
-		`RETURNING link_id, name, description, owner_id, location_id, destination_id, created, updated`
-	LinkRemoveQuery = `DELETE FROM links WHERE link_id = $1`
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
+	LinkRemoveQuery = `DELETE FROM links WHERE id = $1`
 )
 
 // ListQuery returns the List query string given the filter.
-func (LinkDriver) ListQuery(assets.LinksFilter) string {
-	return LinkListQuery
-}
+func (LinkDriver) ListQuery(assets.LinksFilter) string { return LinkListQuery }
 
 // GetQuery returns the Get query string.
-func (LinkDriver) GetQuery() string {
-	return LinkGetQuery
-}
+func (LinkDriver) GetQuery() string { return LinkGetQuery }
 
 // CreateQuery returns the Create query string.
-func (LinkDriver) CreateQuery() string {
-	return LinkCreateQuery
-}
+func (LinkDriver) CreateQuery() string { return LinkCreateQuery }
 
 // UpdateQuery returns the Update query string.
-func (LinkDriver) UpdateQuery() string {
-	return LinkUpdateQuery
-}
+func (LinkDriver) UpdateQuery() string { return LinkUpdateQuery }
 
 // RemoveQuery returns the Remove query string.
-func (LinkDriver) RemoveQuery() string {
-	return LinkRemoveQuery
-}
+func (LinkDriver) RemoveQuery() string { return LinkRemoveQuery }
 
 type (
 	PlayerDriver struct {
@@ -176,14 +160,14 @@ type (
 
 const (
 	PlayerListQuery   = `SELECT id, name, description, home_id, location_id, created, updated FROM players`
-	PlayerGetQuery    = `SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE player_id = $1`
+	PlayerGetQuery    = `SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE id = $1`
 	PlayerCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
-		`RETURNING player_id, name, description, home_id, location_id, created, updated`
+		`RETURNING id, name, description, home_id, location_id, created, updated`
 	PlayerUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
-		`WHERE player_id = $1 ` +
-		`RETURNING player_id, name, description, home_id, location_id, created, updated`
-	PlayerRemoveQuery = `DELETE FROM players WHERE player_id = $1`
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, home_id, location_id, created, updated`
+	PlayerRemoveQuery = `DELETE FROM players WHERE id = $1`
 )
 
 // ListQuery returns the List query string given the filter.
@@ -197,24 +181,16 @@ func (PlayerDriver) ListQuery(filter assets.PlayersFilter) string {
 }
 
 // GetQuery returns the Get query string.
-func (PlayerDriver) GetQuery() string {
-	return PlayerGetQuery
-}
+func (PlayerDriver) GetQuery() string { return PlayerGetQuery }
 
 // CreateQuery returns the Create query string.
-func (PlayerDriver) CreateQuery() string {
-	return PlayerCreateQuery
-}
+func (PlayerDriver) CreateQuery() string { return PlayerCreateQuery }
 
 // UpdateQuery returns the update query string.
-func (PlayerDriver) UpdateQuery() string {
-	return PlayerUpdateQuery
-}
+func (PlayerDriver) UpdateQuery() string { return PlayerUpdateQuery }
 
 // RemoveQuery returns the Remove query string.
-func (PlayerDriver) RemoveQuery() string {
-	return PlayerRemoveQuery
-}
+func (PlayerDriver) RemoveQuery() string { return PlayerRemoveQuery }
 
 type (
 	RoomDriver struct {
@@ -223,41 +199,31 @@ type (
 )
 
 const (
-	RoomListQuery   = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms`
-	RoomGetQuery    = `SELECT room_id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE room_id = $1`
+	RoomListQuery   = `SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms`
+	RoomGetQuery    = `SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE id = $1`
 	RoomCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
-		`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
+		`RETURNING id, name, description, owner_id, parent_id, created, updated`
 	RoomUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
-		`WHERE room_id = $1 ` +
-		`RETURNING room_id, name, description, owner_id, parent_id, created, updated`
-	RoomRemoveQuery = `DELETE FROM rooms WHERE room_id = $1`
+		`WHERE id = $1 ` +
+		`RETURNING id, name, description, owner_id, parent_id, created, updated`
+	RoomRemoveQuery = `DELETE FROM rooms WHERE id = $1`
 )
 
 // ListQuery returns the List query string given the filter.
-func (RoomDriver) ListQuery(assets.RoomsFilter) string {
-	return RoomListQuery
-}
+func (RoomDriver) ListQuery(assets.RoomsFilter) string { return RoomListQuery }
 
 // GetQuery returns the Get query string.
-func (RoomDriver) GetQuery() string {
-	return RoomGetQuery
-}
+func (RoomDriver) GetQuery() string { return RoomGetQuery }
 
 // CreateQuery returns the Create query string.
-func (RoomDriver) CreateQuery() string {
-	return RoomCreateQuery
-}
+func (RoomDriver) CreateQuery() string { return RoomCreateQuery }
 
 // UpdateQuery returns the Update query string.
-func (RoomDriver) UpdateQuery() string {
-	return RoomUpdateQuery
-}
+func (RoomDriver) UpdateQuery() string { return RoomUpdateQuery }
 
 // RoomsRemoveQuery returns the Remove query string.
-func (RoomDriver) RemoveQuery() string {
-	return RoomRemoveQuery
-}
+func (RoomDriver) RemoveQuery() string { return RoomRemoveQuery }
 
 type (
 	Driver struct{}

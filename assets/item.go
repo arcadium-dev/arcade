@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -31,9 +33,11 @@ type (
 	ItemID uuid.UUID
 )
 
-func (i ItemID) ID() LocationID     { return LocationID(i) }
-func (i ItemID) Type() LocationType { return LocationTypeItem }
-func (i ItemID) String() string     { return uuid.UUID(i).String() }
+func (i ItemID) ID() LocationID               { return LocationID(i) }
+func (i ItemID) Type() LocationType           { return LocationTypeItem }
+func (i ItemID) String() string               { return uuid.UUID(i).String() }
+func (i *ItemID) Scan(src any) error          { return (*uuid.UUID)(i).Scan(src) }
+func (i ItemID) Value() (driver.Value, error) { return uuid.UUID(i).Value() }
 
 type (
 	// Item is the internal representation of an item.

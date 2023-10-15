@@ -15,6 +15,7 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"time"
@@ -45,4 +46,22 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 		*t = Timestamp{Time: ts}
 	}
 	return err
+}
+
+func (t *Timestamp) Scan(src any) (err error) {
+	switch src := src.(type) {
+	case nil:
+
+	case time.Time:
+		t.Time = src
+
+	default:
+		err = fmt.Errorf("Scan: unable to scan type %T into Timestamp", src)
+	}
+
+	return
+}
+
+func (t Timestamp) Value() (driver.Value, error) {
+	return t.Time, nil
 }

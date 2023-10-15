@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -31,7 +33,9 @@ type (
 	LinkID uuid.UUID
 )
 
-func (l LinkID) String() string { return uuid.UUID(l).String() }
+func (l LinkID) String() string               { return uuid.UUID(l).String() }
+func (l *LinkID) Scan(src any) error          { return (*uuid.UUID)(l).Scan(src) }
+func (l LinkID) Value() (driver.Value, error) { return uuid.UUID(l).Value() }
 
 type (
 	// Link is the internal representation of a link.

@@ -15,6 +15,8 @@
 package assets // import "arcadium.dev/arcade/assets"
 
 import (
+	"database/sql/driver"
+
 	"github.com/google/uuid"
 )
 
@@ -31,9 +33,11 @@ type (
 	RoomID uuid.UUID
 )
 
-func (r RoomID) ID() LocationID     { return LocationID(r) }
-func (r RoomID) Type() LocationType { return LocationTypeRoom }
-func (r RoomID) String() string     { return uuid.UUID(r).String() }
+func (r RoomID) ID() LocationID               { return LocationID(r) }
+func (r RoomID) Type() LocationType           { return LocationTypeRoom }
+func (r RoomID) String() string               { return uuid.UUID(r).String() }
+func (r *RoomID) Scan(src any) error          { return (*uuid.UUID)(r).Scan(src) }
+func (r RoomID) Value() (driver.Value, error) { return uuid.UUID(r).Value() }
 
 type (
 	// Room is the internal representation of the data related to a room.

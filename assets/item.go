@@ -101,7 +101,9 @@ type (
 	LocationType uint8
 )
 
-func (l LocationID) String() string { return uuid.UUID(l).String() }
+func (l LocationID) String() string               { return uuid.UUID(l).String() }
+func (l *LocationID) Scan(src any) error          { return (*uuid.UUID)(l).Scan(src) }
+func (l LocationID) Value() (driver.Value, error) { return uuid.UUID(l).Value() }
 
 const (
 	LocationTypeRoom = LocationType(iota)

@@ -110,7 +110,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from assets rooms, to network rooms.
-	var rooms []rest.Room
+	rooms := make([]rest.Room, 0)
 	for _, aRoom := range aRooms {
 		rooms = append(rooms, TranslateRoom(aRoom))
 	}

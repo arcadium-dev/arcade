@@ -138,7 +138,23 @@ const (
 )
 
 // ListQuery returns the List query string given the filter.
-func (LinkDriver) ListQuery(assets.LinkFilter) string { return LinkListQuery }
+func (LinkDriver) ListQuery(filter assets.LinkFilter) string {
+	fq := ""
+	cmd := "WHERE"
+	if filter.OwnerID != assets.PlayerID(uuid.Nil) {
+		fq += fmt.Sprintf(" %s owner_id = '%s'", cmd, filter.OwnerID)
+		cmd = "AND"
+	}
+	if filter.LocationID != assets.RoomID(uuid.Nil) {
+		fq += fmt.Sprintf(" %s location_id = '%s'", cmd, filter.LocationID)
+		cmd = "AND"
+	}
+	if filter.DestinationID != assets.RoomID(uuid.Nil) {
+		fq += fmt.Sprintf(" %s destination_id = '%s'", cmd, filter.DestinationID)
+	}
+	fq += limitAndOffset(filter.Limit, filter.Offset)
+	return LinkListQuery + fq
+}
 
 // GetQuery returns the Get query string.
 func (LinkDriver) GetQuery() string { return LinkGetQuery }
@@ -213,13 +229,13 @@ const (
 // ListQuery returns the List query string given the filter.
 func (RoomDriver) ListQuery(filter assets.RoomFilter) string {
 	fq := ""
+	cmd := "WHERE"
 	if filter.OwnerID != assets.PlayerID(uuid.Nil) {
-		fq += fmt.Sprintf(" WHERE owner_id = '%s'", filter.OwnerID)
-		if filter.ParentID != assets.RoomID(uuid.Nil) {
-			fq += fmt.Sprintf(" AND parent_id = '%s'", filter.ParentID)
-		}
-	} else if filter.ParentID != assets.RoomID(uuid.Nil) {
-		fq += fmt.Sprintf(" WHERE parent_id = '%s'", filter.ParentID)
+		fq += fmt.Sprintf(" %s owner_id = '%s'", cmd, filter.OwnerID)
+		cmd = "AND"
+	}
+	if filter.ParentID != assets.RoomID(uuid.Nil) {
+		fq += fmt.Sprintf(" %s parent_id = '%s'", cmd, filter.ParentID)
 	}
 	fq += limitAndOffset(filter.Limit, filter.Offset)
 	return RoomListQuery + fq

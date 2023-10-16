@@ -35,7 +35,7 @@ func Open(ctx context.Context, dsn string) (*sql.DB, error) {
 		return nil, errors.New("failed to open database: dsn required")
 	}
 
-	db, err := sql.Open(ctx, "pgx", dsn)
+	db, err := sql.Open(ctx, "pgx", dsn, sql.WithReconnect(3), sql.WithTxRetries(3))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

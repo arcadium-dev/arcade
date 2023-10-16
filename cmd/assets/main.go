@@ -27,7 +27,7 @@ import (
 
 	"arcadium.dev/arcade/assets/data"
 	"arcadium.dev/arcade/assets/data/cockroach"
-	"arcadium.dev/arcade/assets/network/rest/server"
+	"arcadium.dev/arcade/assets/rest/server"
 )
 
 var (

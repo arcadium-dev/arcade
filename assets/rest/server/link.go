@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package server // import "arcadium.dev/arcade/assets/network/server"
+package server // import "arcadium.dev/arcade/assets/server"
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network/rest"
+	"arcadium.dev/arcade/assets/rest"
 )
 
 const (

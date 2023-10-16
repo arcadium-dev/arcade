@@ -19,8 +19,8 @@ import (
 	"arcadium.dev/core/errors"
 
 	"arcadium.dev/arcade/assets"
-	"arcadium.dev/arcade/assets/network/rest"
-	"arcadium.dev/arcade/assets/network/rest/server"
+	"arcadium.dev/arcade/assets/rest"
+	"arcadium.dev/arcade/assets/rest/server"
 )
 
 func TestLinksList(t *testing.T) {

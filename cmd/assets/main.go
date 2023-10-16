@@ -27,7 +27,6 @@ import (
 
 	"arcadium.dev/arcade/assets/data"
 	"arcadium.dev/arcade/assets/data/cockroach"
-	"arcadium.dev/arcade/assets/domain"
 	"arcadium.dev/arcade/assets/network/rest/server"
 )
 
@@ -78,45 +77,37 @@ func Main() error {
 	}
 
 	items := server.ItemsService{
-		Manager: domain.ItemManager{
-			Storage: data.ItemStorage{
-				DB: db,
-				Driver: cockroach.ItemDriver{
-					Driver: cockroach.Driver{},
-				},
+		Storage: data.ItemStorage{
+			DB: db,
+			Driver: cockroach.ItemDriver{
+				Driver: cockroach.Driver{},
 			},
 		},
 	}
 
 	links := server.LinksService{
-		Manager: domain.LinkManager{
-			Storage: data.LinkStorage{
-				DB: db,
-				Driver: cockroach.LinkDriver{
-					Driver: cockroach.Driver{},
-				},
+		Storage: data.LinkStorage{
+			DB: db,
+			Driver: cockroach.LinkDriver{
+				Driver: cockroach.Driver{},
 			},
 		},
 	}
 
 	players := server.PlayersService{
-		Manager: domain.PlayerManager{
-			Storage: data.PlayerStorage{
-				DB: db,
-				Driver: cockroach.PlayerDriver{
-					Driver: cockroach.Driver{},
-				},
+		Storage: data.PlayerStorage{
+			DB: db,
+			Driver: cockroach.PlayerDriver{
+				Driver: cockroach.Driver{},
 			},
 		},
 	}
 
 	rooms := server.RoomsService{
-		Manager: domain.RoomManager{
-			Storage: data.RoomStorage{
-				DB: db,
-				Driver: cockroach.RoomDriver{
-					Driver: cockroach.Driver{},
-				},
+		Storage: data.RoomStorage{
+			DB: db,
+			Driver: cockroach.RoomDriver{
+				Driver: cockroach.Driver{},
 			},
 		},
 	}

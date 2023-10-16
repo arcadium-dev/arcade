@@ -28,7 +28,7 @@ func TestPlayersList(t *testing.T) {
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		// locationID failure
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil, "locationID", "bad uuid")
@@ -44,7 +44,7 @@ func TestPlayersList(t *testing.T) {
 	})
 
 	t.Run("player manager list failure", func(t *testing.T) {
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t: t,
 			filter: assets.PlayerFilter{
 				LocationID: assets.RoomID(id),
@@ -71,7 +71,7 @@ func TestPlayersList(t *testing.T) {
 			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t: t,
 			filter: assets.PlayerFilter{
 				Offset: 25,
@@ -120,7 +120,7 @@ func TestPlayerGet(t *testing.T) {
 	playerID := assets.PlayerID(uuid.New())
 
 	t.Run("playerID failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
@@ -129,7 +129,7 @@ func TestPlayerGet(t *testing.T) {
 	})
 
 	t.Run("player manager get failure", func(t *testing.T) {
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:      t,
 			getID:  playerID,
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -153,7 +153,7 @@ func TestPlayerGet(t *testing.T) {
 			updated    = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:     t,
 			getID: playerID,
 			getPlayer: &assets.Player{
@@ -197,7 +197,7 @@ func TestPlayerCreate(t *testing.T) {
 	route := server.V1PlayersRoute
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		w := invokePlayersEndpoint(t, m, http.MethodPost, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -207,14 +207,14 @@ func TestPlayerCreate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		w := invokePlayersEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
 	t.Run("create player req failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		tests := []struct {
 			req    rest.PlayerRequest
@@ -287,7 +287,7 @@ func TestPlayerCreate(t *testing.T) {
 			locID  = assets.RoomID(uuid.New())
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t: t,
 			create: assets.PlayerCreate{
 				PlayerChange: assets.PlayerChange{
@@ -328,7 +328,7 @@ func TestPlayerCreate(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t: t,
 			create: assets.PlayerCreate{
 				PlayerChange: assets.PlayerChange{
@@ -386,7 +386,7 @@ func TestPlayerCreate(t *testing.T) {
 
 func TestPlayerUpdate(t *testing.T) {
 	t.Run("playerID failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
@@ -395,7 +395,7 @@ func TestPlayerUpdate(t *testing.T) {
 	})
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		playerID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
@@ -408,7 +408,7 @@ func TestPlayerUpdate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		playerID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
@@ -418,7 +418,7 @@ func TestPlayerUpdate(t *testing.T) {
 	})
 
 	t.Run("update player req failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		tests := []struct {
 			req    rest.PlayerRequest
@@ -499,7 +499,7 @@ func TestPlayerUpdate(t *testing.T) {
 			locID    = assets.RoomID(uuid.New())
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:        t,
 			updateID: playerID,
 			update: assets.PlayerUpdate{
@@ -543,7 +543,7 @@ func TestPlayerUpdate(t *testing.T) {
 			updated  = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:        t,
 			updateID: playerID,
 			update: assets.PlayerUpdate{
@@ -606,7 +606,7 @@ func TestPlayerRemove(t *testing.T) {
 	playerID := assets.PlayerID(uuid.New())
 
 	t.Run("playerID failure", func(t *testing.T) {
-		m := mockPlayerManager{}
+		m := mockPlayerStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
 
@@ -615,7 +615,7 @@ func TestPlayerRemove(t *testing.T) {
 	})
 
 	t.Run("player manager remove eailure", func(t *testing.T) {
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:         t,
 			removeID:  playerID,
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -628,7 +628,7 @@ func TestPlayerRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := mockPlayerManager{
+		m := mockPlayerStorage{
 			t:        t,
 			removeID: playerID,
 		}
@@ -644,7 +644,7 @@ func TestPlayerRemove(t *testing.T) {
 
 // helper
 
-func invokePlayersEndpoint(t *testing.T, m mockPlayerManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+func invokePlayersEndpoint(t *testing.T, m mockPlayerStorage, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	if len(query)%2 != 0 {
@@ -657,7 +657,7 @@ func invokePlayersEndpoint(t *testing.T, m mockPlayerManager, method, target str
 	}
 
 	router := mux.NewRouter()
-	s := server.PlayersService{Manager: m}
+	s := server.PlayersService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, b)
@@ -674,10 +674,10 @@ func invokePlayersEndpoint(t *testing.T, m mockPlayerManager, method, target str
 	return w
 }
 
-// mockPlayerManager
+// mockPlayerStorage
 
 type (
-	mockPlayerManager struct {
+	mockPlayerStorage struct {
 		t *testing.T
 
 		filter  assets.PlayerFilter
@@ -702,28 +702,28 @@ type (
 	}
 )
 
-func (m mockPlayerManager) List(ctx context.Context, filter assets.PlayerFilter) ([]*assets.Player, error) {
+func (m mockPlayerStorage) List(ctx context.Context, filter assets.PlayerFilter) ([]*assets.Player, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }
 
-func (m mockPlayerManager) Get(ctx context.Context, id assets.PlayerID) (*assets.Player, error) {
+func (m mockPlayerStorage) Get(ctx context.Context, id assets.PlayerID) (*assets.Player, error) {
 	assert.Compare(m.t, id, m.getID)
 	return m.getPlayer, m.getErr
 }
 
-func (m mockPlayerManager) Create(ctx context.Context, create assets.PlayerCreate) (*assets.Player, error) {
+func (m mockPlayerStorage) Create(ctx context.Context, create assets.PlayerCreate) (*assets.Player, error) {
 	assert.Compare(m.t, create, m.create)
 	return m.createPlayer, m.createErr
 }
 
-func (m mockPlayerManager) Update(ctx context.Context, id assets.PlayerID, update assets.PlayerUpdate) (*assets.Player, error) {
+func (m mockPlayerStorage) Update(ctx context.Context, id assets.PlayerID, update assets.PlayerUpdate) (*assets.Player, error) {
 	assert.Compare(m.t, id, m.updateID)
 	assert.Compare(m.t, update, m.update)
 	return m.updatePlayer, m.updateErr
 }
 
-func (m mockPlayerManager) Remove(ctx context.Context, id assets.PlayerID) error {
+func (m mockPlayerStorage) Remove(ctx context.Context, id assets.PlayerID) error {
 	assert.Compare(m.t, id, m.removeID)
 	return m.removeErr
 }

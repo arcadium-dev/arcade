@@ -28,7 +28,7 @@ func TestLinksList(t *testing.T) {
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		// ownerID failure
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil, "ownerID", "bad uuid")
@@ -52,7 +52,7 @@ func TestLinksList(t *testing.T) {
 	})
 
 	t.Run("link manager list failure", func(t *testing.T) {
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t: t,
 			filter: assets.LinkFilter{
 				LocationID: assets.RoomID(id),
@@ -80,7 +80,7 @@ func TestLinksList(t *testing.T) {
 			updated       = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t: t,
 			filter: assets.LinkFilter{
 				Offset: 25,
@@ -131,7 +131,7 @@ func TestLinkGet(t *testing.T) {
 	linkID := assets.LinkID(uuid.New())
 
 	t.Run("linkID failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
@@ -140,7 +140,7 @@ func TestLinkGet(t *testing.T) {
 	})
 
 	t.Run("link manager get failure", func(t *testing.T) {
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:      t,
 			getID:  linkID,
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -165,7 +165,7 @@ func TestLinkGet(t *testing.T) {
 			updated       = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:     t,
 			getID: linkID,
 			getLink: &assets.Link{
@@ -211,7 +211,7 @@ func TestLinkCreate(t *testing.T) {
 	route := server.V1LinksRoute
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		w := invokeLinksEndpoint(t, m, http.MethodPost, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -221,14 +221,14 @@ func TestLinkCreate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		w := invokeLinksEndpoint(t, m, http.MethodPost, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
 	})
 
 	t.Run("create link req failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		tests := []struct {
 			req    rest.LinkRequest
@@ -313,7 +313,7 @@ func TestLinkCreate(t *testing.T) {
 			destID  = assets.RoomID(uuid.New())
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t: t,
 			create: assets.LinkCreate{
 				LinkChange: assets.LinkChange{
@@ -357,7 +357,7 @@ func TestLinkCreate(t *testing.T) {
 			updated = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t: t,
 			create: assets.LinkCreate{
 				LinkChange: assets.LinkChange{
@@ -419,7 +419,7 @@ func TestLinkCreate(t *testing.T) {
 
 func TestLinkUpdate(t *testing.T) {
 	t.Run("linkID failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
@@ -428,7 +428,7 @@ func TestLinkUpdate(t *testing.T) {
 	})
 
 	t.Run("empty body", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		linkID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
@@ -441,7 +441,7 @@ func TestLinkUpdate(t *testing.T) {
 	})
 
 	t.Run("invalid body", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		linkID := uuid.New()
 		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
@@ -451,7 +451,7 @@ func TestLinkUpdate(t *testing.T) {
 	})
 
 	t.Run("update link req failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		tests := []struct {
 			req    rest.LinkRequest
@@ -544,7 +544,7 @@ func TestLinkUpdate(t *testing.T) {
 			destID  = assets.RoomID(uuid.New())
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:        t,
 			updateID: linkID,
 			update: assets.LinkUpdate{
@@ -591,7 +591,7 @@ func TestLinkUpdate(t *testing.T) {
 			updated = assets.Timestamp{Time: time.Now()}
 		)
 
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:        t,
 			updateID: linkID,
 			update: assets.LinkUpdate{
@@ -658,7 +658,7 @@ func TestLinkRemove(t *testing.T) {
 	linkID := assets.LinkID(uuid.New())
 
 	t.Run("linkID failure", func(t *testing.T) {
-		m := mockLinkManager{}
+		m := mockLinkStorage{}
 
 		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
 
@@ -667,7 +667,7 @@ func TestLinkRemove(t *testing.T) {
 	})
 
 	t.Run("link manager remove eailure", func(t *testing.T) {
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:            t,
 			removeLinkID: linkID,
 			removeErr:    fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
@@ -680,7 +680,7 @@ func TestLinkRemove(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		m := mockLinkManager{
+		m := mockLinkStorage{
 			t:            t,
 			removeLinkID: linkID,
 		}
@@ -696,7 +696,7 @@ func TestLinkRemove(t *testing.T) {
 
 // helper
 
-func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
+func invokeLinksEndpoint(t *testing.T, m mockLinkStorage, method, target string, body []byte, query ...string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	if len(query)%2 != 0 {
@@ -709,7 +709,7 @@ func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string,
 	}
 
 	router := mux.NewRouter()
-	s := server.LinksService{Manager: m}
+	s := server.LinksService{Storage: m}
 	s.Register(router)
 
 	r := httptest.NewRequest(method, target, b)
@@ -726,10 +726,10 @@ func invokeLinksEndpoint(t *testing.T, m mockLinkManager, method, target string,
 	return w
 }
 
-// mockLinkManager
+// mockLinkStorage
 
 type (
-	mockLinkManager struct {
+	mockLinkStorage struct {
 		t *testing.T
 
 		filter  assets.LinkFilter
@@ -754,28 +754,28 @@ type (
 	}
 )
 
-func (m mockLinkManager) List(ctx context.Context, filter assets.LinkFilter) ([]*assets.Link, error) {
+func (m mockLinkStorage) List(ctx context.Context, filter assets.LinkFilter) ([]*assets.Link, error) {
 	assert.Compare(m.t, filter, m.filter)
 	return m.list, m.listErr
 }
 
-func (m mockLinkManager) Get(ctx context.Context, id assets.LinkID) (*assets.Link, error) {
+func (m mockLinkStorage) Get(ctx context.Context, id assets.LinkID) (*assets.Link, error) {
 	assert.Compare(m.t, id, m.getID)
 	return m.getLink, m.getErr
 }
 
-func (m mockLinkManager) Create(ctx context.Context, create assets.LinkCreate) (*assets.Link, error) {
+func (m mockLinkStorage) Create(ctx context.Context, create assets.LinkCreate) (*assets.Link, error) {
 	assert.Compare(m.t, create, m.create)
 	return m.createLink, m.createErr
 }
 
-func (m mockLinkManager) Update(ctx context.Context, id assets.LinkID, update assets.LinkUpdate) (*assets.Link, error) {
+func (m mockLinkStorage) Update(ctx context.Context, id assets.LinkID, update assets.LinkUpdate) (*assets.Link, error) {
 	assert.Compare(m.t, id, m.updateID)
 	assert.Compare(m.t, update, m.update)
 	return m.updateLink, m.updateErr
 }
 
-func (m mockLinkManager) Remove(ctx context.Context, id assets.LinkID) error {
+func (m mockLinkStorage) Remove(ctx context.Context, id assets.LinkID) error {
 	assert.Compare(m.t, id, m.removeLinkID)
 	return m.removeErr
 }

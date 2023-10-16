@@ -2,7 +2,6 @@ package data_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgerrcode"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 	"arcadium.dev/arcade/assets/data"
@@ -54,7 +54,7 @@ func TestPlayersList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
 			_, err = p.List(ctx, assets.PlayerFilter{})
@@ -83,7 +83,7 @@ func TestPlayersList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			_, err = p.List(context.Background(), assets.PlayerFilter{})
@@ -123,7 +123,7 @@ func TestPlayersList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			players, err := p.List(context.Background(), test.filter)
@@ -185,7 +185,7 @@ func TestPlayersGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WithArgs(id).WillReturnError(test.err)
 
 			_, err = p.Get(ctx, id)
@@ -213,7 +213,7 @@ func TestPlayersGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows)
 
 			player, err := p.Get(ctx, id)
@@ -282,7 +282,7 @@ func TestPlayersCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.PlayerCreate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
 			}
@@ -314,7 +314,7 @@ func TestPlayersCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.PlayerCreate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
 			}
@@ -345,7 +345,7 @@ func TestPlayersCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 
 			create := assets.PlayerCreate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
@@ -426,7 +426,7 @@ func TestPlayersUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.PlayerUpdate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
 			}
@@ -458,7 +458,7 @@ func TestPlayersUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.PlayerUpdate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
 			}
@@ -489,7 +489,7 @@ func TestPlayersUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.PlayerUpdate{
 				PlayerChange: assets.PlayerChange{Name: name, Description: desc, HomeID: homeID, LocationID: locationID},
 			}
@@ -547,7 +547,7 @@ func TestPlayersRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnError(test.err)
 
 			err = p.Remove(ctx, id)
@@ -572,7 +572,7 @@ func TestPlayersRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			p := data.PlayerStorage{DB: db, Driver: test.driver}
+			p := data.PlayerStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			err = p.Remove(ctx, id)

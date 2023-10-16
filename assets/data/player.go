@@ -16,12 +16,12 @@ package data // import "arcadium.dev/arcade/assets/data"
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 )
@@ -51,7 +51,7 @@ func (p PlayerStorage) List(ctx context.Context, filter assets.PlayerFilter) ([]
 
 	logger.Info().Msg("list players")
 
-	rows, err := p.DB.QueryContext(ctx, p.Driver.ListQuery(filter))
+	rows, err := p.DB.Query(ctx, p.Driver.ListQuery(filter))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
@@ -93,7 +93,7 @@ func (p PlayerStorage) Get(ctx context.Context, playerID assets.PlayerID) (*asse
 	logger.Info().Msgf("get player: %s", playerID)
 
 	var player assets.Player
-	err := p.DB.QueryRowContext(ctx, p.Driver.GetQuery(), playerID).Scan(
+	err := p.DB.QueryRow(ctx, p.Driver.GetQuery(), playerID).Scan(
 		&player.ID,
 		&player.Name,
 		&player.Description,
@@ -122,7 +122,7 @@ func (p PlayerStorage) Create(ctx context.Context, create assets.PlayerCreate) (
 	var (
 		player assets.Player
 	)
-	err := p.DB.QueryRowContext(ctx, p.Driver.CreateQuery(),
+	err := p.DB.QueryRow(ctx, p.Driver.CreateQuery(),
 		create.Name,
 		create.Description,
 		create.HomeID,
@@ -169,7 +169,7 @@ func (p PlayerStorage) Update(ctx context.Context, playerID assets.PlayerID, upd
 	logger.Info().Msgf("update player: %s", playerID)
 
 	var player assets.Player
-	err := p.DB.QueryRowContext(ctx, p.Driver.UpdateQuery(),
+	err := p.DB.QueryRow(ctx, p.Driver.UpdateQuery(),
 		playerID,
 		update.Name,
 		update.Description,
@@ -218,7 +218,7 @@ func (p PlayerStorage) Remove(ctx context.Context, playerID assets.PlayerID) err
 
 	zerolog.Ctx(ctx).Info().Msgf("remove player %s", playerID)
 
-	_, err := p.DB.ExecContext(ctx, p.Driver.RemoveQuery(), playerID)
+	_, err := p.DB.Exec(ctx, p.Driver.RemoveQuery(), playerID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
 	}

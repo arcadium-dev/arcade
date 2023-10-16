@@ -2,7 +2,6 @@ package data_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgerrcode"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 	"arcadium.dev/arcade/assets/data"
@@ -61,7 +61,7 @@ func TestLinksList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
 			_, err = l.List(ctx, assets.LinkFilter{})
@@ -90,7 +90,7 @@ func TestLinksList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			_, err = l.List(context.Background(), assets.LinkFilter{})
@@ -165,7 +165,7 @@ func TestLinksList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			links, err := l.List(context.Background(), test.filter)
@@ -229,7 +229,7 @@ func TestLinksGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WithArgs(id).WillReturnError(test.err)
 
 			_, err = l.Get(ctx, id)
@@ -257,7 +257,7 @@ func TestLinksGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows)
 
 			link, err := l.Get(ctx, id)
@@ -328,7 +328,7 @@ func TestLinksCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.LinkCreate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
 			}
@@ -360,7 +360,7 @@ func TestLinksCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.LinkCreate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
 			}
@@ -391,7 +391,7 @@ func TestLinksCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 
 			create := assets.LinkCreate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
@@ -474,7 +474,7 @@ func TestLinksUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.LinkUpdate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
 			}
@@ -506,7 +506,7 @@ func TestLinksUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.LinkUpdate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
 			}
@@ -537,7 +537,7 @@ func TestLinksUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.LinkUpdate{
 				LinkChange: assets.LinkChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: locationID, DestinationID: destinationID},
 			}
@@ -596,7 +596,7 @@ func TestLinksRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnError(test.err)
 
 			err = l.Remove(ctx, id)
@@ -621,7 +621,7 @@ func TestLinksRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			l := data.LinkStorage{DB: db, Driver: test.driver}
+			l := data.LinkStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			err = l.Remove(ctx, id)

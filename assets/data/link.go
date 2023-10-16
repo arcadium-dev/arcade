@@ -16,12 +16,12 @@ package data // import "arcadium.dev/arcade/assets/data"
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 )
@@ -51,7 +51,7 @@ func (l LinkStorage) List(ctx context.Context, filter assets.LinkFilter) ([]*ass
 
 	logger.Info().Msg("list links")
 
-	rows, err := l.DB.QueryContext(ctx, l.Driver.ListQuery(filter))
+	rows, err := l.DB.Query(ctx, l.Driver.ListQuery(filter))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
@@ -94,7 +94,7 @@ func (l LinkStorage) Get(ctx context.Context, linkID assets.LinkID) (*assets.Lin
 	logger.Info().Msgf("get link: %s", linkID)
 
 	var link assets.Link
-	err := l.DB.QueryRowContext(ctx, l.Driver.GetQuery(), linkID).Scan(
+	err := l.DB.QueryRow(ctx, l.Driver.GetQuery(), linkID).Scan(
 		&link.ID,
 		&link.Name,
 		&link.Description,
@@ -124,7 +124,7 @@ func (l LinkStorage) Create(ctx context.Context, create assets.LinkCreate) (*ass
 	var (
 		link assets.Link
 	)
-	err := l.DB.QueryRowContext(ctx, l.Driver.CreateQuery(),
+	err := l.DB.QueryRow(ctx, l.Driver.CreateQuery(),
 		create.Name,
 		create.Description,
 		create.OwnerID,
@@ -173,7 +173,7 @@ func (l LinkStorage) Update(ctx context.Context, linkID assets.LinkID, update as
 	logger.Info().Msgf("update link: %s", linkID)
 
 	var link assets.Link
-	err := l.DB.QueryRowContext(ctx, l.Driver.UpdateQuery(),
+	err := l.DB.QueryRow(ctx, l.Driver.UpdateQuery(),
 		linkID,
 		update.Name,
 		update.Description,
@@ -224,7 +224,7 @@ func (l LinkStorage) Remove(ctx context.Context, linkID assets.LinkID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove link %s", linkID)
 
-	_, err := l.DB.ExecContext(ctx, l.Driver.RemoveQuery(), linkID)
+	_, err := l.DB.Exec(ctx, l.Driver.RemoveQuery(), linkID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
 	}

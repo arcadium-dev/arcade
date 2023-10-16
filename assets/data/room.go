@@ -16,12 +16,12 @@ package data // import "arcadium.dev/arcade/assets/data"
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 )
@@ -51,7 +51,7 @@ func (r RoomStorage) List(ctx context.Context, filter assets.RoomFilter) ([]*ass
 
 	logger.Info().Msg("list rooms")
 
-	rows, err := r.DB.QueryContext(ctx, r.Driver.ListQuery(filter))
+	rows, err := r.DB.Query(ctx, r.Driver.ListQuery(filter))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
@@ -93,7 +93,7 @@ func (r RoomStorage) Get(ctx context.Context, roomID assets.RoomID) (*assets.Roo
 	logger.Info().Msgf("get room: %s", roomID)
 
 	var room assets.Room
-	err := r.DB.QueryRowContext(ctx, r.Driver.GetQuery(), roomID).Scan(
+	err := r.DB.QueryRow(ctx, r.Driver.GetQuery(), roomID).Scan(
 		&room.ID,
 		&room.Name,
 		&room.Description,
@@ -122,7 +122,7 @@ func (r RoomStorage) Create(ctx context.Context, create assets.RoomCreate) (*ass
 	var (
 		room assets.Room
 	)
-	err := r.DB.QueryRowContext(ctx, r.Driver.CreateQuery(),
+	err := r.DB.QueryRow(ctx, r.Driver.CreateQuery(),
 		create.Name,
 		create.Description,
 		create.OwnerID,
@@ -169,7 +169,7 @@ func (r RoomStorage) Update(ctx context.Context, roomID assets.RoomID, update as
 	logger.Info().Msgf("update room: %s", roomID)
 
 	var room assets.Room
-	err := r.DB.QueryRowContext(ctx, r.Driver.UpdateQuery(),
+	err := r.DB.QueryRow(ctx, r.Driver.UpdateQuery(),
 		roomID,
 		update.Name,
 		update.Description,
@@ -218,7 +218,7 @@ func (r RoomStorage) Remove(ctx context.Context, roomID assets.RoomID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove room %s", roomID)
 
-	_, err := r.DB.ExecContext(ctx, r.Driver.RemoveQuery(), roomID)
+	_, err := r.DB.Exec(ctx, r.Driver.RemoveQuery(), roomID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
 	}

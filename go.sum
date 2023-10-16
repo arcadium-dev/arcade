@@ -1,5 +1,5 @@
-arcadium.dev/core v0.0.9 h1:SJ2+Bb7UccTcLglS0jmv3RmKMDGHkpY6tN3a14vEvgg=
-arcadium.dev/core v0.0.9/go.mod h1:fm9MdFeIJ0nXQDbJhEFhewb1W3v563wRILdfkv5BL14=
+arcadium.dev/core v0.0.11 h1:+/EaET/tSCvrOoX2fxYY+ZK+zJO8MISQ17l/V5pO39s=
+arcadium.dev/core v0.0.11/go.mod h1:fm9MdFeIJ0nXQDbJhEFhewb1W3v563wRILdfkv5BL14=
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=

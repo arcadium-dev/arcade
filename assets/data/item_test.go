@@ -2,7 +2,6 @@ package data_test
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"github.com/jackc/pgerrcode"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 	"arcadium.dev/arcade/assets/data"
@@ -65,7 +65,7 @@ func TestItemsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
 			_, err = i.List(ctx, assets.ItemFilter{})
@@ -94,7 +94,7 @@ func TestItemsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			_, err = i.List(context.Background(), assets.ItemFilter{})
@@ -200,7 +200,7 @@ func TestItemsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			items, err := i.List(context.Background(), test.filter)
@@ -264,7 +264,7 @@ func TestItemsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WithArgs(id).WillReturnError(test.err)
 
 			_, err = i.Get(ctx, id)
@@ -308,7 +308,7 @@ func TestItemsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows)
 
 			item, err := i.Get(ctx, id)
@@ -385,7 +385,7 @@ func TestItemsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.ItemCreate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
 			}
@@ -421,7 +421,7 @@ func TestItemsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.ItemCreate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
 			}
@@ -472,7 +472,7 @@ func TestItemsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 
 			create := assets.ItemCreate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
@@ -563,7 +563,7 @@ func TestItemsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.ItemUpdate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
 			}
@@ -599,7 +599,7 @@ func TestItemsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.ItemUpdate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
 			}
@@ -650,7 +650,7 @@ func TestItemsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.ItemUpdate{
 				ItemChange: assets.ItemChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
 			}
@@ -708,7 +708,7 @@ func TestItemsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnError(test.err)
 
 			err = i.Remove(ctx, id)
@@ -733,7 +733,7 @@ func TestItemsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			i := data.ItemStorage{DB: db, Driver: test.driver}
+			i := data.ItemStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			err = i.Remove(ctx, id)

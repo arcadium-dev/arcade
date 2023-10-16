@@ -16,13 +16,13 @@ package data // import "arcadium.dev/arcade/assets/data"
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 )
@@ -52,7 +52,7 @@ func (i ItemStorage) List(ctx context.Context, filter assets.ItemFilter) ([]*ass
 
 	logger.Info().Msg("list items")
 
-	rows, err := i.DB.QueryContext(ctx, i.Driver.ListQuery(filter))
+	rows, err := i.DB.Query(ctx, i.Driver.ListQuery(filter))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
@@ -120,7 +120,7 @@ func (i ItemStorage) Get(ctx context.Context, itemID assets.ItemID) (*assets.Ite
 
 	var item assets.Item
 	var locItemID, locPlayerID, locRoomID uuid.NullUUID
-	err := i.DB.QueryRowContext(ctx, i.Driver.GetQuery(), itemID).Scan(
+	err := i.DB.QueryRow(ctx, i.Driver.GetQuery(), itemID).Scan(
 		&item.ID,
 		&item.Name,
 		&item.Description,
@@ -156,7 +156,7 @@ func (i ItemStorage) Create(ctx context.Context, create assets.ItemCreate) (*ass
 	)
 	newLocItemID, newLocPlayerID, newLocRoomID := locationID(create.LocationID.Type(), create.LocationID.ID())
 
-	err := i.DB.QueryRowContext(ctx, i.Driver.CreateQuery(),
+	err := i.DB.QueryRow(ctx, i.Driver.CreateQuery(),
 		create.Name,
 		create.Description,
 		create.OwnerID,
@@ -214,7 +214,7 @@ func (i ItemStorage) Update(ctx context.Context, itemID assets.ItemID, update as
 	)
 	newLocItemID, newLocPlayerID, newLocRoomID := locationID(update.LocationID.Type(), update.LocationID.ID())
 
-	err := i.DB.QueryRowContext(ctx, i.Driver.UpdateQuery(),
+	err := i.DB.QueryRow(ctx, i.Driver.UpdateQuery(),
 		itemID,
 		update.Name,
 		update.Description,
@@ -269,7 +269,7 @@ func (i ItemStorage) Remove(ctx context.Context, itemID assets.ItemID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove item %s", itemID)
 
-	_, err := i.DB.ExecContext(ctx, i.Driver.RemoveQuery(), itemID)
+	_, err := i.DB.Exec(ctx, i.Driver.RemoveQuery(), itemID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
 	}

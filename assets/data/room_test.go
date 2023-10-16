@@ -2,7 +2,6 @@ package data_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgerrcode"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 	"arcadium.dev/arcade/assets/data"
@@ -58,7 +58,7 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnError(errors.New("query error"))
 
 			_, err = r.List(ctx, assets.RoomFilter{})
@@ -87,7 +87,7 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			_, err = r.List(context.Background(), assets.RoomFilter{})
@@ -150,7 +150,7 @@ func TestRoomsList(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows).RowsWillBeClosed()
 
 			rooms, err := r.List(context.Background(), test.filter)
@@ -212,7 +212,7 @@ func TestRoomsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WithArgs(id).WillReturnError(test.err)
 
 			_, err = r.Get(ctx, id)
@@ -240,7 +240,7 @@ func TestRoomsGet(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectQuery(test.query).WillReturnRows(test.rows)
 
 			room, err := r.Get(ctx, id)
@@ -309,7 +309,7 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
@@ -341,7 +341,7 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
@@ -372,7 +372,7 @@ func TestRoomsCreate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 
 			create := assets.RoomCreate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
@@ -453,7 +453,7 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
@@ -485,7 +485,7 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
@@ -516,7 +516,7 @@ func TestRoomsUpdate(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			update := assets.RoomUpdate{
 				RoomChange: assets.RoomChange{Name: name, Description: desc, OwnerID: ownerID, ParentID: parentID},
 			}
@@ -574,7 +574,7 @@ func TestRoomsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnError(test.err)
 
 			err = r.Remove(ctx, id)
@@ -599,7 +599,7 @@ func TestRoomsRemove(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
-			r := data.RoomStorage{DB: db, Driver: test.driver}
+			r := data.RoomStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
 			mock.ExpectExec(test.query).WithArgs(id).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			err = r.Remove(ctx, id)

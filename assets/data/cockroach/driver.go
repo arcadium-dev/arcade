@@ -16,7 +16,6 @@ package cockroach // import "arcadium.dev/arcade/assets/data/cockroach"
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -24,66 +23,27 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/rs/zerolog"
+
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/assets"
 )
 
 // Open opens a database.
 func Open(ctx context.Context, dsn string) (*sql.DB, error) {
-	logger := zerolog.Ctx(ctx)
-
 	if dsn == "" {
 		return nil, errors.New("failed to open database: dsn required")
 	}
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open(ctx, "pgx", dsn, sql.WithReconnect(3), sql.WithTxRetries(3))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(20)
-
-	if err := connect(ctx, db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	logger.Info().Msg("database connected")
+	db.DB.SetConnMaxLifetime(time.Minute * 3)
+	db.DB.SetMaxOpenConns(20)
+	db.DB.SetMaxIdleConns(20)
 
 	return db, nil
-}
-
-// connect allows for insertion of mock connect functions.
-var connect = func(ctx context.Context, db *sql.DB) error {
-	logger := zerolog.Ctx(ctx)
-
-	count := 0
-	timeout := 600 * time.Second
-
-	retryCtx, retryCancel := context.WithTimeout(ctx, timeout)
-	defer retryCancel()
-
-	prevRetry, currRetry := time.Duration(1), time.Duration(1)
-	for done := false; !done; {
-		select {
-		case <-time.After(currRetry * time.Second):
-			nextRetry := currRetry + prevRetry
-			prevRetry, currRetry = currRetry, nextRetry
-
-			if err := db.PingContext(retryCtx); err != nil {
-				count++
-				logger.Info().Msgf("ping failed, error: %s, count: %d, retrying...", err, count)
-				continue
-			}
-			done = true
-
-		case <-retryCtx.Done():
-			return retryCtx.Err()
-		}
-	}
-	return nil
 }
 
 type (

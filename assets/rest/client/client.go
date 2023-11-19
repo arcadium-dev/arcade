@@ -16,19 +16,53 @@ package client // import "arcadium.dev/arcade/assets/rest/client"
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"time"
+)
 
-	"arcadium.dev/core/errors"
+const (
+	defaultTimeout = 10 * time.Second
 )
 
 type (
 	// Client ... TODO
 	Client struct {
-		URL    string
-		client *http.Client
+		baseURL string
+		timeout time.Duration
+		client  *http.Client
 	}
 )
 
+// New returns a new client to the MPX API.
+func New(baseURL string, opts ...ClientOption) *Client {
+	// Set defaults.
+	c := &Client{
+		baseURL: baseURL,
+		timeout: defaultTimeout,
+	}
+
+	// Load options.
+	for _, opt := range opts {
+		opt.apply(c)
+	}
+
+	c.client = &http.Client{
+		Timeout: c.timeout,
+	}
+
+	return c
+}
+
 func (c Client) send(ctx context.Context, req *http.Request) (*http.Response, error) {
-	return nil, errors.ErrNotImplemented
+	// TODO: add logging, auth, etc.
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("%d, %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+
+	return resp, nil
 }

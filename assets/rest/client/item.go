@@ -35,10 +35,10 @@ const (
 
 // ListItems ... TODO
 func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
-	failMsg := "failed to send list items request"
+	failMsg := "failed to list items"
 
 	// Create the request.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+V1ItemsRoute, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+V1ItemsRoute, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -63,7 +63,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 	req.URL.RawQuery = q.Encode()
 
 	// Send the request
-	resp, err := c.client.Do(req)
+	resp, err := c.send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -71,7 +71,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 
 	// Handle the response.
 	var itemsResp rest.ItemsResponse
-	if err := json.NewDecoder(resp.Body).Decode(itemsResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&itemsResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	var items []*assets.Item
@@ -83,7 +83,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 		items = append(items, aItem)
 	}
 
-	return items, errors.ErrNotImplemented
+	return items, nil
 }
 
 func (c Client) Get(context.Context, assets.ItemID) (*assets.Item, error) {
@@ -106,19 +106,19 @@ func (c Client) Remove(context.Context, assets.ItemID) error {
 func TranslateItem(i rest.Item) (*assets.Item, error) {
 	id, err := uuid.Parse(i.ID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid ownerID: '%s'", err, i.OwnerID)
+		return nil, fmt.Errorf("received invalid item ID: '%s': %w", i.ID, err)
 	}
 	ownerID, err := uuid.Parse(i.OwnerID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid ownerID: '%s'", err, i.OwnerID)
+		return nil, fmt.Errorf("received invalid item ownerID: '%s': %w", i.OwnerID, err)
 	}
 	locID, err := uuid.Parse(i.LocationID.ID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: invalid locationID.ID: '%s', %s", err, i.LocationID.ID)
+		return nil, fmt.Errorf("received invalid item locationID.ID: '%s': %w", i.LocationID.ID, err)
 	}
 	t := strings.ToLower(i.LocationID.Type)
 	if t != "room" && t != "player" && t != "item" {
-		return nil, fmt.Errorf("%w: invalid locationID.Type: '%s'", err, i.LocationID.Type)
+		return nil, fmt.Errorf("received invalid item locationID.Type: '%s'", i.LocationID.Type)
 	}
 
 	item := &assets.Item{

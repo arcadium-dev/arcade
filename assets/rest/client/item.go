@@ -15,15 +15,17 @@
 package client // import "arcadium.dev/arcade/assets/rest/client"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"arcadium.dev/core/errors"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/arcade/assets"
 	"arcadium.dev/arcade/assets/rest"
@@ -33,12 +35,13 @@ const (
 	V1ItemsRoute string = "/v1/items"
 )
 
-// ListItems ... TODO
+// ListItems returns a list of items for the given item filter.
 func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*assets.Item, error) {
 	failMsg := "failed to list items"
 
 	// Create the request.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+V1ItemsRoute, nil)
+	url := fmt.Sprintf("%s%s", c.baseURL, V1ItemsRoute)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -62,7 +65,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 	}
 	req.URL.RawQuery = q.Encode()
 
-	// Send the request
+	// Send the request.
 	resp, err := c.send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -74,32 +77,150 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 	if err := json.NewDecoder(resp.Body).Decode(&itemsResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	var items []*assets.Item
+	var aItems []*assets.Item
 	for _, i := range itemsResp.Items {
 		aItem, err := TranslateItem(i)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
-		items = append(items, aItem)
+		aItems = append(aItems, aItem)
 	}
 
-	return items, nil
+	return aItems, nil
 }
 
-func (c Client) Get(context.Context, assets.ItemID) (*assets.Item, error) {
-	return nil, errors.ErrNotImplemented
+// GetItem returns an item for the given item id.
+func (c Client) GetItem(ctx context.Context, id assets.ItemID) (*assets.Item, error) {
+	failMsg := "failed to get item"
+
+	// Create the request.
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemsRoute, id)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	// Send the request.
+	resp, err := c.send(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	defer resp.Body.Close()
+
+	return itemResponse(resp.Body, failMsg)
 }
 
-func (c Client) Create(context.Context, assets.ItemCreate) (*assets.Item, error) {
-	return nil, errors.ErrNotImplemented
+func itemResponse(body io.ReadCloser, failMsg string) (*assets.Item, error) {
+	var itemResp rest.ItemResponse
+	if err := json.NewDecoder(body).Decode(&itemResp); err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	aItem, err := TranslateItem(itemResp.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	return aItem, nil
 }
 
-func (c Client) Update(context.Context, assets.ItemID, assets.ItemUpdate) (*assets.Item, error) {
-	return nil, errors.ErrNotImplemented
+// CreateItem creates an item.
+func (c Client) CreateItem(ctx context.Context, item assets.ItemCreate) (*assets.Item, error) {
+	failMsg := "failed to create item"
+
+	// Build the request body.
+	change := TranslateItemChange(item.ItemChange)
+	reqBody := &bytes.Buffer{}
+	if err := json.NewEncoder(reqBody).Encode(change); err != nil {
+		return nil, fmt.Errorf("%s: failed to encode request body: %w", failMsg, err)
+	}
+
+	// Create the request.
+	url := fmt.Sprintf("%s%s", c.baseURL, V1ItemsRoute)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create item")
+
+	// Send the request
+	resp, err := c.send(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	defer resp.Body.Close()
+
+	// Handle the response.
+	var itemResp rest.ItemResponse
+	if err := json.NewDecoder(resp.Body).Decode(&itemResp); err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	aItem, err := TranslateItem(itemResp.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	return aItem, nil
 }
 
-func (c Client) Remove(context.Context, assets.ItemID) error {
-	return errors.ErrNotImplemented
+// UpdateItem updates the item with the given item update.
+func (c Client) UpdateItem(ctx context.Context, id assets.ItemID, item assets.ItemUpdate) (*assets.Item, error) {
+	failMsg := "failed to update item"
+
+	// Build the request body.
+	change := TranslateItemChange(item.ItemChange)
+	reqBody := &bytes.Buffer{}
+	if err := json.NewEncoder(reqBody).Encode(change); err != nil {
+		return nil, fmt.Errorf("%s: failed to encode request body: %w", failMsg, err)
+	}
+
+	// Create the request.
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemsRoute, id)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update item")
+
+	// Send the request
+	resp, err := c.send(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	defer resp.Body.Close()
+
+	// Handle the response.
+	var itemResp rest.ItemResponse
+	if err := json.NewDecoder(resp.Body).Decode(&itemResp); err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	aItem, err := TranslateItem(itemResp.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	return aItem, nil
+}
+
+// RemoveItem deletes an item.
+func (c Client) RemoveItem(ctx context.Context, id assets.ItemID) error {
+	failMsg := "failed to remove item"
+
+	// Create the request.
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemsRoute, id)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("%s: %w", failMsg, err)
+	}
+
+	// Send the request
+	resp, err := c.send(ctx, req)
+	if err != nil {
+		return fmt.Errorf("%s: %w", failMsg, err)
+	}
+	defer resp.Body.Close()
+
+	return nil
 }
 
 // TranslateItem translates a network item into an assets item.
@@ -140,4 +261,17 @@ func TranslateItem(i rest.Item) (*assets.Item, error) {
 	}
 
 	return item, nil
+}
+
+// TranslateItemChange translates an asset item change struct to a network item request.
+func TranslateItemChange(i assets.ItemChange) rest.ItemRequest {
+	return rest.ItemRequest{
+		Name:        i.Name,
+		Description: i.Description,
+		OwnerID:     i.OwnerID.String(),
+		LocationID:  rest.ItemLocationID{
+			// ID:   i.LocationID.ID().String(),
+			// Type: i.LocationID.Type().String(),
+		},
+	}
 }

@@ -72,21 +72,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 	}
 	defer resp.Body.Close()
 
-	// Handle the response.
-	var itemsResp rest.ItemsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&itemsResp); err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-	var aItems []*assets.Item
-	for _, i := range itemsResp.Items {
-		aItem, err := TranslateItem(i)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", failMsg, err)
-		}
-		aItems = append(aItems, aItem)
-	}
-
-	return aItems, nil
+	return itemsResponse(resp.Body, failMsg)
 }
 
 // GetItem returns an item for the given item id.
@@ -108,18 +94,6 @@ func (c Client) GetItem(ctx context.Context, id assets.ItemID) (*assets.Item, er
 	defer resp.Body.Close()
 
 	return itemResponse(resp.Body, failMsg)
-}
-
-func itemResponse(body io.ReadCloser, failMsg string) (*assets.Item, error) {
-	var itemResp rest.ItemResponse
-	if err := json.NewDecoder(body).Decode(&itemResp); err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-	aItem, err := TranslateItem(itemResp.Item)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-	return aItem, nil
 }
 
 // CreateItem creates an item.
@@ -149,17 +123,7 @@ func (c Client) CreateItem(ctx context.Context, item assets.ItemCreate) (*assets
 	}
 	defer resp.Body.Close()
 
-	// Handle the response.
-	var itemResp rest.ItemResponse
-	if err := json.NewDecoder(resp.Body).Decode(&itemResp); err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-	aItem, err := TranslateItem(itemResp.Item)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-
-	return aItem, nil
+	return itemResponse(resp.Body, failMsg)
 }
 
 // UpdateItem updates the item with the given item update.
@@ -189,17 +153,7 @@ func (c Client) UpdateItem(ctx context.Context, id assets.ItemID, item assets.It
 	}
 	defer resp.Body.Close()
 
-	// Handle the response.
-	var itemResp rest.ItemResponse
-	if err := json.NewDecoder(resp.Body).Decode(&itemResp); err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-	aItem, err := TranslateItem(itemResp.Item)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", failMsg, err)
-	}
-
-	return aItem, nil
+	return itemResponse(resp.Body, failMsg)
 }
 
 // RemoveItem deletes an item.
@@ -221,6 +175,35 @@ func (c Client) RemoveItem(ctx context.Context, id assets.ItemID) error {
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func itemsResponse(body io.ReadCloser, failMsg string) ([]*assets.Item, error) {
+	var itemsResp rest.ItemsResponse
+	if err := json.NewDecoder(body).Decode(&itemsResp); err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	var aItems []*assets.Item
+	for _, i := range itemsResp.Items {
+		aItem, err := TranslateItem(i)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", failMsg, err)
+		}
+		aItems = append(aItems, aItem)
+	}
+
+	return aItems, nil
+}
+
+func itemResponse(body io.ReadCloser, failMsg string) (*assets.Item, error) {
+	var itemResp rest.ItemResponse
+	if err := json.NewDecoder(body).Decode(&itemResp); err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	aItem, err := TranslateItem(itemResp.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
+	return aItem, nil
 }
 
 // TranslateItem translates a network item into an assets item.

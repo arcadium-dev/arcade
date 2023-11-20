@@ -28,13 +28,13 @@ const (
 	MaxPlayerFilterLimit     = 100
 )
 
-var (
-	NilPlayer = PlayerID(uuid.Nil)
-)
-
 type (
 	// PlayerID is the unique identifier of an player.
 	PlayerID uuid.UUID
+)
+
+var (
+	NilPlayerID = PlayerID(uuid.Nil)
 )
 
 func (p PlayerID) ID() LocationID               { return LocationID(p) }

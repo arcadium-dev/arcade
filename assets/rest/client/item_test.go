@@ -136,10 +136,9 @@ func TestListItems(t *testing.T) {
 }
 
 func TestGetItem(t *testing.T) {
-	ctx := context.Background()
-
 	var (
-		id = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
+		ctx = context.Background()
+		id  = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 	)
 
 	t.Run("create request failure", func(t *testing.T) {
@@ -406,12 +405,9 @@ func TestUpdateItem(t *testing.T) {
 
 	var (
 		ctx        = context.Background()
+		id         = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 		ownerID    = assets.PlayerID(uuid.MustParse(owner))
 		locationID = assets.RoomID(uuid.MustParse(loc))
-	)
-
-	var (
-		id = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 	)
 
 	t.Run("item change failure", func(t *testing.T) {
@@ -558,10 +554,9 @@ func TestUpdateItem(t *testing.T) {
 }
 
 func TestRemoveItem(t *testing.T) {
-	ctx := context.Background()
-
 	var (
-		id = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
+		ctx = context.Background()
+		id  = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 	)
 
 	t.Run("create request failure", func(t *testing.T) {

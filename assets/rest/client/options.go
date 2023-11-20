@@ -17,7 +17,7 @@ package client // import "arcadium.dev/arcade/assets/rest/client"
 import "time"
 
 type (
-	// ClientOption provides options for configuring the creation of an MPX client.
+	// ClientOption provides options for configuring the creation of an assets client.
 	ClientOption interface {
 		apply(*Client)
 	}

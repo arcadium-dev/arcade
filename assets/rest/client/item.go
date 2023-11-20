@@ -101,7 +101,10 @@ func (c Client) CreateItem(ctx context.Context, item assets.ItemCreate) (*assets
 	failMsg := "failed to create item"
 
 	// Build the request body.
-	change := TranslateItemChange(item.ItemChange)
+	change, err := TranslateItemChange(item.ItemChange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
 	reqBody := &bytes.Buffer{}
 	if err := json.NewEncoder(reqBody).Encode(change); err != nil {
 		return nil, fmt.Errorf("%s: failed to encode request body: %w", failMsg, err)
@@ -131,7 +134,10 @@ func (c Client) UpdateItem(ctx context.Context, id assets.ItemID, item assets.It
 	failMsg := "failed to update item"
 
 	// Build the request body.
-	change := TranslateItemChange(item.ItemChange)
+	change, err := TranslateItemChange(item.ItemChange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", failMsg, err)
+	}
 	reqBody := &bytes.Buffer{}
 	if err := json.NewEncoder(reqBody).Encode(change); err != nil {
 		return nil, fmt.Errorf("%s: failed to encode request body: %w", failMsg, err)
@@ -247,14 +253,26 @@ func TranslateItem(i rest.Item) (*assets.Item, error) {
 }
 
 // TranslateItemChange translates an asset item change struct to a network item request.
-func TranslateItemChange(i assets.ItemChange) rest.ItemRequest {
+func TranslateItemChange(i assets.ItemChange) (rest.ItemRequest, error) {
+	emptyResp := rest.ItemRequest{}
+
+	if i.Name == "" {
+		return emptyResp, fmt.Errorf("attempted to send empty name in request")
+	}
+	if i.Description == "" {
+		return emptyResp, fmt.Errorf("attempted to send empty description in request")
+	}
+	if i.LocationID == nil {
+		return emptyResp, fmt.Errorf("attempted to send empty locationID in request")
+	}
+
 	return rest.ItemRequest{
 		Name:        i.Name,
 		Description: i.Description,
 		OwnerID:     i.OwnerID.String(),
-		LocationID:  rest.ItemLocationID{
-			// ID:   i.LocationID.ID().String(),
-			// Type: i.LocationID.Type().String(),
+		LocationID: rest.ItemLocationID{
+			ID:   i.LocationID.ID().String(),
+			Type: i.LocationID.Type().String(),
 		},
-	}
+	}, nil
 }

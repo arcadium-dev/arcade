@@ -28,7 +28,7 @@ const (
 )
 
 type (
-	// Client ... TODO
+	// Client provides a client for the assets api.
 	Client struct {
 		baseURL string
 		timeout time.Duration
@@ -36,7 +36,7 @@ type (
 	}
 )
 
-// New returns a new client to the MPX API.
+// New returns a new client for the assets API.
 func New(baseURL string, opts ...ClientOption) *Client {
 	// Set defaults.
 	c := &Client{
@@ -59,7 +59,7 @@ func New(baseURL string, opts ...ClientOption) *Client {
 func (c Client) send(ctx context.Context, req *http.Request) (*http.Response, error) {
 	zerolog.Ctx(ctx).Debug().Msgf("sending request: %s", req.URL)
 
-	// TODO:  Add auth to request
+	// TODO:  Add auth to request?
 
 	resp, err := c.client.Do(req)
 	if err != nil {

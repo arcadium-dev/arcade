@@ -18,7 +18,7 @@ import (
 	"arcadium.dev/arcade/assets/rest/client"
 )
 
-func TestItemList(t *testing.T) {
+func TestListItems(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("create request failure", func(t *testing.T) {
@@ -243,16 +243,36 @@ func TestGetItem(t *testing.T) {
 }
 
 func TestCreateItem(t *testing.T) {
-	ctx := context.Background()
+	const (
+		name = "name"
+		desc = "desc"
+	)
+
+	var (
+		ctx        = context.Background()
+		ownerID    = assets.PlayerID(uuid.MustParse("7f5908a2-3f99-4e21-a621-d369cff3b061"))
+		locationID = assets.RoomID(uuid.MustParse("a4a4474a-a44e-47f9-9b26-c66daa42f2db"))
+	)
 
 	t.Run("item change failure", func(t *testing.T) {
-		// TODO
+		c := client.Client{}
+
+		_, err := c.CreateItem(ctx, assets.ItemCreate{ItemChange: assets.ItemChange{Name: ""}})
+
+		assert.Error(t, err, `failed to create item: attempted to send empty name in request`)
 	})
 
 	t.Run("create request failure", func(t *testing.T) {
 		c := client.New("1234:bad url")
 
-		_, err := c.CreateItem(ctx, assets.ItemCreate{} /* FIXME */)
+		_, err := c.CreateItem(ctx, assets.ItemCreate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
 
 		assert.Contains(t, err.Error(), `failed to create item: parse "1234:bad url/v1/items": first path segment in URL cannot contain colon`)
 	})
@@ -265,27 +285,136 @@ func TestCreateItem(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.CreateItem(ctx, assets.ItemCreate{})
+		_, err := c.CreateItem(ctx, assets.ItemCreate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
 
 		assert.Error(t, err, `failed to create item: 500, Internal Server Error`)
+	})
+
+	t.Run("translate item failure", func(t *testing.T) {
+		item := rest.Item{
+			ID: "bad uuid",
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: item})
+			assert.Nil(t, err)
+		}))
+		defer server.Close()
+
+		c := client.New(server.URL)
+
+		_, err := c.CreateItem(ctx, assets.ItemCreate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
+
+		assert.Error(t, err, `failed to create item: received invalid item ID: 'bad uuid': invalid UUID length: 8`)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		const (
+			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+		)
+		var (
+			u       = uuid.MustParse(id)
+			created = assets.Timestamp{Time: time.Now().UTC()}
+			updated = assets.Timestamp{Time: time.Now().UTC()}
+		)
+
+		rItem := rest.Item{
+			ID:          id,
+			Name:        name,
+			Description: desc,
+			OwnerID:     id,
+			LocationID: rest.ItemLocationID{
+				ID:   id,
+				Type: "room",
+			},
+			Created: created,
+			Updated: updated,
+		}
+
+		aItem := &assets.Item{
+			ID:          assets.ItemID(u),
+			Name:        name,
+			Description: desc,
+			OwnerID:     assets.PlayerID(u),
+			LocationID:  assets.RoomID(u),
+			Created:     created,
+			Updated:     updated,
+		}
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
+			assert.Nil(t, err)
+		}))
+		defer server.Close()
+
+		c := client.New(server.URL)
+
+		item, err := c.CreateItem(ctx, assets.ItemCreate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
+
+		assert.Nil(t, err)
+		assert.Compare(t, item, aItem, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
 	})
 }
 
 func TestUpdateItem(t *testing.T) {
-	ctx := context.Background()
+	const (
+		name = "name"
+		desc = "desc"
+	)
+
+	var (
+		ctx        = context.Background()
+		ownerID    = assets.PlayerID(uuid.MustParse("7f5908a2-3f99-4e21-a621-d369cff3b061"))
+		locationID = assets.RoomID(uuid.MustParse("a4a4474a-a44e-47f9-9b26-c66daa42f2db"))
+	)
 
 	var (
 		id = assets.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 	)
 
 	t.Run("item change failure", func(t *testing.T) {
-		// TODO
+		c := client.Client{}
+
+		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{ItemChange: assets.ItemChange{
+			Name:        name,
+			Description: desc,
+			OwnerID:     ownerID,
+		}})
+
+		assert.Error(t, err, `failed to update item: attempted to send empty locationID in request`)
 	})
 
 	t.Run("update request failure", func(t *testing.T) {
 		c := client.New("1234:bad url")
 
-		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{} /* FIXME */)
+		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
 
 		assert.Contains(t, err.Error(), `failed to update item: parse "1234:bad url/v1/items/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
@@ -298,9 +427,95 @@ func TestUpdateItem(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{})
+		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
 
 		assert.Error(t, err, `failed to update item: 500, Internal Server Error`)
+	})
+
+	t.Run("translate item failure", func(t *testing.T) {
+		item := rest.Item{
+			ID: "bad uuid",
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: item})
+			assert.Nil(t, err)
+		}))
+		defer server.Close()
+
+		c := client.New(server.URL)
+
+		_, err := c.UpdateItem(ctx, id, assets.ItemUpdate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
+
+		assert.Error(t, err, `failed to update item: received invalid item ID: 'bad uuid': invalid UUID length: 8`)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		const (
+			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+		)
+		var (
+			u       = uuid.MustParse(id)
+			itemID  = assets.ItemID(u)
+			created = assets.Timestamp{Time: time.Now().UTC()}
+			updated = assets.Timestamp{Time: time.Now().UTC()}
+		)
+
+		rItem := rest.Item{
+			ID:          id,
+			Name:        name,
+			Description: desc,
+			OwnerID:     id,
+			LocationID: rest.ItemLocationID{
+				ID:   id,
+				Type: "room",
+			},
+			Created: created,
+			Updated: updated,
+		}
+
+		aItem := &assets.Item{
+			ID:          assets.ItemID(u),
+			Name:        name,
+			Description: desc,
+			OwnerID:     assets.PlayerID(u),
+			LocationID:  assets.RoomID(u),
+			Created:     created,
+			Updated:     updated,
+		}
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
+			assert.Nil(t, err)
+		}))
+		defer server.Close()
+
+		c := client.New(server.URL)
+
+		item, err := c.UpdateItem(ctx, itemID, assets.ItemUpdate{
+			ItemChange: assets.ItemChange{
+				Name:        name,
+				Description: desc,
+				OwnerID:     ownerID,
+				LocationID:  locationID,
+			},
+		})
+
+		assert.Nil(t, err)
+		assert.Compare(t, item, aItem, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
 	})
 }
 
@@ -468,5 +683,65 @@ func TestTranslateItem(t *testing.T) {
 }
 
 func TestTranslateItemChange(t *testing.T) {
-	// TODO
+	const (
+		name  = "name"
+		desc  = "desc"
+		owner = "7f5908a2-3f99-4e21-a621-d369cff3b061"
+		loc   = "a4a4474a-a44e-47f9-9b26-c66daa42f2db"
+	)
+
+	var (
+		ownerID    = assets.PlayerID(uuid.MustParse(owner))
+		locationID = assets.RoomID(uuid.MustParse(loc))
+	)
+
+	t.Run("failures", func(t *testing.T) {
+		tests := []struct {
+			change assets.ItemChange
+			err    string
+		}{
+			{
+				change: assets.ItemChange{},
+				err:    "attempted to send empty name in request",
+			},
+			{
+				change: assets.ItemChange{
+					Name: name,
+				},
+				err: "attempted to send empty description in request",
+			},
+			{
+				change: assets.ItemChange{
+					Name:        name,
+					Description: desc,
+				},
+				err: "attempted to send empty locationID in request",
+			},
+		}
+
+		for _, test := range tests {
+			_, err := client.TranslateItemChange(test.change)
+			assert.Error(t, err, test.err)
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		change := assets.ItemChange{
+			Name:        name,
+			Description: desc,
+			OwnerID:     ownerID,
+			LocationID:  locationID,
+		}
+		req, err := client.TranslateItemChange(change)
+		assert.Nil(t, err)
+		assert.Equal(t, req, rest.ItemRequest{
+			Name:        name,
+			Description: desc,
+			OwnerID:     owner,
+			LocationID: rest.ItemLocationID{
+				ID:   loc,
+				Type: "room",
+			},
+		})
+	})
 }

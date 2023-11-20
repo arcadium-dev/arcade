@@ -25,9 +25,9 @@ import (
 	httpserver "arcadium.dev/core/http/server"
 	"arcadium.dev/core/rest"
 
-	"arcadium.dev/arcade/assets/data"
-	"arcadium.dev/arcade/assets/data/cockroach"
-	"arcadium.dev/arcade/assets/rest/server"
+	"arcadium.dev/arcade/asset/data"
+	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/rest/server"
 )
 
 var (
@@ -56,11 +56,11 @@ var New = func(v, b, c, d string) RestServer {
 	return rest.NewServer(v, b, c, d)
 }
 
-// Main is the testable entry point into the assets server.
+// Main is the testable entry point into the asset server.
 func Main() error {
 	s := New(Version, Branch, Commit, Date)
 
-	prefix := "assets"
+	prefix := "asset"
 
 	cfg := Config{}
 	if err := envconfig.Process(prefix, &cfg); err != nil {

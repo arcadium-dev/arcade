@@ -56,11 +56,11 @@ var New = func(v, b, c, d string) RestServer {
 	return rest.NewServer(v, b, c, d)
 }
 
-// Main is the testable entry point into the assets server.
+// Main is the testable entry point into the asset server.
 func Main() error {
 	s := New(Version, Branch, Commit, Date)
 
-	prefix := "assets"
+	prefix := "asset"
 
 	cfg := Config{}
 	if err := envconfig.Process(prefix, &cfg); err != nil {

@@ -48,7 +48,7 @@ func (c Client) ListItems(ctx context.Context, filter assets.ItemFilter) ([]*ass
 
 	// Add the filter parameters.
 	q := req.URL.Query()
-	if filter.OwnerID != assets.NilPlayer {
+	if filter.OwnerID != assets.NilPlayerID {
 		q.Add("ownerID", filter.OwnerID.String())
 	}
 	if filter.LocationID != nil {

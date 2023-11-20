@@ -33,6 +33,10 @@ type (
 	LinkID uuid.UUID
 )
 
+var (
+	NilLinkID = LinkID(uuid.Nil)
+)
+
 func (l LinkID) String() string               { return uuid.UUID(l).String() }
 func (l *LinkID) Scan(src any) error          { return (*uuid.UUID)(l).Scan(src) }
 func (l LinkID) Value() (driver.Value, error) { return uuid.UUID(l).Value() }

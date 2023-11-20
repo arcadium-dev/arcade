@@ -33,6 +33,10 @@ type (
 	RoomID uuid.UUID
 )
 
+var (
+	NilRoomID = RoomID(uuid.Nil)
+)
+
 func (r RoomID) ID() LocationID               { return LocationID(r) }
 func (r RoomID) Type() LocationType           { return LocationTypeRoom }
 func (r RoomID) String() string               { return uuid.UUID(r).String() }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -244,14 +245,16 @@ func TestGetItem(t *testing.T) {
 
 func TestCreateItem(t *testing.T) {
 	const (
-		name = "name"
-		desc = "desc"
+		name  = "name"
+		desc  = "desc"
+		owner = "7f5908a2-3f99-4e21-a621-d369cff3b061"
+		loc   = "a4a4474a-a44e-47f9-9b26-c66daa42f2db"
 	)
 
 	var (
 		ctx        = context.Background()
-		ownerID    = assets.PlayerID(uuid.MustParse("7f5908a2-3f99-4e21-a621-d369cff3b061"))
-		locationID = assets.RoomID(uuid.MustParse("a4a4474a-a44e-47f9-9b26-c66daa42f2db"))
+		ownerID    = assets.PlayerID(uuid.MustParse(owner))
+		locationID = assets.RoomID(uuid.MustParse(loc))
 	)
 
 	t.Run("item change failure", func(t *testing.T) {
@@ -326,7 +329,7 @@ func TestCreateItem(t *testing.T) {
 			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
 		)
 		var (
-			u       = uuid.MustParse(id)
+			itemID  = assets.ItemID(uuid.MustParse(id))
 			created = assets.Timestamp{Time: time.Now().UTC()}
 			updated = assets.Timestamp{Time: time.Now().UTC()}
 		)
@@ -335,9 +338,9 @@ func TestCreateItem(t *testing.T) {
 			ID:          id,
 			Name:        name,
 			Description: desc,
-			OwnerID:     id,
+			OwnerID:     owner,
 			LocationID: rest.ItemLocationID{
-				ID:   id,
+				ID:   loc,
 				Type: "room",
 			},
 			Created: created,
@@ -345,17 +348,34 @@ func TestCreateItem(t *testing.T) {
 		}
 
 		aItem := &assets.Item{
-			ID:          assets.ItemID(u),
+			ID:          itemID,
 			Name:        name,
 			Description: desc,
-			OwnerID:     assets.PlayerID(u),
-			LocationID:  assets.RoomID(u),
+			OwnerID:     assets.PlayerID(ownerID),
+			LocationID:  assets.RoomID(locationID),
 			Created:     created,
 			Updated:     updated,
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
+			body, err := io.ReadAll(r.Body)
+			assert.Nil(t, err)
+			defer r.Body.Close()
+
+			var createReq rest.ItemCreateRequest
+			err = json.Unmarshal(body, &createReq)
+			assert.Nil(t, err)
+			assert.Equal(t, createReq, rest.ItemCreateRequest{ItemRequest: rest.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     owner,
+				LocationID: rest.ItemLocationID{
+					ID:   loc,
+					Type: "room",
+				},
+			}})
+
+			err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
 			assert.Nil(t, err)
 		}))
 		defer server.Close()
@@ -378,14 +398,16 @@ func TestCreateItem(t *testing.T) {
 
 func TestUpdateItem(t *testing.T) {
 	const (
-		name = "name"
-		desc = "desc"
+		name  = "name"
+		desc  = "desc"
+		owner = "7f5908a2-3f99-4e21-a621-d369cff3b061"
+		loc   = "a4a4474a-a44e-47f9-9b26-c66daa42f2db"
 	)
 
 	var (
 		ctx        = context.Background()
-		ownerID    = assets.PlayerID(uuid.MustParse("7f5908a2-3f99-4e21-a621-d369cff3b061"))
-		locationID = assets.RoomID(uuid.MustParse("a4a4474a-a44e-47f9-9b26-c66daa42f2db"))
+		ownerID    = assets.PlayerID(uuid.MustParse(owner))
+		locationID = assets.RoomID(uuid.MustParse(loc))
 	)
 
 	var (
@@ -468,8 +490,7 @@ func TestUpdateItem(t *testing.T) {
 			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
 		)
 		var (
-			u       = uuid.MustParse(id)
-			itemID  = assets.ItemID(u)
+			itemID  = assets.ItemID(uuid.MustParse(id))
 			created = assets.Timestamp{Time: time.Now().UTC()}
 			updated = assets.Timestamp{Time: time.Now().UTC()}
 		)
@@ -478,9 +499,9 @@ func TestUpdateItem(t *testing.T) {
 			ID:          id,
 			Name:        name,
 			Description: desc,
-			OwnerID:     id,
+			OwnerID:     owner,
 			LocationID: rest.ItemLocationID{
-				ID:   id,
+				ID:   loc,
 				Type: "room",
 			},
 			Created: created,
@@ -488,17 +509,34 @@ func TestUpdateItem(t *testing.T) {
 		}
 
 		aItem := &assets.Item{
-			ID:          assets.ItemID(u),
+			ID:          itemID,
 			Name:        name,
 			Description: desc,
-			OwnerID:     assets.PlayerID(u),
-			LocationID:  assets.RoomID(u),
+			OwnerID:     ownerID,
+			LocationID:  locationID,
 			Created:     created,
 			Updated:     updated,
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
+			body, err := io.ReadAll(r.Body)
+			assert.Nil(t, err)
+			defer r.Body.Close()
+
+			var createReq rest.ItemCreateRequest
+			err = json.Unmarshal(body, &createReq)
+			assert.Nil(t, err)
+			assert.Equal(t, createReq, rest.ItemCreateRequest{ItemRequest: rest.ItemRequest{
+				Name:        name,
+				Description: desc,
+				OwnerID:     owner,
+				LocationID: rest.ItemLocationID{
+					ID:   loc,
+					Type: "room",
+				},
+			}})
+
+			err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: rItem})
 			assert.Nil(t, err)
 		}))
 		defer server.Close()

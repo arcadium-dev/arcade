@@ -24,7 +24,7 @@ import (
 )
 
 func TestItemsList(t *testing.T) {
-	route := server.V1ItemsRoute
+	route := server.V1ItemRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -138,7 +138,7 @@ func TestItemGet(t *testing.T) {
 	t.Run("itemID failure", func(t *testing.T) {
 		m := mockItemStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, "bad_itemID")
 
 		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
@@ -151,7 +151,7 @@ func TestItemGet(t *testing.T) {
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -183,7 +183,7 @@ func TestItemGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -213,7 +213,7 @@ func TestItemGet(t *testing.T) {
 }
 
 func TestItemCreate(t *testing.T) {
-	route := server.V1ItemsRoute
+	route := server.V1ItemRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockItemStorage{}
@@ -430,7 +430,7 @@ func TestItemUpdate(t *testing.T) {
 	t.Run("itemID failure", func(t *testing.T) {
 		m := mockItemStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, "bad_itemID")
 
 		w := invokeItemsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
@@ -440,7 +440,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemStorage{}
 
 		itemID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -453,7 +453,7 @@ func TestItemUpdate(t *testing.T) {
 		m := mockItemStorage{}
 
 		itemID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
@@ -538,7 +538,7 @@ func TestItemUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			itemID := uuid.New()
-			route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+			route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 			w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -584,7 +584,7 @@ func TestItemUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -638,7 +638,7 @@ func TestItemUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodPut, route, body)
 
@@ -673,7 +673,7 @@ func TestItemRemove(t *testing.T) {
 	t.Run("itemID failure", func(t *testing.T) {
 		m := mockItemStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, "bad_itemID")
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, "bad_itemID")
 
 		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
@@ -686,7 +686,7 @@ func TestItemRemove(t *testing.T) {
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -698,7 +698,7 @@ func TestItemRemove(t *testing.T) {
 			removeID: itemID,
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1ItemsRoute, itemID.String())
+		route := fmt.Sprintf("%s/%s", server.V1ItemRoute, itemID.String())
 
 		w := invokeItemsEndpoint(t, m, http.MethodDelete, route, nil)
 

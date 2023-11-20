@@ -24,7 +24,7 @@ import (
 )
 
 func TestLinksList(t *testing.T) {
-	route := server.V1LinksRoute
+	route := server.V1LinkRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestLinkGet(t *testing.T) {
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
@@ -146,7 +146,7 @@ func TestLinkGet(t *testing.T) {
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -180,7 +180,7 @@ func TestLinkGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -208,7 +208,7 @@ func TestLinkGet(t *testing.T) {
 }
 
 func TestLinkCreate(t *testing.T) {
-	route := server.V1LinksRoute
+	route := server.V1LinkRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockLinkStorage{}
@@ -421,7 +421,7 @@ func TestLinkUpdate(t *testing.T) {
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
@@ -431,7 +431,7 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkStorage{}
 
 		linkID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -444,7 +444,7 @@ func TestLinkUpdate(t *testing.T) {
 		m := mockLinkStorage{}
 
 		linkID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
@@ -525,7 +525,7 @@ func TestLinkUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			linkID := uuid.New()
-			route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+			route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 			w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -571,7 +571,7 @@ func TestLinkUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -627,7 +627,7 @@ func TestLinkUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodPut, route, body)
 
@@ -660,7 +660,7 @@ func TestLinkRemove(t *testing.T) {
 	t.Run("linkID failure", func(t *testing.T) {
 		m := mockLinkStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, "bad_linkID")
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, "bad_linkID")
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
@@ -673,7 +673,7 @@ func TestLinkRemove(t *testing.T) {
 			removeErr:    fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -685,7 +685,7 @@ func TestLinkRemove(t *testing.T) {
 			removeLinkID: linkID,
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1LinksRoute, linkID.String())
+		route := fmt.Sprintf("%s/%s", server.V1LinkRoute, linkID.String())
 
 		w := invokeLinksEndpoint(t, m, http.MethodDelete, route, nil)
 

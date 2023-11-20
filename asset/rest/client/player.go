@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	V1PlayersRoute string = "/v1/players"
+	V1PlayerRoute string = "/v1/player"
 )
 
 // ListPlayers returns a list of players for the given player filter.
@@ -39,7 +39,7 @@ func (c Client) ListPlayers(ctx context.Context, filter asset.PlayerFilter) ([]*
 	failMsg := "failed to list players"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s", c.baseURL, V1PlayersRoute)
+	url := fmt.Sprintf("%s%s", c.baseURL, V1PlayerRoute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -73,7 +73,7 @@ func (c Client) GetPlayer(ctx context.Context, id asset.PlayerID) (*asset.Player
 	failMsg := "failed to get player"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayersRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayerRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -104,7 +104,7 @@ func (c Client) CreatePlayer(ctx context.Context, player asset.PlayerCreate) (*a
 	}
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s", c.baseURL, V1PlayersRoute)
+	url := fmt.Sprintf("%s%s", c.baseURL, V1PlayerRoute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -137,7 +137,7 @@ func (c Client) UpdatePlayer(ctx context.Context, id asset.PlayerID, player asse
 	}
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayersRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayerRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -160,7 +160,7 @@ func (c Client) RemovePlayer(ctx context.Context, id asset.PlayerID) error {
 	failMsg := "failed to remove player"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayersRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayerRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)

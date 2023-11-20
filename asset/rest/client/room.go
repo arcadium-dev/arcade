@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -32,15 +31,15 @@ import (
 )
 
 const (
-	V1ItemRoute string = "/v1/item"
+	V1RoomRoute string = "/v1/room"
 )
 
-// ListItems returns a list of items for the given item filter.
-func (c Client) ListItems(ctx context.Context, filter asset.ItemFilter) ([]*asset.Item, error) {
-	failMsg := "failed to list items"
+// ListRooms returns a list of rooms for the given room filter.
+func (c Client) ListRooms(ctx context.Context, filter asset.RoomFilter) ([]*asset.Room, error) {
+	failMsg := "failed to list rooms"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s", c.baseURL, V1ItemRoute)
+	url := fmt.Sprintf("%s%s", c.baseURL, V1RoomRoute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -51,11 +50,8 @@ func (c Client) ListItems(ctx context.Context, filter asset.ItemFilter) ([]*asse
 	if filter.OwnerID != asset.NilPlayerID {
 		q.Add("ownerID", filter.OwnerID.String())
 	}
-	if filter.LocationID != nil {
-		if filter.LocationID.ID() != asset.NilLocationID {
-			q.Add("locationID", filter.LocationID.ID().String())
-			q.Add("locationType", filter.LocationID.Type().String())
-		}
+	if filter.ParentID != asset.NilRoomID {
+		q.Add("ownerID", filter.OwnerID.String())
 	}
 	if filter.Offset > 0 {
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
@@ -72,15 +68,15 @@ func (c Client) ListItems(ctx context.Context, filter asset.ItemFilter) ([]*asse
 	}
 	defer resp.Body.Close()
 
-	return itemsResponse(resp.Body, failMsg)
+	return roomsResponse(resp.Body, failMsg)
 }
 
-// GetItem returns an item for the given item id.
-func (c Client) GetItem(ctx context.Context, id asset.ItemID) (*asset.Item, error) {
-	failMsg := "failed to get item"
+// GetRoom returns an room for the given room id.
+func (c Client) GetRoom(ctx context.Context, id asset.RoomID) (*asset.Room, error) {
+	failMsg := "failed to get room"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1RoomRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
@@ -93,15 +89,15 @@ func (c Client) GetItem(ctx context.Context, id asset.ItemID) (*asset.Item, erro
 	}
 	defer resp.Body.Close()
 
-	return itemResponse(resp.Body, failMsg)
+	return roomResponse(resp.Body, failMsg)
 }
 
-// CreateItem creates an item.
-func (c Client) CreateItem(ctx context.Context, item asset.ItemCreate) (*asset.Item, error) {
-	failMsg := "failed to create item"
+// CreateRoom creates an room.
+func (c Client) CreateRoom(ctx context.Context, room asset.RoomCreate) (*asset.Room, error) {
+	failMsg := "failed to create room"
 
 	// Build the request body.
-	change, err := TranslateItemChange(item.ItemChange)
+	change, err := TranslateRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -111,13 +107,13 @@ func (c Client) CreateItem(ctx context.Context, item asset.ItemCreate) (*asset.I
 	}
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s", c.baseURL, V1ItemRoute)
+	url := fmt.Sprintf("%s%s", c.baseURL, V1RoomRoute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 
-	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create item")
+	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create room")
 
 	// Send the request
 	resp, err := c.send(ctx, req)
@@ -126,15 +122,15 @@ func (c Client) CreateItem(ctx context.Context, item asset.ItemCreate) (*asset.I
 	}
 	defer resp.Body.Close()
 
-	return itemResponse(resp.Body, failMsg)
+	return roomResponse(resp.Body, failMsg)
 }
 
-// UpdateItem updates the item with the given item update.
-func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.ItemUpdate) (*asset.Item, error) {
-	failMsg := "failed to update item"
+// UpdateRoom updates the room with the given room update.
+func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.RoomUpdate) (*asset.Room, error) {
+	failMsg := "failed to update room"
 
 	// Build the request body.
-	change, err := TranslateItemChange(item.ItemChange)
+	change, err := TranslateRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -144,13 +140,13 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 	}
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1RoomRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 
-	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update item")
+	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update room")
 
 	// Send the request
 	resp, err := c.send(ctx, req)
@@ -159,15 +155,15 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 	}
 	defer resp.Body.Close()
 
-	return itemResponse(resp.Body, failMsg)
+	return roomResponse(resp.Body, failMsg)
 }
 
-// RemoveItem deletes an item.
-func (c Client) RemoveItem(ctx context.Context, id asset.ItemID) error {
-	failMsg := "failed to remove item"
+// RemoveRoom deletes an room.
+func (c Client) RemoveRoom(ctx context.Context, id asset.RoomID) error {
+	failMsg := "failed to remove room"
 
 	// Create the request.
-	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemRoute, id)
+	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1RoomRoute, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)
@@ -183,78 +179,66 @@ func (c Client) RemoveItem(ctx context.Context, id asset.ItemID) error {
 	return nil
 }
 
-func itemsResponse(body io.ReadCloser, failMsg string) ([]*asset.Item, error) {
-	var itemsResp rest.ItemsResponse
-	if err := json.NewDecoder(body).Decode(&itemsResp); err != nil {
+func roomsResponse(body io.ReadCloser, failMsg string) ([]*asset.Room, error) {
+	var roomsResp rest.RoomsResponse
+	if err := json.NewDecoder(body).Decode(&roomsResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	var aItems []*asset.Item
-	for _, i := range itemsResp.Items {
-		aItem, err := TranslateItem(i)
+	var aRooms []*asset.Room
+	for _, p := range roomsResp.Rooms {
+		aRoom, err := TranslateRoom(p)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
-		aItems = append(aItems, aItem)
+		aRooms = append(aRooms, aRoom)
 	}
 
-	return aItems, nil
+	return aRooms, nil
 }
 
-func itemResponse(body io.ReadCloser, failMsg string) (*asset.Item, error) {
-	var itemResp rest.ItemResponse
-	if err := json.NewDecoder(body).Decode(&itemResp); err != nil {
+func roomResponse(body io.ReadCloser, failMsg string) (*asset.Room, error) {
+	var roomResp rest.RoomResponse
+	if err := json.NewDecoder(body).Decode(&roomResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aItem, err := TranslateItem(itemResp.Item)
+	aRoom, err := TranslateRoom(roomResp.Room)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	return aItem, nil
+	return aRoom, nil
 }
 
-// TranslateItem translates a network item into an asset item.
-func TranslateItem(i rest.Item) (*asset.Item, error) {
-	id, err := uuid.Parse(i.ID)
+// TranslateRoom translates a network room into an asset room.
+func TranslateRoom(p rest.Room) (*asset.Room, error) {
+	id, err := uuid.Parse(p.ID)
 	if err != nil {
-		return nil, fmt.Errorf("received invalid item ID: '%s': %w", i.ID, err)
+		return nil, fmt.Errorf("received invalid room ID: '%s': %w", p.ID, err)
 	}
-	ownerID, err := uuid.Parse(i.OwnerID)
+	ownerID, err := uuid.Parse(p.OwnerID)
 	if err != nil {
-		return nil, fmt.Errorf("received invalid item ownerID: '%s': %w", i.OwnerID, err)
+		return nil, fmt.Errorf("received invalid room ownerID: '%s': %w", p.OwnerID, err)
 	}
-	locID, err := uuid.Parse(i.LocationID.ID)
+	parentID, err := uuid.Parse(p.ParentID)
 	if err != nil {
-		return nil, fmt.Errorf("received invalid item locationID.ID: '%s': %w", i.LocationID.ID, err)
-	}
-	t := strings.ToLower(i.LocationID.Type)
-	if t != "room" && t != "player" && t != "item" {
-		return nil, fmt.Errorf("received invalid item locationID.Type: '%s'", i.LocationID.Type)
+		return nil, fmt.Errorf("received invalid room parentID: '%s': %w", p.ParentID, err)
 	}
 
-	item := &asset.Item{
-		ID:          asset.ItemID(id),
-		Name:        i.Name,
-		Description: i.Description,
+	room := &asset.Room{
+		ID:          asset.RoomID(id),
+		Name:        p.Name,
+		Description: p.Description,
 		OwnerID:     asset.PlayerID(ownerID),
-		Created:     i.Created,
-		Updated:     i.Updated,
+		ParentID:    asset.RoomID(parentID),
+		Created:     p.Created,
+		Updated:     p.Updated,
 	}
 
-	switch t {
-	case "room":
-		item.LocationID = asset.RoomID(locID)
-	case "player":
-		item.LocationID = asset.PlayerID(locID)
-	case "item":
-		item.LocationID = asset.ItemID(locID)
-	}
-
-	return item, nil
+	return room, nil
 }
 
-// TranslateItemChange translates an asset item change struct to a network item request.
-func TranslateItemChange(i asset.ItemChange) (rest.ItemRequest, error) {
-	emptyResp := rest.ItemRequest{}
+// TranslateRoomChange translates an asset room change struct to a network room request.
+func TranslateRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
+	emptyResp := rest.RoomRequest{}
 
 	if i.Name == "" {
 		return emptyResp, fmt.Errorf("attempted to send empty name in request")
@@ -262,17 +246,11 @@ func TranslateItemChange(i asset.ItemChange) (rest.ItemRequest, error) {
 	if i.Description == "" {
 		return emptyResp, fmt.Errorf("attempted to send empty description in request")
 	}
-	if i.LocationID == nil {
-		return emptyResp, fmt.Errorf("attempted to send empty locationID in request")
-	}
 
-	return rest.ItemRequest{
+	return rest.RoomRequest{
 		Name:        i.Name,
 		Description: i.Description,
 		OwnerID:     i.OwnerID.String(),
-		LocationID: rest.ItemLocationID{
-			ID:   i.LocationID.ID().String(),
-			Type: i.LocationID.Type().String(),
-		},
+		ParentID:    i.ParentID.String(),
 	}, nil
 }

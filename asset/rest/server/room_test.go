@@ -24,7 +24,7 @@ import (
 )
 
 func TestRoomsList(t *testing.T) {
-	route := server.V1RoomsRoute
+	route := server.V1RoomRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestRoomGet(t *testing.T) {
 	t.Run("roomID failure", func(t *testing.T) {
 		m := mockRoomStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, "bad_roomID")
 
 		w := invokeRoomsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
@@ -139,7 +139,7 @@ func TestRoomGet(t *testing.T) {
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -171,7 +171,7 @@ func TestRoomGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -198,7 +198,7 @@ func TestRoomGet(t *testing.T) {
 }
 
 func TestRoomCreate(t *testing.T) {
-	route := server.V1RoomsRoute
+	route := server.V1RoomRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockRoomStorage{}
@@ -392,7 +392,7 @@ func TestRoomUpdate(t *testing.T) {
 	t.Run("roomID failure", func(t *testing.T) {
 		m := mockRoomStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, "bad_roomID")
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
@@ -402,7 +402,7 @@ func TestRoomUpdate(t *testing.T) {
 		m := mockRoomStorage{}
 
 		roomID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -415,7 +415,7 @@ func TestRoomUpdate(t *testing.T) {
 		m := mockRoomStorage{}
 
 		roomID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
@@ -485,7 +485,7 @@ func TestRoomUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			roomID := uuid.New()
-			route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+			route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 			w := invokeRoomsEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -528,7 +528,7 @@ func TestRoomUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -580,7 +580,7 @@ func TestRoomUpdate(t *testing.T) {
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodPut, route, body)
 
@@ -612,7 +612,7 @@ func TestRoomRemove(t *testing.T) {
 	t.Run("roomID failure", func(t *testing.T) {
 		m := mockRoomStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, "bad_roomID")
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, "bad_roomID")
 
 		w := invokeRoomsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
@@ -625,7 +625,7 @@ func TestRoomRemove(t *testing.T) {
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -637,7 +637,7 @@ func TestRoomRemove(t *testing.T) {
 			removeID: roomID,
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1RoomsRoute, roomID.String())
+		route := fmt.Sprintf("%s/%s", server.V1RoomRoute, roomID.String())
 
 		w := invokeRoomsEndpoint(t, m, http.MethodDelete, route, nil)
 

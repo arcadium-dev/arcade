@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	V1PlayersRoute string = "/v1/players"
+	V1PlayerRoute string = "/v1/player"
 )
 
 type (
@@ -54,7 +54,7 @@ type (
 
 // Register sets up the http handler for this service with the given router.
 func (s PlayersService) Register(router *mux.Router) {
-	r := router.PathPrefix(V1PlayersRoute).Subrouter()
+	r := router.PathPrefix(V1PlayerRoute).Subrouter()
 	r.HandleFunc("", s.List).Methods(http.MethodGet)
 	r.HandleFunc("/{id}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)

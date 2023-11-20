@@ -26,7 +26,7 @@ func TestListPlayers(t *testing.T) {
 
 		_, err := c.ListPlayers(ctx, asset.PlayerFilter{})
 
-		assert.Contains(t, err.Error(), `failed to list players: parse "1234:bad url/v1/players": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to list players: parse "1234:bad url/v1/player": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -141,7 +141,7 @@ func TestGetPlayer(t *testing.T) {
 
 		_, err := c.GetPlayer(ctx, id)
 
-		assert.Contains(t, err.Error(), `failed to get player: parse "1234:bad url/v1/players/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to get player: parse "1234:bad url/v1/player/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -268,7 +268,7 @@ func TestCreatePlayer(t *testing.T) {
 			},
 		})
 
-		assert.Contains(t, err.Error(), `failed to create player: parse "1234:bad url/v1/players": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to create player: parse "1234:bad url/v1/player": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -385,24 +385,22 @@ func TestUpdatePlayer(t *testing.T) {
 	const (
 		name = "name"
 		desc = "desc"
+		id   = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
 		home = "7f5908a2-3f99-4e21-a621-d369cff3b061"
 		loc  = "a4a4474a-a44e-47f9-9b26-c66daa42f2db"
 	)
 
 	var (
 		ctx        = context.Background()
+		playerID   = asset.PlayerID(uuid.MustParse(id))
 		homeID     = asset.RoomID(uuid.MustParse(home))
 		locationID = asset.RoomID(uuid.MustParse(loc))
-	)
-
-	var (
-		id = asset.PlayerID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
 	)
 
 	t.Run("player change failure", func(t *testing.T) {
 		c := client.Client{}
 
-		_, err := c.UpdatePlayer(ctx, id, asset.PlayerUpdate{PlayerChange: asset.PlayerChange{
+		_, err := c.UpdatePlayer(ctx, playerID, asset.PlayerUpdate{PlayerChange: asset.PlayerChange{
 			Name: name,
 		}})
 
@@ -412,7 +410,7 @@ func TestUpdatePlayer(t *testing.T) {
 	t.Run("update request failure", func(t *testing.T) {
 		c := client.New("1234:bad url")
 
-		_, err := c.UpdatePlayer(ctx, id, asset.PlayerUpdate{
+		_, err := c.UpdatePlayer(ctx, playerID, asset.PlayerUpdate{
 			PlayerChange: asset.PlayerChange{
 				Name:        name,
 				Description: desc,
@@ -421,7 +419,7 @@ func TestUpdatePlayer(t *testing.T) {
 			},
 		})
 
-		assert.Contains(t, err.Error(), `failed to update player: parse "1234:bad url/v1/players/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to update player: parse "1234:bad url/v1/player/db81f22a-90cf-48a7-93a2-94de93a9b48f": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -432,7 +430,7 @@ func TestUpdatePlayer(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.UpdatePlayer(ctx, id, asset.PlayerUpdate{
+		_, err := c.UpdatePlayer(ctx, playerID, asset.PlayerUpdate{
 			PlayerChange: asset.PlayerChange{
 				Name:        name,
 				Description: desc,
@@ -456,7 +454,7 @@ func TestUpdatePlayer(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.UpdatePlayer(ctx, id, asset.PlayerUpdate{
+		_, err := c.UpdatePlayer(ctx, playerID, asset.PlayerUpdate{
 			PlayerChange: asset.PlayerChange{
 				Name:        name,
 				Description: desc,
@@ -469,13 +467,9 @@ func TestUpdatePlayer(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		const (
-			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
-		)
 		var (
-			playerID = asset.PlayerID(uuid.MustParse(id))
-			created  = asset.Timestamp{Time: time.Now().UTC()}
-			updated  = asset.Timestamp{Time: time.Now().UTC()}
+			created = asset.Timestamp{Time: time.Now().UTC()}
+			updated = asset.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{
@@ -545,7 +539,7 @@ func TestRemovePlayer(t *testing.T) {
 
 		err := c.RemovePlayer(ctx, id)
 
-		assert.Contains(t, err.Error(), `failed to remove player: parse "1234:bad url/v1/players/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to remove player: parse "1234:bad url/v1/player/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {

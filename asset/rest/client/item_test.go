@@ -27,7 +27,7 @@ func TestListItems(t *testing.T) {
 
 		_, err := c.ListItems(ctx, asset.ItemFilter{})
 
-		assert.Contains(t, err.Error(), `failed to list items: parse "1234:bad url/v1/items": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to list items: parse "1234:bad url/v1/item": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -146,7 +146,7 @@ func TestGetItem(t *testing.T) {
 
 		_, err := c.GetItem(ctx, id)
 
-		assert.Contains(t, err.Error(), `failed to get item: parse "1234:bad url/v1/items/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to get item: parse "1234:bad url/v1/item/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -276,7 +276,7 @@ func TestCreateItem(t *testing.T) {
 			},
 		})
 
-		assert.Contains(t, err.Error(), `failed to create item: parse "1234:bad url/v1/items": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to create item: parse "1234:bad url/v1/item": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -399,13 +399,14 @@ func TestUpdateItem(t *testing.T) {
 	const (
 		name  = "name"
 		desc  = "desc"
+		id    = "4efee5c1-01ac-41c6-a479-0ae59617482b"
 		owner = "7f5908a2-3f99-4e21-a621-d369cff3b061"
 		loc   = "a4a4474a-a44e-47f9-9b26-c66daa42f2db"
 	)
 
 	var (
 		ctx        = context.Background()
-		id         = asset.ItemID(uuid.MustParse("4efee5c1-01ac-41c6-a479-0ae59617482b"))
+		itemID     = asset.ItemID(uuid.MustParse(id))
 		ownerID    = asset.PlayerID(uuid.MustParse(owner))
 		locationID = asset.RoomID(uuid.MustParse(loc))
 	)
@@ -413,7 +414,7 @@ func TestUpdateItem(t *testing.T) {
 	t.Run("item change failure", func(t *testing.T) {
 		c := client.Client{}
 
-		_, err := c.UpdateItem(ctx, id, asset.ItemUpdate{ItemChange: asset.ItemChange{
+		_, err := c.UpdateItem(ctx, itemID, asset.ItemUpdate{ItemChange: asset.ItemChange{
 			Name:        name,
 			Description: desc,
 			OwnerID:     ownerID,
@@ -425,7 +426,7 @@ func TestUpdateItem(t *testing.T) {
 	t.Run("update request failure", func(t *testing.T) {
 		c := client.New("1234:bad url")
 
-		_, err := c.UpdateItem(ctx, id, asset.ItemUpdate{
+		_, err := c.UpdateItem(ctx, itemID, asset.ItemUpdate{
 			ItemChange: asset.ItemChange{
 				Name:        name,
 				Description: desc,
@@ -434,7 +435,7 @@ func TestUpdateItem(t *testing.T) {
 			},
 		})
 
-		assert.Contains(t, err.Error(), `failed to update item: parse "1234:bad url/v1/items/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to update item: parse "1234:bad url/v1/item/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {
@@ -445,7 +446,7 @@ func TestUpdateItem(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.UpdateItem(ctx, id, asset.ItemUpdate{
+		_, err := c.UpdateItem(ctx, itemID, asset.ItemUpdate{
 			ItemChange: asset.ItemChange{
 				Name:        name,
 				Description: desc,
@@ -469,7 +470,7 @@ func TestUpdateItem(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		_, err := c.UpdateItem(ctx, id, asset.ItemUpdate{
+		_, err := c.UpdateItem(ctx, itemID, asset.ItemUpdate{
 			ItemChange: asset.ItemChange{
 				Name:        name,
 				Description: desc,
@@ -482,11 +483,7 @@ func TestUpdateItem(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		const (
-			id = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
-		)
 		var (
-			itemID  = asset.ItemID(uuid.MustParse(id))
 			created = asset.Timestamp{Time: time.Now().UTC()}
 			updated = asset.Timestamp{Time: time.Now().UTC()}
 		)
@@ -564,7 +561,7 @@ func TestRemoveItem(t *testing.T) {
 
 		err := c.RemoveItem(ctx, id)
 
-		assert.Contains(t, err.Error(), `failed to remove item: parse "1234:bad url/v1/items/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
+		assert.Contains(t, err.Error(), `failed to remove item: parse "1234:bad url/v1/item/4efee5c1-01ac-41c6-a479-0ae59617482b": first path segment in URL cannot contain colon`)
 	})
 
 	t.Run("send request failure", func(t *testing.T) {

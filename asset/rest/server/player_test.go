@@ -24,7 +24,7 @@ import (
 )
 
 func TestPlayersList(t *testing.T) {
-	route := server.V1PlayersRoute
+	route := server.V1PlayerRoute
 	id := uuid.New()
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestPlayerGet(t *testing.T) {
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
@@ -135,7 +135,7 @@ func TestPlayerGet(t *testing.T) {
 			getErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -167,7 +167,7 @@ func TestPlayerGet(t *testing.T) {
 			},
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodGet, route, nil)
 
@@ -194,7 +194,7 @@ func TestPlayerGet(t *testing.T) {
 }
 
 func TestPlayerCreate(t *testing.T) {
-	route := server.V1PlayersRoute
+	route := server.V1PlayerRoute
 
 	t.Run("empty body", func(t *testing.T) {
 		m := mockPlayerStorage{}
@@ -388,7 +388,7 @@ func TestPlayerUpdate(t *testing.T) {
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
@@ -398,7 +398,7 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerStorage{}
 
 		playerID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
@@ -411,7 +411,7 @@ func TestPlayerUpdate(t *testing.T) {
 		m := mockPlayerStorage{}
 
 		playerID := uuid.New()
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, []byte(`{"id": `))
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
@@ -481,7 +481,7 @@ func TestPlayerUpdate(t *testing.T) {
 			assert.Nil(t, err)
 
 			playerID := uuid.New()
-			route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+			route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 			w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 			assertRespError(t, w, test.status, test.errMsg)
@@ -524,7 +524,7 @@ func TestPlayerUpdate(t *testing.T) {
 		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 		assertRespError(t, w, http.StatusNotFound, "not found: update failure")
@@ -576,7 +576,7 @@ func TestPlayerUpdate(t *testing.T) {
 		body, err := json.Marshal(playerReq)
 		assert.Nil(t, err)
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodPut, route, body)
 
@@ -608,7 +608,7 @@ func TestPlayerRemove(t *testing.T) {
 	t.Run("playerID failure", func(t *testing.T) {
 		m := mockPlayerStorage{}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, "bad_playerID")
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, "bad_playerID")
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
@@ -621,7 +621,7 @@ func TestPlayerRemove(t *testing.T) {
 			removeErr: fmt.Errorf("%w: %s", errors.ErrBadRequest, "get failure"),
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
 		assertRespError(t, w, http.StatusBadRequest, "bad request: get failure")
@@ -633,7 +633,7 @@ func TestPlayerRemove(t *testing.T) {
 			removeID: playerID,
 		}
 
-		route := fmt.Sprintf("%s/%s", server.V1PlayersRoute, playerID.String())
+		route := fmt.Sprintf("%s/%s", server.V1PlayerRoute, playerID.String())
 
 		w := invokePlayersEndpoint(t, m, http.MethodDelete, route, nil)
 

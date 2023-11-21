@@ -14,6 +14,7 @@ import (
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 )
@@ -75,13 +76,17 @@ func TestListPlayers(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		const (
 			id   = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+			home = "1f290a67-ef2c-455b-aad7-6a3e72276ab5"
+			loc  = "8f314204-49f5-44c0-83f1-1e3a24eec3ad"
 			name = "name"
 			desc = "desc"
 		)
 		var (
-			u       = uuid.MustParse(id)
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			playerID   = asset.PlayerID(uuid.MustParse(id))
+			homeID     = asset.RoomID(uuid.MustParse(home))
+			locationID = asset.RoomID(uuid.MustParse(loc))
+			created    = asset.Timestamp{Time: time.Now().UTC()}
+			updated    = asset.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayers := []rest.Player{
@@ -89,8 +94,8 @@ func TestListPlayers(t *testing.T) {
 				ID:          id,
 				Name:        name,
 				Description: desc,
-				HomeID:      id,
-				LocationID:  id,
+				HomeID:      home,
+				LocationID:  loc,
 				Created:     created,
 				Updated:     updated,
 			},
@@ -98,17 +103,25 @@ func TestListPlayers(t *testing.T) {
 
 		aPlayers := []*asset.Player{
 			{
-				ID:          asset.PlayerID(u),
+				ID:          playerID,
 				Name:        name,
 				Description: desc,
-				HomeID:      asset.RoomID(u),
-				LocationID:  asset.RoomID(u),
+				HomeID:      homeID,
+				LocationID:  locationID,
 				Created:     created,
 				Updated:     updated,
 			},
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			require.Equal(t, len(q["locationID"]), 1)
+			assert.Equal(t, q["locationID"][0], loc)
+			require.Equal(t, len(q["offset"]), 1)
+			assert.Equal(t, q["offset"][0], "10")
+			require.Equal(t, len(q["limit"]), 1)
+			assert.Equal(t, q["limit"][0], "10")
+
 			err := json.NewEncoder(w).Encode(rest.PlayersResponse{Players: rPlayers})
 			assert.Nil(t, err)
 		}))
@@ -117,7 +130,7 @@ func TestListPlayers(t *testing.T) {
 		c := client.New(server.URL)
 
 		filter := asset.PlayerFilter{
-			LocationID: asset.RoomID(u),
+			LocationID: locationID,
 			Offset:     10,
 			Limit:      10,
 		}
@@ -190,31 +203,35 @@ func TestGetPlayer(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		const (
 			id   = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+			home = "1f290a67-ef2c-455b-aad7-6a3e72276ab5"
+			loc  = "8f314204-49f5-44c0-83f1-1e3a24eec3ad"
 			name = "name"
 			desc = "desc"
 		)
 		var (
-			u       = uuid.MustParse(id)
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			playerID   = asset.PlayerID(uuid.MustParse(id))
+			homeID     = asset.RoomID(uuid.MustParse(home))
+			locationID = asset.RoomID(uuid.MustParse(loc))
+			created    = asset.Timestamp{Time: time.Now().UTC()}
+			updated    = asset.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{
 			ID:          id,
 			Name:        name,
 			Description: desc,
-			HomeID:      id,
-			LocationID:  id,
+			HomeID:      home,
+			LocationID:  loc,
 			Created:     created,
 			Updated:     updated,
 		}
 
 		aPlayer := &asset.Player{
-			ID:          asset.PlayerID(u),
+			ID:          playerID,
 			Name:        name,
 			Description: desc,
-			HomeID:      asset.RoomID(u),
-			LocationID:  asset.RoomID(u),
+			HomeID:      homeID,
+			LocationID:  locationID,
 			Created:     created,
 			Updated:     updated,
 		}
@@ -227,7 +244,7 @@ func TestGetPlayer(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		player, err := c.GetPlayer(ctx, asset.PlayerID(u))
+		player, err := c.GetPlayer(ctx, playerID)
 
 		assert.Nil(t, err)
 		assert.Compare(t, player, aPlayer, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))

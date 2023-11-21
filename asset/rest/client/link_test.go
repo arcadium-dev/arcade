@@ -14,6 +14,7 @@ import (
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 )
@@ -117,6 +118,18 @@ func TestListLinks(t *testing.T) {
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			require.Equal(t, len(q["ownerID"]), 1)
+			assert.Equal(t, q["ownerID"][0], owner)
+			require.Equal(t, len(q["locationID"]), 1)
+			assert.Equal(t, q["locationID"][0], location)
+			require.Equal(t, len(q["destinationID"]), 1)
+			assert.Equal(t, q["destinationID"][0], destination)
+			require.Equal(t, len(q["offset"]), 1)
+			assert.Equal(t, q["offset"][0], "10")
+			require.Equal(t, len(q["limit"]), 1)
+			assert.Equal(t, q["limit"][0], "10")
+
 			err := json.NewEncoder(w).Encode(rest.LinksResponse{Links: rLinks})
 			assert.Nil(t, err)
 		}))

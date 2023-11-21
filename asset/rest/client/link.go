@@ -51,10 +51,10 @@ func (c Client) ListLinks(ctx context.Context, filter asset.LinkFilter) ([]*asse
 		q.Add("ownerID", filter.OwnerID.String())
 	}
 	if filter.LocationID != asset.NilRoomID {
-		q.Add("locationID", filter.OwnerID.String())
+		q.Add("locationID", filter.LocationID.String())
 	}
 	if filter.DestinationID != asset.NilRoomID {
-		q.Add("destinationID", filter.OwnerID.String())
+		q.Add("destinationID", filter.DestinationID.String())
 	}
 	if filter.Offset > 0 {
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 
@@ -75,14 +76,18 @@ func TestListItems(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		const (
-			id   = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
-			name = "name"
-			desc = "desc"
+			id    = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+			owner = "1f290a67-ef2c-455b-aad7-6a3e72276ab5"
+			loc   = "8f314204-49f5-44c0-83f1-1e3a24eec3ad"
+			name  = "name"
+			desc  = "desc"
 		)
 		var (
-			u       = uuid.MustParse(id)
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			itemID     = asset.ItemID(uuid.MustParse(id))
+			ownerID    = asset.PlayerID(uuid.MustParse(owner))
+			locationID = asset.RoomID(uuid.MustParse(loc))
+			created    = asset.Timestamp{Time: time.Now().UTC()}
+			updated    = asset.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItems := []rest.Item{
@@ -90,9 +95,9 @@ func TestListItems(t *testing.T) {
 				ID:          id,
 				Name:        name,
 				Description: desc,
-				OwnerID:     id,
+				OwnerID:     owner,
 				LocationID: rest.ItemLocationID{
-					ID:   id,
+					ID:   loc,
 					Type: "room",
 				},
 				Created: created,
@@ -102,17 +107,29 @@ func TestListItems(t *testing.T) {
 
 		aItems := []*asset.Item{
 			{
-				ID:          asset.ItemID(u),
+				ID:          itemID,
 				Name:        name,
 				Description: desc,
-				OwnerID:     asset.PlayerID(u),
-				LocationID:  asset.RoomID(u),
+				OwnerID:     ownerID,
+				LocationID:  locationID,
 				Created:     created,
 				Updated:     updated,
 			},
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			require.Equal(t, len(q["ownerID"]), 1)
+			assert.Equal(t, q["ownerID"][0], owner)
+			require.Equal(t, len(q["locationID"]), 1)
+			assert.Equal(t, q["locationID"][0], loc)
+			require.Equal(t, len(q["locationType"]), 1)
+			assert.Equal(t, q["locationType"][0], "room")
+			require.Equal(t, len(q["offset"]), 1)
+			assert.Equal(t, q["offset"][0], "10")
+			require.Equal(t, len(q["limit"]), 1)
+			assert.Equal(t, q["limit"][0], "10")
+
 			err := json.NewEncoder(w).Encode(rest.ItemsResponse{Items: rItems})
 			assert.Nil(t, err)
 		}))
@@ -121,8 +138,8 @@ func TestListItems(t *testing.T) {
 		c := client.New(server.URL)
 
 		filter := asset.ItemFilter{
-			OwnerID:    asset.PlayerID(u),
-			LocationID: asset.RoomID(u),
+			OwnerID:    ownerID,
+			LocationID: locationID,
 			Offset:     10,
 			Limit:      10,
 		}
@@ -194,23 +211,27 @@ func TestGetItem(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		const (
-			id   = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
-			name = "name"
-			desc = "desc"
+			id    = "db81f22a-90cf-48a7-93a2-94de93a9b48f"
+			owner = "1f290a67-ef2c-455b-aad7-6a3e72276ab5"
+			loc   = "8f314204-49f5-44c0-83f1-1e3a24eec3ad"
+			name  = "name"
+			desc  = "desc"
 		)
 		var (
-			u       = uuid.MustParse(id)
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			itemID     = asset.ItemID(uuid.MustParse(id))
+			ownerID    = asset.PlayerID(uuid.MustParse(owner))
+			locationID = asset.RoomID(uuid.MustParse(loc))
+			created    = asset.Timestamp{Time: time.Now().UTC()}
+			updated    = asset.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItem := rest.Item{
 			ID:          id,
 			Name:        name,
 			Description: desc,
-			OwnerID:     id,
+			OwnerID:     owner,
 			LocationID: rest.ItemLocationID{
-				ID:   id,
+				ID:   loc,
 				Type: "room",
 			},
 			Created: created,
@@ -218,11 +239,11 @@ func TestGetItem(t *testing.T) {
 		}
 
 		aItem := &asset.Item{
-			ID:          asset.ItemID(u),
+			ID:          itemID,
 			Name:        name,
 			Description: desc,
-			OwnerID:     asset.PlayerID(u),
-			LocationID:  asset.RoomID(u),
+			OwnerID:     ownerID,
+			LocationID:  locationID,
 			Created:     created,
 			Updated:     updated,
 		}
@@ -235,7 +256,7 @@ func TestGetItem(t *testing.T) {
 
 		c := client.New(server.URL)
 
-		item, err := c.GetItem(ctx, asset.ItemID(u))
+		item, err := c.GetItem(ctx, itemID)
 
 		assert.Nil(t, err)
 		assert.Compare(t, item, aItem, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))

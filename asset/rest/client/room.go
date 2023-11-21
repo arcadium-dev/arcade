@@ -51,7 +51,7 @@ func (c Client) ListRooms(ctx context.Context, filter asset.RoomFilter) ([]*asse
 		q.Add("ownerID", filter.OwnerID.String())
 	}
 	if filter.ParentID != asset.NilRoomID {
-		q.Add("parentID", filter.OwnerID.String())
+		q.Add("parentID", filter.ParentID.String())
 	}
 	if filter.Offset > 0 {
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))

@@ -138,7 +138,7 @@ func (c Client) UpdatePlayer(ctx context.Context, id asset.PlayerID, player asse
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1PlayerRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}

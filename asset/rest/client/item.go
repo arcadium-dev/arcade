@@ -61,6 +61,9 @@ func (c Client) ListItems(ctx context.Context, filter asset.ItemFilter) ([]*asse
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
+		if filter.Limit >= asset.MaxItemFilterLimit {
+			return nil, fmt.Errorf("%s: filter item limit exceed maximum: %d", failMsg, asset.MaxItemFilterLimit)
+		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))
 	}
 	req.URL.RawQuery = q.Encode()
@@ -145,7 +148,7 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}

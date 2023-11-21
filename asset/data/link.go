@@ -160,7 +160,7 @@ func (l LinkStorage) Create(ctx context.Context, create asset.LinkCreate) (*asse
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
-	logger.Info().Msgf("created link, id:  %s", link.ID)
+	logger.Info().Msgf("created link, id: %s", link.ID)
 
 	return &link, nil
 }

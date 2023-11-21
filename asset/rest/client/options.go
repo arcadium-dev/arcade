@@ -14,7 +14,11 @@
 
 package client // import "arcadium.dev/arcade/asset/rest/client"
 
-import "time"
+import (
+	"crypto/tls"
+	"net/http"
+	"time"
+)
 
 type (
 	// ClientOption provides options for configuring the creation of an asset client.
@@ -34,6 +38,17 @@ func WithTimeout(timeout time.Duration) ClientOption {
 	return newClientOption(func(c *Client) {
 		if timeout > 0 {
 			c.timeout = timeout
+		}
+	})
+}
+
+// WithInsecure ... temporary
+func WithInsecure() ClientOption {
+	return newClientOption(func(c *Client) {
+		c.transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		}
 	})
 }

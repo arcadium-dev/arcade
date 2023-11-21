@@ -99,19 +99,26 @@ unit_test:
 test: unit_test
 
 integration_test_build:
-	dev nuke && make dev-images && dev init
+	dev nuke && make dev-images && dev init && dev pull telegraf
 
 esc := \033
 clear := $(esc)[0;39m
 yellow := $(esc)[1;33m
 
-integration_test:
+integration_test_up:
 	@mkdir -m 0777 -p ./asset/test/coverage
 	dev start
-	@sleep 3; echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
-	@-go test ./asset/test
+	@sleep 1
+
+integration_test: integration_test_up
+	@go clean -testcache
+	@echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
+	@-go test -v ./asset/test
+	dev stop assets
 	@echo -e "\n$(yellow)Assets Coverage$(clear)"
 	@go tool covdata percent -i=./asset/test/coverage
+
+integration_test_down:
 	@echo ""
 	@dev stop
 	@rm -rf ./asset/test/coverage

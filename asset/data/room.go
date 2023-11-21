@@ -156,7 +156,7 @@ func (r RoomStorage) Create(ctx context.Context, create asset.RoomCreate) (*asse
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
-	logger.Info().Msgf("created room, id:  %s", room.ID)
+	logger.Info().Msgf("created room, id: %s", room.ID)
 
 	return &room, nil
 }

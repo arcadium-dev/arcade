@@ -141,7 +141,7 @@ func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.Room
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1RoomRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}

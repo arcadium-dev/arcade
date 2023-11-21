@@ -262,6 +262,10 @@ down() {
 	stop "$@"
 }
 
+pull() {
+  docker_compose pull "$@"
+}
+
 #----------------------------------------------------------------------------
 # clean
 
@@ -298,7 +302,7 @@ completion() {
 		echo "networks certs db migrate"
 		;;
 	"dev")
-		echo "init start up status ps logs stop down clean help"
+		echo "init start up pull status ps logs stop down clean help"
 		;;
 	esac
 	exit 0
@@ -315,6 +319,7 @@ help() {
 		    init [networks|certs|influxdb|db|migrate]
 		    start
 		    up
+        pull
 		    status
 		    ps
 		    logs

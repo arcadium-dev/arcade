@@ -98,6 +98,10 @@ unit_test:
 
 test: unit_test
 
+integration_test:
+	dev nuke && make images && dev init && dev start
+	go test ./asset/test
+
 # ____ docs __________________________________________________________________
 
 .PHONY: docs
@@ -113,7 +117,13 @@ docs:
 
 .PHONY: images assets assets-migrate mkcert curl
 
+export buildargs :=
+
 images:
+	make -C dockerfiles all
+
+dev-images: buildargs := -cover
+dev-images:
 	make -C dockerfiles all
 
 assets assets-migrate mkcert curl:

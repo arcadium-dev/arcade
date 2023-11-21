@@ -98,9 +98,23 @@ unit_test:
 
 test: unit_test
 
+integration_test_build:
+	dev nuke && make dev-images && dev init
+
+esc := \033
+clear := $(esc)[0;39m
+yellow := $(esc)[1;33m
+
 integration_test:
-	dev nuke && make images && dev init && dev start
-	go test ./asset/test
+	@mkdir -m 0777 -p ./asset/test/coverage
+	dev start
+	@sleep 3; echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
+	@-go test ./asset/test
+	@echo -e "\n$(yellow)Assets Coverage$(clear)"
+	@go tool covdata percent -i=./asset/test/coverage
+	@echo ""
+	@dev stop
+	@rm -rf ./asset/test/coverage
 
 # ____ docs __________________________________________________________________
 
@@ -135,9 +149,9 @@ assets assets-migrate mkcert curl:
 
 clean:
 	@printf "\nClean...\n"
-	-rm -rf dist test/seed
+	-rm -rf ./dist ./test/seed
+	-rm -rf ./asset/test/coverage
 	-go clean -testcache -cache
 	-rm -f $$(go env GOPATH)/bin/staticcheck
 	-rm -f $$(go env GOPATH)/bin/govulncheck
 	-rm -f $$(go env GOPATH)/bin/swagger
-	make -C dockerfiles clean

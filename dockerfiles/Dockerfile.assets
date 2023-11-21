@@ -53,6 +53,6 @@ COPY --from=builder --chown=arcadium:arcadium /src/dist/assets /arcadium/assets
 
 USER  arcadium:arcadium
 EXPOSE 4202
-VOLUME "/etc/certs"
+VOLUME ["/etc/certs"]
 WORKDIR /arcadium
 ENTRYPOINT ["/arcadium/assets"]

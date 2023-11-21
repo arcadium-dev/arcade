@@ -8,6 +8,7 @@ services:
       - env/arcade
     volumes:
       - certificates_volume:/etc/certs
+      - ./asset/test/coverage:/arcadium/coverage
     networks:
       - arcadium_network
 

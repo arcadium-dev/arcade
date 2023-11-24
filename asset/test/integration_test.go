@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"arcadium.dev/arcade/asset"
@@ -11,6 +12,10 @@ import (
 )
 
 func TestAssets(t *testing.T) {
+	if os.Getenv("INTEGRATION") == "" {
+		t.Skip("skipping integration tests: set INTEGRATION environment variable")
+	}
+
 	var (
 		ctx = context.Background()
 
@@ -178,6 +183,10 @@ func TestAssets(t *testing.T) {
 }
 
 func TestDeletingStuff(t *testing.T) {
+	if os.Getenv("INTEGRATION") == "" {
+		t.Skip("skipping integration tests: set INTEGRATION environment variable")
+	}
+
 	t.Run("delete player home", func(t *testing.T) {
 	})
 

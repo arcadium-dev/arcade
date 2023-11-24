@@ -112,7 +112,7 @@ integration_test_up:
 
 integration_test: integration_test_up
 	@echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
-	@-go test -v --timeout 20s -count=1 ./asset/test
+	@-INTEGRATION=1 go test -v --timeout 20s -count=1 ./asset/test
 	dev stop assets
 	@echo -e "\n$(yellow)Assets Coverage$(clear)"
 	@go tool covdata percent -i=./asset/test/coverage

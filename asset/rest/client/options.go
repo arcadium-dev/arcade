@@ -42,7 +42,7 @@ func WithTimeout(timeout time.Duration) ClientOption {
 	})
 }
 
-// WithInsecure ... temporary
+// WithInsecure is only for use with integration testing.
 func WithInsecure() ClientOption {
 	return newClientOption(func(c *Client) {
 		c.transport = &http.Transport{

@@ -54,12 +54,15 @@ func (c Client) ListPlayers(ctx context.Context, filter asset.PlayerFilter) ([]*
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
+		if filter.Limit > asset.MaxPlayerFilterLimit {
+			return nil, fmt.Errorf("%s: player filter limit %d exceeds maximum %d", failMsg, filter.Limit, asset.MaxPlayerFilterLimit)
+		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))
 	}
 	req.URL.RawQuery = q.Encode()
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -80,7 +83,7 @@ func (c Client) GetPlayer(ctx context.Context, id asset.PlayerID) (*asset.Player
 	}
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -113,7 +116,7 @@ func (c Client) CreatePlayer(ctx context.Context, player asset.PlayerCreate) (*a
 	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create player")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -146,7 +149,7 @@ func (c Client) UpdatePlayer(ctx context.Context, id asset.PlayerID, player asse
 	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update player")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -167,7 +170,7 @@ func (c Client) RemovePlayer(ctx context.Context, id asset.PlayerID) error {
 	}
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)
 	}

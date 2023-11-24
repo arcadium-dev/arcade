@@ -69,7 +69,7 @@ func New(baseURL string, opts ...ClientOption) *Client {
 	return c
 }
 
-func (c Client) send(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c Client) Send(ctx context.Context, req *http.Request) (*http.Response, error) {
 	zerolog.Ctx(ctx).Debug().Msgf("sending request: %s", req.URL)
 
 	// TODO:  Add auth to request?

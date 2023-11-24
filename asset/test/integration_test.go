@@ -7,6 +7,7 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 )
 
 func TestAssets(t *testing.T) {
@@ -71,6 +72,7 @@ func TestAssets(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, player.HomeID, home.ID)
 			assert.Equal(t, player.LocationID, home.ID)
+			assert.NotNil(t, players[player.Name])
 			players[player.Name] = player
 
 			bed, err := assets.CreateItem(ctx, asset.ItemCreate{
@@ -118,8 +120,23 @@ func TestAssets(t *testing.T) {
 		}
 	})
 
-	// List Players: should be 10
+	t.Run("list players", func(t *testing.T) {
+		p, err := assets.ListPlayers(ctx, asset.PlayerFilter{Limit: 100})
 
+		assert.Nil(t, err)
+		assert.Equal(t, len(p), len(players)+1) // plus nobody
+
+		for _, player := range p {
+			if player.Name == "Nobody" {
+				continue
+			}
+			require.NotNil(t, players[player.Name])
+			assert.Equal(t, *player, *(players[player.Name]))
+		}
+	})
+
+	t.Run("list players by location", func(t *testing.T) {
+	})
 	// List players in each home
 
 	// List players outside: should be 0

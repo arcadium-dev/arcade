@@ -3,7 +3,7 @@ module arcadium.dev/arcade
 go 1.21
 
 require (
-	arcadium.dev/core v0.0.11
+	arcadium.dev/core v0.0.12
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1

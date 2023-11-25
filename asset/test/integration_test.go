@@ -6,9 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"arcadium.dev/arcade/asset"
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/require"
+
+	"arcadium.dev/arcade/asset"
 )
 
 func TestAssets(t *testing.T) {
@@ -141,34 +142,147 @@ func TestAssets(t *testing.T) {
 	})
 
 	t.Run("list players by location", func(t *testing.T) {
+		for _, player := range players {
+			p, err := assets.ListPlayers(ctx, asset.PlayerFilter{
+				LocationID: player.LocationID,
+			})
+
+			assert.Nil(t, err)
+			require.Equal(t, len(p), 1)
+			pl := p[0]
+			assert.Equal(t, *pl, *player)
+			assert.Equal(t, pl.LocationID, pl.HomeID)
+		}
 	})
-	// List players in each home
 
-	// List players outside: should be 0
+	t.Run("list players outside", func(t *testing.T) {
+		p, err := assets.ListPlayers(ctx, asset.PlayerFilter{
+			LocationID: outside.ID,
+		})
 
-	// Get each player
+		assert.Nil(t, err)
+		assert.Equal(t, len(p), 0)
+	})
 
-	// List rooms: should be 10
+	t.Run("get players", func(t *testing.T) {
+		for _, player := range players {
+			p, err := assets.GetPlayer(ctx, player.ID)
 
-	// List rooms owned by each player
+			assert.Nil(t, err)
+			assert.Equal(t, *p, *player)
+		}
+	})
 
-	// List rooms in outside: should be 10
+	t.Run("list homes/rooms", func(t *testing.T) {
+		r, err := assets.ListRooms(ctx, asset.RoomFilter{Limit: 100})
 
-	// List rooms in nowhere: should be 0
+		assert.Nil(t, err)
+		assert.Equal(t, len(r), len(homes)+2) // including outside and nowhere
+	})
 
-	// Get each room
+	t.Run("list rooms in outside", func(t *testing.T) {
+		r, err := assets.ListRooms(ctx, asset.RoomFilter{ParentID: outside.ID})
 
-	// List Items: should be 10
+		assert.Nil(t, err)
+		assert.Equal(t, len(r), len(homes))
+	})
 
-	// List items owned by each player
+	t.Run("list rooms in nowhere", func(t *testing.T) {
+		r, err := assets.ListRooms(ctx, asset.RoomFilter{ParentID: nowhere})
 
-	// List items in each room.
+		t.Logf("nowhere rooms: %+v", r)
+		for _, room := range r {
+			t.Logf("room: %s", room.Name)
+		}
 
-	// List items in nowhere, nobody, nothing: each should be 0
+		assert.Nil(t, err)
+		require.Equal(t, len(r), 2) // nowhere (is it's own parent) and outside
+	})
 
-	// List links in outside, should be 10
+	t.Run("list rooms owned by each player", func(t *testing.T) {
+		for _, player := range players {
+			r, err := assets.ListRooms(ctx, asset.RoomFilter{OwnerID: player.ID})
 
-	// List links in each home, should be 1
+			assert.Nil(t, err)
+			require.Equal(t, len(r), 1)
+			assert.Equal(t, r[0].ID, homes[player.Name].ID)
+		}
+	})
+
+	t.Run("get each home", func(t *testing.T) {
+		for _, home := range homes {
+			r, err := assets.GetRoom(ctx, home.ID)
+
+			assert.Nil(t, err)
+			assert.Equal(t, *r, *home)
+		}
+	})
+
+	t.Run("list beds/items", func(t *testing.T) {
+		i, err := assets.ListItems(ctx, asset.ItemFilter{Limit: 100})
+
+		assert.Nil(t, err)
+		assert.Equal(t, len(i), len(beds)+1) // including nothing
+	})
+
+	t.Run("list beds/items owned by each player", func(t *testing.T) {
+		for _, player := range players {
+			i, err := assets.ListItems(ctx, asset.ItemFilter{OwnerID: player.ID})
+
+			assert.Nil(t, err)
+			require.Equal(t, len(i), 1)
+			item := i[0]
+			assert.Equal(t, *item, *(beds[player.Name]))
+		}
+	})
+
+	t.Run("list beds/items located in each room", func(t *testing.T) {
+		for _, home := range homes {
+			i, err := assets.ListItems(ctx, asset.ItemFilter{LocationID: home.ID})
+
+			assert.Nil(t, err)
+			require.Equal(t, len(i), 1)
+			item := i[0]
+			assert.Equal(t, item.OwnerID, home.OwnerID)
+		}
+	})
+
+	t.Run("list items in nowhere, nobody and nothing", func(t *testing.T) {
+		i, err := assets.ListItems(ctx, asset.ItemFilter{LocationID: nowhere})
+
+		assert.Nil(t, err)
+		assert.Equal(t, len(i), 1)
+		assert.Equal(t, i[0].ID, nothing)
+
+		i, err = assets.ListItems(ctx, asset.ItemFilter{LocationID: nobody})
+
+		assert.Nil(t, err)
+		assert.Equal(t, len(i), 0)
+
+		i, err = assets.ListItems(ctx, asset.ItemFilter{LocationID: nothing})
+
+		assert.Nil(t, err)
+		assert.Equal(t, len(i), 0)
+	})
+
+	t.Run("list links located outside", func(t *testing.T) {
+		l, err := assets.ListLinks(ctx, asset.LinkFilter{LocationID: outside.ID})
+
+		assert.Nil(t, err)
+		assert.Equal(t, len(l), len(ins))
+	})
+
+	t.Run("list links in each home", func(t *testing.T) {
+		var links []*asset.Link
+		for _, home := range homes {
+			l, err := assets.ListLinks(ctx, asset.LinkFilter{LocationID: home.ID})
+
+			assert.Nil(t, err)
+			assert.Equal(t, len(l), 1)
+			links = append(links, l...)
+		}
+		assert.Equal(t, len(links), len(outs))
+	})
 
 	t.Run("delete stuff", func(t *testing.T) {
 		for _, player := range players {

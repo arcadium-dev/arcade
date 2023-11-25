@@ -14,7 +14,7 @@ import (
 var (
 	assets *client.Client
 
-	// nothing = asset.ItemID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	nothing = asset.ItemID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	nobody  = asset.PlayerID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	nowhere = asset.RoomID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 )

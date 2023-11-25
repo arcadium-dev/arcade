@@ -57,7 +57,7 @@ func (c Client) ListRooms(ctx context.Context, filter asset.RoomFilter) ([]*asse
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
-		if filter.Limit >= asset.MaxRoomFilterLimit {
+		if filter.Limit > asset.MaxRoomFilterLimit {
 			return nil, fmt.Errorf("%s: room filter limit %d exceeds maximum %d", failMsg, filter.Limit, asset.MaxRoomFilterLimit)
 		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))

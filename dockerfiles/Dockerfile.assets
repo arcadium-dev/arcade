@@ -23,9 +23,10 @@ ARG version
 ARG branch
 ARG commit
 ARG build_date
+ARG buildargs
 
 RUN GOOS="linux" GOARCH="amd64" CGO_ENAGLED=0 \
-    go build -ldflags="-s -w \
+    go build ${buildargs} -ldflags="-s -w \
       -X 'main.Version=${version}' \
       -X 'main.Branch=${branch}' \
       -X 'main.Commit=${commit}' \
@@ -52,6 +53,6 @@ COPY --from=builder --chown=arcadium:arcadium /src/dist/assets /arcadium/assets
 
 USER  arcadium:arcadium
 EXPOSE 4202
-VOLUME "/etc/certs"
+VOLUME ["/etc/certs"]
 WORKDIR /arcadium
 ENTRYPOINT ["/arcadium/assets"]

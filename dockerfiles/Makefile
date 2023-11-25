@@ -38,6 +38,7 @@ assets: Dockerfile.assets
 		--build-arg branch=$(branch) \
 		--build-arg commit=$(commit) \
 		--build-arg build_date=$(date) \
+		--build-arg buildargs=$(buildargs) \
 		--rm --force-rm \
 		--tag assets:latest \
 		..

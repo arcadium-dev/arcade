@@ -98,6 +98,30 @@ unit_test:
 
 test: unit_test
 
+integration_test_build:
+	dev nuke && make dev-images && dev init && dev pull telegraf
+
+esc := \033
+clear := $(esc)[0;39m
+yellow := $(esc)[1;33m
+
+integration_test_up:
+	@mkdir -m 0777 -p ./asset/test/coverage
+	dev start
+	@sleep 1
+
+integration_test: integration_test_up
+	@echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
+	@-INTEGRATION=1 go test -v --timeout 20s -count=1 ./asset/test
+	dev stop assets
+	@echo -e "\n$(yellow)Assets Coverage$(clear)"
+	@go tool covdata percent -i=./asset/test/coverage
+
+integration_test_down:
+	@echo ""
+	@dev stop
+	@rm -rf ./asset/test/coverage
+
 # ____ docs __________________________________________________________________
 
 .PHONY: docs
@@ -113,7 +137,13 @@ docs:
 
 .PHONY: images assets assets-migrate mkcert curl
 
+export buildargs :=
+
 images:
+	make -C dockerfiles all
+
+dev-images: buildargs := -cover
+dev-images:
 	make -C dockerfiles all
 
 assets assets-migrate mkcert curl:
@@ -125,9 +155,9 @@ assets assets-migrate mkcert curl:
 
 clean:
 	@printf "\nClean...\n"
-	-rm -rf dist test/seed
+	-rm -rf ./dist ./test/seed
+	-rm -rf ./asset/test/coverage
 	-go clean -testcache -cache
 	-rm -f $$(go env GOPATH)/bin/staticcheck
 	-rm -f $$(go env GOPATH)/bin/govulncheck
 	-rm -f $$(go env GOPATH)/bin/swagger
-	make -C dockerfiles clean

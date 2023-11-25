@@ -30,6 +30,14 @@ func TestListLinks(t *testing.T) {
 		assert.Contains(t, err.Error(), `failed to list links: parse "1234:bad url/v1/link": first path segment in URL cannot contain colon`)
 	})
 
+	t.Run("max limit failure", func(t *testing.T) {
+		c := client.New("https://example.com")
+
+		_, err := c.ListLinks(ctx, asset.LinkFilter{Limit: 1000})
+
+		assert.Contains(t, err.Error(), `failed to list links: link filter limit 1000 exceeds maximum 100`)
+	})
+
 	t.Run("send request failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)

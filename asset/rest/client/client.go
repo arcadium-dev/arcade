@@ -16,10 +16,13 @@ package client // import "arcadium.dev/arcade/asset/rest/client"
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
+	"arcadium.dev/core/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -30,11 +33,19 @@ const (
 type (
 	// Client provides a client for the asset api.
 	Client struct {
-		baseURL string
-		timeout time.Duration
-		client  *http.Client
+		baseURL   string
+		timeout   time.Duration
+		transport *http.Transport
+		client    *http.Client
+	}
+
+	ResponseError struct {
+		Status int    `json:"status"`
+		Detail string `json:"detail"`
 	}
 )
+
+func (e ResponseError) Error() string { return e.Detail }
 
 // New returns a new client for the asset API.
 func New(baseURL string, opts ...ClientOption) *Client {
@@ -52,11 +63,14 @@ func New(baseURL string, opts ...ClientOption) *Client {
 	c.client = &http.Client{
 		Timeout: c.timeout,
 	}
+	if c.transport != nil {
+		c.client.Transport = c.transport
+	}
 
 	return c
 }
 
-func (c Client) send(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c Client) Send(ctx context.Context, req *http.Request) (*http.Response, error) {
 	zerolog.Ctx(ctx).Debug().Msgf("sending request: %s", req.URL)
 
 	// TODO:  Add auth to request?
@@ -65,7 +79,25 @@ func (c Client) send(ctx context.Context, req *http.Request) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read request body: %w", err)
+		}
+		defer resp.Body.Close()
+
+		var e ResponseError
+		if err := json.Unmarshal(body, &e); err == nil {
+			var (
+				httpErr errors.HTTPError
+				ok      bool
+			)
+			if httpErr, ok = errors.HTTPErrors[e.Status]; !ok {
+				httpErr = errors.ErrInternal
+			}
+			return nil, fmt.Errorf("%w, (server error: %w)", httpErr, e)
+		}
 		return nil, fmt.Errorf("%d, %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 

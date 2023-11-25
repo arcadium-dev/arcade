@@ -1,3 +1,6 @@
+# GOCOVERDIR defines the directory to place integration test coverage files.
+GOCOVERDIR="/arcadium/coverage"
+
 # LOG_LEVEL defines the level of logging.
 ASSETS_LOG_LEVEL="info"
 

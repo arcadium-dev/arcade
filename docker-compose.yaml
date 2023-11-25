@@ -6,8 +6,11 @@ services:
     container_name: assets
     env_file:
       - env/arcade
+    ports:
+      - 4202:4202
     volumes:
       - certificates_volume:/etc/certs
+      - ./asset/test/coverage:/arcadium/coverage
     networks:
       - arcadium_network
 

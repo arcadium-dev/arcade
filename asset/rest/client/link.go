@@ -60,12 +60,15 @@ func (c Client) ListLinks(ctx context.Context, filter asset.LinkFilter) ([]*asse
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
+		if filter.Limit > asset.MaxLinkFilterLimit {
+			return nil, fmt.Errorf("%s: link filter limit %d exceeds maximum %d", failMsg, filter.Limit, asset.MaxLinkFilterLimit)
+		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))
 	}
 	req.URL.RawQuery = q.Encode()
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -86,7 +89,7 @@ func (c Client) GetLink(ctx context.Context, id asset.LinkID) (*asset.Link, erro
 	}
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -119,7 +122,7 @@ func (c Client) CreateLink(ctx context.Context, link asset.LinkCreate) (*asset.L
 	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create link")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -144,7 +147,7 @@ func (c Client) UpdateLink(ctx context.Context, id asset.LinkID, link asset.Link
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1LinkRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -152,7 +155,7 @@ func (c Client) UpdateLink(ctx context.Context, id asset.LinkID, link asset.Link
 	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update link")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -173,7 +176,7 @@ func (c Client) RemoveLink(ctx context.Context, id asset.LinkID) error {
 	}
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)
 	}

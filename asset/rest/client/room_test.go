@@ -30,6 +30,14 @@ func TestListRooms(t *testing.T) {
 		assert.Contains(t, err.Error(), `failed to list rooms: parse "1234:bad url/v1/room": first path segment in URL cannot contain colon`)
 	})
 
+	t.Run("max limit failure", func(t *testing.T) {
+		c := client.New("https://example.com")
+
+		_, err := c.ListRooms(ctx, asset.RoomFilter{Limit: 1000})
+
+		assert.Contains(t, err.Error(), `failed to list rooms: room filter limit 1000 exceeds maximum 100`)
+	})
+
 	t.Run("send request failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)

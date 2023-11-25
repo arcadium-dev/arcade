@@ -156,7 +156,7 @@ func (p PlayerStorage) Create(ctx context.Context, create asset.PlayerCreate) (*
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
-	logger.Info().Msgf("created player, id:  %s", player.ID)
+	logger.Info().Msgf("created player, id: %s", player.ID)
 
 	return &player, nil
 }

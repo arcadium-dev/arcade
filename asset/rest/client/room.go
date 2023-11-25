@@ -57,12 +57,15 @@ func (c Client) ListRooms(ctx context.Context, filter asset.RoomFilter) ([]*asse
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
+		if filter.Limit > asset.MaxRoomFilterLimit {
+			return nil, fmt.Errorf("%s: room filter limit %d exceeds maximum %d", failMsg, filter.Limit, asset.MaxRoomFilterLimit)
+		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))
 	}
 	req.URL.RawQuery = q.Encode()
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -83,7 +86,7 @@ func (c Client) GetRoom(ctx context.Context, id asset.RoomID) (*asset.Room, erro
 	}
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -116,7 +119,7 @@ func (c Client) CreateRoom(ctx context.Context, room asset.RoomCreate) (*asset.R
 	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create room")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -141,7 +144,7 @@ func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.Room
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1RoomRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -149,7 +152,7 @@ func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.Room
 	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update room")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -170,7 +173,7 @@ func (c Client) RemoveRoom(ctx context.Context, id asset.RoomID) error {
 	}
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)
 	}

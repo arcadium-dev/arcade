@@ -61,12 +61,15 @@ func (c Client) ListItems(ctx context.Context, filter asset.ItemFilter) ([]*asse
 		q.Add("offset", strconv.FormatUint(uint64(filter.Offset), 10))
 	}
 	if filter.Limit > 0 {
+		if filter.Limit > asset.MaxItemFilterLimit {
+			return nil, fmt.Errorf("%s: item filter limit %d exceeds maximum %d", failMsg, filter.Limit, asset.MaxItemFilterLimit)
+		}
 		q.Add("limit", strconv.FormatUint(uint64(filter.Limit), 10))
 	}
 	req.URL.RawQuery = q.Encode()
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -87,7 +90,7 @@ func (c Client) GetItem(ctx context.Context, id asset.ItemID) (*asset.Item, erro
 	}
 
 	// Send the request.
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -120,7 +123,7 @@ func (c Client) CreateItem(ctx context.Context, item asset.ItemCreate) (*asset.I
 	zerolog.Ctx(ctx).Info().RawJSON("request", reqBody.Bytes()).Msg("create item")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -145,7 +148,7 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 
 	// Create the request.
 	url := fmt.Sprintf("%s%s/%s", c.baseURL, V1ItemRoute, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -153,7 +156,7 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 	zerolog.Ctx(ctx).Debug().RawJSON("request", reqBody.Bytes()).Msg("update item")
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -174,7 +177,7 @@ func (c Client) RemoveItem(ctx context.Context, id asset.ItemID) error {
 	}
 
 	// Send the request
-	resp, err := c.send(ctx, req)
+	resp, err := c.Send(ctx, req)
 	if err != nil {
 		return fmt.Errorf("%s: %w", failMsg, err)
 	}

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"time"
 
+	"arcadium.dev/core/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -88,7 +89,14 @@ func (c Client) Send(ctx context.Context, req *http.Request) (*http.Response, er
 
 		var e ResponseError
 		if err := json.Unmarshal(body, &e); err == nil {
-			return nil, e
+			var (
+				httpErr errors.HTTPError
+				ok      bool
+			)
+			if httpErr, ok = errors.HTTPErrors[e.Status]; !ok {
+				httpErr = errors.ErrInternal
+			}
+			return nil, fmt.Errorf("%w, (server error: %w)", httpErr, e)
 		}
 		return nil, fmt.Errorf("%d, %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}

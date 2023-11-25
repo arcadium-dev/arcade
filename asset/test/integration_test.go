@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/errors"
 	"arcadium.dev/core/require"
 
 	"arcadium.dev/arcade/asset"
@@ -29,7 +30,7 @@ func TestAssets(t *testing.T) {
 		outside *asset.Room
 	)
 
-	t.Run("create stuff", func(t *testing.T) {
+	t.Run("create resources", func(t *testing.T) {
 		var err error
 
 		outside, err = assets.CreateRoom(ctx, asset.RoomCreate{
@@ -190,11 +191,6 @@ func TestAssets(t *testing.T) {
 	t.Run("list rooms in nowhere", func(t *testing.T) {
 		r, err := assets.ListRooms(ctx, asset.RoomFilter{ParentID: nowhere})
 
-		t.Logf("nowhere rooms: %+v", r)
-		for _, room := range r {
-			t.Logf("room: %s", room.Name)
-		}
-
 		assert.Nil(t, err)
 		require.Equal(t, len(r), 2) // nowhere (is it's own parent) and outside
 	})
@@ -247,6 +243,15 @@ func TestAssets(t *testing.T) {
 		}
 	})
 
+	t.Run("get items", func(t *testing.T) {
+		for _, bed := range beds {
+			i, err := assets.GetItem(ctx, bed.ID)
+
+			assert.Nil(t, err)
+			assert.Equal(t, *i, *bed)
+		}
+	})
+
 	t.Run("list items in nowhere, nobody and nothing", func(t *testing.T) {
 		i, err := assets.ListItems(ctx, asset.ItemFilter{LocationID: nowhere})
 
@@ -284,7 +289,22 @@ func TestAssets(t *testing.T) {
 		assert.Equal(t, len(links), len(outs))
 	})
 
-	t.Run("delete stuff", func(t *testing.T) {
+	t.Run("get each link", func(t *testing.T) {
+		for _, in := range ins {
+			l, err := assets.GetLink(ctx, in.ID)
+
+			assert.Nil(t, err)
+			assert.Equal(t, *l, *in)
+		}
+		for _, out := range outs {
+			l, err := assets.GetLink(ctx, out.ID)
+
+			assert.Nil(t, err)
+			assert.Equal(t, *l, *out)
+		}
+	})
+
+	t.Run("delete resources", func(t *testing.T) {
 		for _, player := range players {
 			assert.Nil(t, assets.RemoveLink(ctx, ins[player.Name].ID))
 			assert.Nil(t, assets.RemoveLink(ctx, outs[player.Name].ID))
@@ -296,35 +316,347 @@ func TestAssets(t *testing.T) {
 	})
 }
 
-func TestDeletingStuff(t *testing.T) {
+func TestOnDeleteSetDefault(t *testing.T) {
 	if os.Getenv("INTEGRATION") == "" {
 		t.Skip("skipping integration tests: set INTEGRATION environment variable")
 	}
 
-	t.Run("delete player home", func(t *testing.T) {
-	})
+	var (
+		ctx = context.Background()
+	)
 
-	t.Run("delete player location", func(t *testing.T) {
+	t.Run("delete player home", func(t *testing.T) {
+		home, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "Welcome home!",
+				Description: "Home sweet home",
+				OwnerID:     nobody,
+				ParentID:    nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		name := randName(8)
+		player, err := assets.CreatePlayer(ctx, asset.PlayerCreate{
+			PlayerChange: asset.PlayerChange{
+				Name:        name,
+				Description: fmt.Sprintf("This is %s", name),
+				HomeID:      home.ID,
+				LocationID:  home.ID,
+			},
+		})
+		assert.Nil(t, err)
+
+		err = assets.RemoveRoom(ctx, home.ID)
+		assert.Nil(t, err)
+
+		player, err = assets.GetPlayer(ctx, player.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, player.HomeID, nowhere)
+		assert.Equal(t, player.LocationID, nowhere)
+
+		err = assets.RemovePlayer(ctx, player.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetPlayer(ctx, player.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
 	t.Run("delete room owner", func(t *testing.T) {
+		player, err := assets.CreatePlayer(ctx, asset.PlayerCreate{
+			PlayerChange: asset.PlayerChange{
+				Name:        randName(8),
+				Description: "A player",
+				HomeID:      nowhere,
+				LocationID:  nowhere,
+			},
+		})
+
+		assert.Nil(t, err)
+		room, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "A room",
+				Description: "This is a room.",
+				OwnerID:     player.ID,
+				ParentID:    nowhere,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, room.OwnerID, player.ID)
+
+		err = assets.RemovePlayer(ctx, player.ID)
+		assert.Nil(t, err)
+
+		room, err = assets.GetRoom(ctx, room.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, room.OwnerID, nobody)
+
+		err = assets.RemoveRoom(ctx, room.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetRoom(ctx, room.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
 	t.Run("delete room parent", func(t *testing.T) {
+		world, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "World",
+				Description: "This is the world.",
+				OwnerID:     nobody,
+				ParentID:    nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		room, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "A room",
+				Description: "This is a room",
+				OwnerID:     nobody,
+				ParentID:    world.ID,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, room.ParentID, world.ID)
+
+		err = assets.RemoveRoom(ctx, world.ID)
+		assert.Nil(t, err)
+
+		room, err = assets.GetRoom(ctx, room.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, room.ParentID, nowhere)
+
+		err = assets.RemoveRoom(ctx, room.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetRoom(ctx, room.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
 	t.Run("delete item owner", func(t *testing.T) {
+		player, err := assets.CreatePlayer(ctx, asset.PlayerCreate{
+			PlayerChange: asset.PlayerChange{
+				Name:        randName(8),
+				Description: "A player",
+				HomeID:      nowhere,
+				LocationID:  nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		item, err := assets.CreateItem(ctx, asset.ItemCreate{
+			ItemChange: asset.ItemChange{
+				Name:        "A thing",
+				Description: "A nice thing.",
+				OwnerID:     player.ID,
+				LocationID:  nowhere,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, item.OwnerID, player.ID)
+
+		err = assets.RemovePlayer(ctx, player.ID)
+		assert.Nil(t, err)
+
+		item, err = assets.GetItem(ctx, item.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, item.OwnerID, nobody)
+
+		err = assets.RemoveItem(ctx, item.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetItem(ctx, item.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
-	t.Run("delete item location", func(t *testing.T) {
+	t.Run("delete item location - room", func(t *testing.T) {
+		room, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "A room",
+				Description: "This is a room",
+				OwnerID:     nobody,
+				ParentID:    nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		item, err := assets.CreateItem(ctx, asset.ItemCreate{
+			ItemChange: asset.ItemChange{
+				Name:        "A thing",
+				Description: "A nice thing.",
+				OwnerID:     nobody,
+				LocationID:  room.ID,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(room.ID))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypeRoom)
+
+		err = assets.RemoveRoom(ctx, room.ID)
+		assert.Nil(t, err)
+
+		item, err = assets.GetItem(ctx, item.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(nowhere))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypeRoom)
+
+		err = assets.RemoveItem(ctx, item.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetItem(ctx, item.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
+	})
+
+	t.Run("delete item location - player", func(t *testing.T) {
+		player, err := assets.CreatePlayer(ctx, asset.PlayerCreate{
+			PlayerChange: asset.PlayerChange{
+				Name:        randName(8),
+				Description: "A player",
+				HomeID:      nowhere,
+				LocationID:  nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		item, err := assets.CreateItem(ctx, asset.ItemCreate{
+			ItemChange: asset.ItemChange{
+				Name:        "A thing",
+				Description: "A nice thing.",
+				OwnerID:     nobody,
+				LocationID:  player.ID,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(player.ID))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypePlayer)
+
+		err = assets.RemovePlayer(ctx, player.ID)
+		assert.Nil(t, err)
+
+		item, err = assets.GetItem(ctx, item.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(nobody))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypePlayer)
+
+		err = assets.RemoveItem(ctx, item.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetItem(ctx, item.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
+	})
+
+	t.Run("delete item location - item", func(t *testing.T) {
+		bag, err := assets.CreateItem(ctx, asset.ItemCreate{
+			ItemChange: asset.ItemChange{
+				Name:        "A bag",
+				Description: "A spacious thing.",
+				OwnerID:     nobody,
+				LocationID:  nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		item, err := assets.CreateItem(ctx, asset.ItemCreate{
+			ItemChange: asset.ItemChange{
+				Name:        "A thing",
+				Description: "A nice thing.",
+				OwnerID:     nobody,
+				LocationID:  bag.ID,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(bag.ID))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypeItem)
+
+		err = assets.RemoveItem(ctx, bag.ID)
+		assert.Nil(t, err)
+
+		item, err = assets.GetItem(ctx, item.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, item.LocationID.ID(), asset.LocationID(nothing))
+		assert.Equal(t, item.LocationID.Type(), asset.LocationTypeItem)
+
+		err = assets.RemoveItem(ctx, item.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetItem(ctx, item.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
 	t.Run("delete link owner", func(t *testing.T) {
+		player, err := assets.CreatePlayer(ctx, asset.PlayerCreate{
+			PlayerChange: asset.PlayerChange{
+				Name:        randName(8),
+				Description: "A player",
+				HomeID:      nowhere,
+				LocationID:  nowhere,
+			},
+		})
+		assert.Nil(t, err)
+
+		link, err := assets.CreateLink(ctx, asset.LinkCreate{
+			LinkChange: asset.LinkChange{
+				Name:          "out",
+				Description:   "The way out.",
+				OwnerID:       player.ID,
+				LocationID:    nowhere,
+				DestinationID: nowhere,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, link.OwnerID, player.ID)
+
+		err = assets.RemovePlayer(ctx, player.ID)
+		assert.Nil(t, err)
+
+		link, err = assets.GetLink(ctx, link.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, link.OwnerID, nobody)
+
+		err = assets.RemoveLink(ctx, link.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetLink(ctx, link.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 
-	t.Run("delete link location", func(t *testing.T) {
-	})
+	t.Run("delete link location and destination", func(t *testing.T) {
+		room, err := assets.CreateRoom(ctx, asset.RoomCreate{
+			RoomChange: asset.RoomChange{
+				Name:        "A room",
+				Description: "This is a room",
+				OwnerID:     nobody,
+				ParentID:    nowhere,
+			},
+		})
+		assert.Nil(t, err)
 
-	t.Run("delete link destination", func(t *testing.T) {
+		link, err := assets.CreateLink(ctx, asset.LinkCreate{
+			LinkChange: asset.LinkChange{
+				Name:          "out",
+				Description:   "The way out.",
+				OwnerID:       nobody,
+				LocationID:    room.ID,
+				DestinationID: room.ID,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, link.LocationID, room.ID)
+		assert.Equal(t, link.DestinationID, room.ID)
+
+		err = assets.RemoveRoom(ctx, room.ID)
+		assert.Nil(t, err)
+
+		link, err = assets.GetLink(ctx, link.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, link.LocationID, nowhere)
+		assert.Equal(t, link.DestinationID, nowhere)
+
+		err = assets.RemoveLink(ctx, link.ID)
+		assert.Nil(t, err)
+
+		_, err = assets.GetLink(ctx, link.ID)
+		assert.IsError(t, err, errors.ErrNotFound)
 	})
 }

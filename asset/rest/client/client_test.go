@@ -31,7 +31,7 @@ func TestClientSend(t *testing.T) {
 		assert.Nil(t, err)
 
 		_, err = c.Send(ctx, req)
-		assert.Error(t, err, "response error detail")
+		assert.Error(t, err, "bad request: response error detail")
 	})
 
 	t.Run("no response body", func(t *testing.T) {

@@ -1,5 +1,3 @@
-version: '3.3'
-
 services:
   assets:
     image: assets:latest
@@ -46,6 +44,7 @@ services:
 
   cockroach:
     image: cockroachdb/cockroach:v21.2.8
+    #image: cockroachdb/cockroach:latest-v23.2
     container_name: cockroach
     hostname: cockroach
     command: ["start-single-node", "--certs-dir=/etc/certs"]
@@ -77,6 +76,7 @@ services:
 
   csql:
     image: cockroachdb/cockroach:v21.2.8
+    #image: cockroachdb/cockroach:latest-v23.2
     entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
     env_file:
       - env/csql
@@ -95,7 +95,7 @@ services:
 
   # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
   create_migration:
-    image: migrate/migrate:v4.15.1
+    image: migrate/migrate:v4.17.0
     entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
     volumes:
       - ./migrations:/migration

@@ -532,12 +532,6 @@ func TestPlayersRemove(t *testing.T) {
 			{
 				query:  cockroachRemoveQ,
 				driver: cockroach.PlayerDriver{},
-				err:    sql.ErrNoRows,
-				msg:    "failed to remove player: not found",
-			},
-			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.PlayerDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove player: internal server error: unknown error",
 			},

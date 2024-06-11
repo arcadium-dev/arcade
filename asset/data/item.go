@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -131,10 +131,10 @@ func (i ItemStorage) Get(ctx context.Context, itemID asset.ItemID) (*asset.Item,
 		&item.Created,
 		&item.Updated,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -175,22 +175,22 @@ func (i ItemStorage) Create(ctx context.Context, create asset.ItemCreate) (*asse
 		&item.Updated,
 	)
 
+	switch {
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if i.Driver.IsForeignKeyViolation(err) {
+	case i.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given ownerID or locationID does not exist: ownerID '%s', locationID '%s (%s)'",
 			failMsg, errors.ErrBadRequest, create.OwnerID, create.LocationID.ID(), create.LocationID.Type(),
 		)
-	}
 
 	// A UniqueViolation means the inserted item violated a uniqueness
 	// constraint. The item record already exists in the table or the name
 	// is not unique.
-	if i.Driver.IsUniqueViolation(err) {
+	case i.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: item name '%s' already exists", failMsg, errors.ErrBadRequest, create.Name)
-	}
-	if err != nil {
+
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -234,27 +234,25 @@ func (i ItemStorage) Update(ctx context.Context, itemID asset.ItemID, update ass
 		&item.Updated,
 	)
 
+	switch {
 	// Tried to update a item that doesn't exist.
-	if errors.Is(err, sql.ErrNoRows) {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
 
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if i.Driver.IsForeignKeyViolation(err) {
+	case i.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given ownerID or locationID does not exist: ownerID '%s', locationID '%s (%s)'",
 			failMsg, errors.ErrBadRequest, update.OwnerID, update.LocationID.ID(), update.LocationID.Type(),
 		)
-	}
 
 	// A UniqueViolation means the inserted item violated a uniqueness
 	// constraint. The item name is not unique.
-	if i.Driver.IsUniqueViolation(err) {
+	case i.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: item name '%s' already exists", failMsg, errors.ErrBadRequest, update.Name)
-	}
 
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
@@ -269,11 +267,7 @@ func (i ItemStorage) Remove(ctx context.Context, itemID asset.ItemID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove item %s", itemID)
 
-	_, err := i.DB.Exec(ctx, i.Driver.RemoveQuery(), itemID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	if _, err := i.DB.Exec(ctx, i.Driver.RemoveQuery(), itemID); err != nil {
 		return fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 

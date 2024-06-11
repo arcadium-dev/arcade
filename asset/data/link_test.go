@@ -581,12 +581,6 @@ func TestLinksRemove(t *testing.T) {
 			{
 				query:  cockroachRemoveQ,
 				driver: cockroach.LinkDriver{},
-				err:    sql.ErrNoRows,
-				msg:    "failed to remove link: not found",
-			},
-			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.LinkDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove link: internal server error: unknown error",
 			},

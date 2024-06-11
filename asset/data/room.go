@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -102,10 +102,10 @@ func (r RoomStorage) Get(ctx context.Context, roomID asset.RoomID) (*asset.Room,
 		&room.Created,
 		&room.Updated,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -146,13 +146,14 @@ func (r RoomStorage) Create(ctx context.Context, create asset.RoomCreate) (*asse
 		)
 	}
 
+	switch {
 	// A UniqueViolation means the inserted room violated a uniqueness
 	// constraint. The room record already exists in the table or the name
 	// is not unique.
-	if r.Driver.IsUniqueViolation(err) {
+	case r.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: room name '%s' already exists", failMsg, errors.ErrBadRequest, create.Name)
-	}
-	if err != nil {
+
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -185,27 +186,25 @@ func (r RoomStorage) Update(ctx context.Context, roomID asset.RoomID, update ass
 		&room.Updated,
 	)
 
+	switch {
 	// Tried to update a room that doesn't exist.
-	if errors.Is(err, sql.ErrNoRows) {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
 
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if r.Driver.IsForeignKeyViolation(err) {
+	case r.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given ownerID or parentID does not exist: ownerID '%s', parentID '%s'",
 			failMsg, errors.ErrBadRequest, update.OwnerID, update.ParentID,
 		)
-	}
 
 	// A UniqueViolation means the inserted room violated a uniqueness
 	// constraint. The room name is not unique.
-	if r.Driver.IsUniqueViolation(err) {
+	case r.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: room name '%s' already exists", failMsg, errors.ErrBadRequest, update.Name)
-	}
 
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
@@ -218,11 +217,7 @@ func (r RoomStorage) Remove(ctx context.Context, roomID asset.RoomID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove room %s", roomID)
 
-	_, err := r.DB.Exec(ctx, r.Driver.RemoveQuery(), roomID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	if _, err := r.DB.Exec(ctx, r.Driver.RemoveQuery(), roomID); err != nil {
 		return fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 

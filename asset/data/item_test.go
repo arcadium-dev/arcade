@@ -693,12 +693,6 @@ func TestItemsRemove(t *testing.T) {
 			{
 				query:  cockroachRemoveQ,
 				driver: cockroach.ItemDriver{},
-				err:    sql.ErrNoRows,
-				msg:    "failed to remove item: not found",
-			},
-			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.ItemDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove item: internal server error: unknown error",
 			},

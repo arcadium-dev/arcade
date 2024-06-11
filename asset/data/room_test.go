@@ -559,12 +559,6 @@ func TestRoomsRemove(t *testing.T) {
 			{
 				query:  cockroachRemoveQ,
 				driver: cockroach.RoomDriver{},
-				err:    sql.ErrNoRows,
-				msg:    "failed to remove room: not found",
-			},
-			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.RoomDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove room: internal server error: unknown error",
 			},

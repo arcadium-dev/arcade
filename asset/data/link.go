@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -104,10 +104,10 @@ func (l LinkStorage) Get(ctx context.Context, linkID asset.LinkID) (*asset.Link,
 		&link.Created,
 		&link.Updated,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -141,22 +141,22 @@ func (l LinkStorage) Create(ctx context.Context, create asset.LinkCreate) (*asse
 		&link.Updated,
 	)
 
+	switch {
 	// A ForeignKeyViolation means the referenced ownerID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if l.Driver.IsForeignKeyViolation(err) {
+	case l.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given ownerID, locationID or destinationID does not exist: ownerID '%s', locationID '%s', destinationID '%s'",
 			failMsg, errors.ErrBadRequest, create.OwnerID, create.LocationID, create.DestinationID,
 		)
-	}
 
 	// A UniqueViolation means the inserted link violated a uniqueness
 	// constraint. The link record already exists in the table or the name
 	// is not unique.
-	if l.Driver.IsUniqueViolation(err) {
+	case l.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: link name '%s' already exists", failMsg, errors.ErrBadRequest, create.Name)
-	}
-	if err != nil {
+
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -191,27 +191,25 @@ func (l LinkStorage) Update(ctx context.Context, linkID asset.LinkID, update ass
 		&link.Updated,
 	)
 
+	switch {
 	// Tried to update a link that doesn't exist.
-	if errors.Is(err, sql.ErrNoRows) {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
 
 	// A ForeignKeyViolation means the referenced ownerID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if l.Driver.IsForeignKeyViolation(err) {
+	case l.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given ownerID, locationID or destinationID does not exist: ownerID '%s', locationID '%s', destinationID '%s'",
 			failMsg, errors.ErrBadRequest, update.OwnerID, update.LocationID, update.DestinationID,
 		)
-	}
 
 	// A UniqueViolation means the inserted link violated a uniqueness
 	// constraint. The link name is not unique.
-	if l.Driver.IsUniqueViolation(err) {
+	case l.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: link name '%s' already exists", failMsg, errors.ErrBadRequest, update.Name)
-	}
 
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
@@ -224,11 +222,7 @@ func (l LinkStorage) Remove(ctx context.Context, linkID asset.LinkID) error {
 
 	zerolog.Ctx(ctx).Info().Msgf("remove link %s", linkID)
 
-	_, err := l.DB.Exec(ctx, l.Driver.RemoveQuery(), linkID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	if _, err := l.DB.Exec(ctx, l.Driver.RemoveQuery(), linkID); err != nil {
 		return fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 

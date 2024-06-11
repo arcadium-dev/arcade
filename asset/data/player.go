@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -102,10 +102,10 @@ func (p PlayerStorage) Get(ctx context.Context, playerID asset.PlayerID) (*asset
 		&player.Created,
 		&player.Updated,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -137,22 +137,22 @@ func (p PlayerStorage) Create(ctx context.Context, create asset.PlayerCreate) (*
 		&player.Updated,
 	)
 
+	switch {
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if p.Driver.IsForeignKeyViolation(err) {
+	case p.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given homeID or locationID does not exist: homeID '%s', locationID '%s'",
 			failMsg, errors.ErrBadRequest, create.HomeID, create.LocationID,
 		)
-	}
 
 	// A UniqueViolation means the inserted player violated a uniqueness
 	// constraint. The player record already exists in the table or the name
 	// is not unique.
-	if p.Driver.IsUniqueViolation(err) {
+	case p.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: player name '%s' already exists", failMsg, errors.ErrBadRequest, create.Name)
-	}
-	if err != nil {
+
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
@@ -185,27 +185,25 @@ func (p PlayerStorage) Update(ctx context.Context, playerID asset.PlayerID, upda
 		&player.Updated,
 	)
 
+	switch {
 	// Tried to update a player that doesn't exist.
-	if errors.Is(err, sql.ErrNoRows) {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
 
 	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
 	// in the rooms table, thus we will return an invalid argument error.
-	if p.Driver.IsForeignKeyViolation(err) {
+	case p.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
 			"%s: %w: the given homeID or locationID does not exist: homeID '%s', locationID '%s'",
 			failMsg, errors.ErrBadRequest, update.HomeID, update.LocationID,
 		)
-	}
 
 	// A UniqueViolation means the inserted player violated a uniqueness
 	// constraint. The player name is not unique.
-	if p.Driver.IsUniqueViolation(err) {
+	case p.Driver.IsUniqueViolation(err):
 		return nil, fmt.Errorf("%s: %w: player name '%s' already exists", failMsg, errors.ErrBadRequest, update.Name)
-	}
 
-	if err != nil {
+	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
@@ -218,11 +216,7 @@ func (p PlayerStorage) Remove(ctx context.Context, playerID asset.PlayerID) erro
 
 	zerolog.Ctx(ctx).Info().Msgf("remove player %s", playerID)
 
-	_, err := p.DB.Exec(ctx, p.Driver.RemoveQuery(), playerID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
-	}
-	if err != nil {
+	if _, err := p.DB.Exec(ctx, p.Driver.RemoveQuery(), playerID); err != nil {
 		return fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 

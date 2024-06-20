@@ -1,4 +1,6 @@
 services:
+  # arcadium services
+  #--------------------------------------------------------------------------
   assets:
     image: assets:latest
     container_name: assets
@@ -11,7 +13,21 @@ services:
       - ./asset/test/coverage:/arcadium/coverage
     networks:
       - arcadium_network
+      #- database_network
+      #- observability_network
 
+  # arcadium clients
+  #------------------------------------------------------------------------
+  curl:
+    image: curl:latest
+    working_dir: /etc
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  # observability services
+  #--------------------------------------------------------------------------
   influxdb:
     image: influxdb:alpine
     container_name: influxdb
@@ -42,6 +58,22 @@ services:
     networks:
       - arcadium_network
 
+  # database services
+  #--------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    hostname: postgres
+    restart: always
+    shm_size: 128mb
+    env_file:
+      - env/postgres
+    volumes: 
+      - postgres_volume:/var/lib/postgres/data
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
   cockroach:
     image: cockroachdb/cockroach:v21.2.8
     #image: cockroachdb/cockroach:latest-v23.2
@@ -51,11 +83,13 @@ services:
     ports:
       - 4000:8080
     volumes:
-      - database_volume:/cockroach/cockroach-data
+      - cockroach_volume:/cockroach/cockroach-data
       - certificates_volume:/etc/certs
     networks:
       - arcadium_network
 
+  # database clients
+  #--------------------------------------------------------------------------
   migrate:
     image: assets-migrate:latest
     depends_on:
@@ -67,12 +101,13 @@ services:
     networks:
       - arcadium_network
 
-  mkcert:
-    image: mkcert:latest
-    environment:
-      - CAROOT=/etc/certs
+  psql:
+    image: postgres:16-alpine
+    # TODO
     volumes:
       - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
 
   csql:
     image: cockroachdb/cockroach:v21.2.8
@@ -85,13 +120,14 @@ services:
     networks:
       - arcadium_network
 
-  curl:
-    image: curl:latest
-    working_dir: /etc
+  # utilities
+  #--------------------------------------------------------------------------
+  mkcert:
+    image: mkcert:latest
+    environment:
+      - CAROOT=/etc/certs
     volumes:
       - certificates_volume:/etc/certs
-    networks:
-      - arcadium_network
 
   # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
   create_migration:
@@ -103,9 +139,14 @@ services:
 volumes:
   certificates_volume:
   influxdb_volume:
-  database_volume:
+  cockroach_volume:
+  postgres_volume:
 
 
 networks:
   arcadium_network:
     external: true
+  #database_network:
+    #external: true
+  #observability_network:
+    #external: true

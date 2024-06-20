@@ -1,0 +1,3 @@
+POSTGRES_PASSWORD="arcadium"
+#POSTGRES_USER="arcadium"
+#POSTGRES_DB="arcadium"

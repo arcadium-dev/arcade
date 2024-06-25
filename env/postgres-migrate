@@ -1,1 +1,1 @@
-SQL_URL="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/postgres_client.pem&sslkey=/etc/certs/postgres_client_key.pem&sslrootcert=/etc/certs/postgres_rootCA.pem"
+SQL_URL="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/migrate_client.pem&sslkey=/etc/certs/migrate_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"

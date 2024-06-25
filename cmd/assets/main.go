@@ -27,6 +27,8 @@ import (
 
 	"arcadium.dev/arcade/asset/data"
 	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/data/postgres"
+
 	"arcadium.dev/arcade/asset/rest/server"
 )
 
@@ -46,8 +48,15 @@ type (
 	}
 
 	Config struct {
-		DSN string `required:"true"`
+		Database     string `required:"true"`
+		CockroachDsn string `split_words:"true"`
+		PostgresDsn  string `split_words:"true"`
 	}
+)
+
+const (
+	cockroachDatabase = "cockroach"
+	postgresDatabase  = "postgres"
 )
 
 // New creates a new rest server. This is provided as a function variable to
@@ -71,7 +80,34 @@ func Main() error {
 		return err
 	}
 
-	db, err := cockroach.Open(s.Ctx(), cfg.DSN)
+	switch cfg.Database {
+	case cockroachDatabase:
+		if err := startCockroach(s, cfg.CockroachDsn); err != nil {
+			return err
+		}
+	case postgresDatabase:
+		if err := startPostgres(s, cfg.PostgresDsn); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown database configured: %s", cfg.Database)
+	}
+
+	return nil
+}
+
+func main() {
+	if err := Main(); err != nil {
+		l.Fatal(err)
+	}
+}
+
+func startCockroach(s RestServer, dsn string) error {
+	if dsn == "" {
+		return fmt.Errorf("cockroach dsn required")
+	}
+
+	db, err := cockroach.Open(s.Ctx(), dsn)
 	if err != nil {
 		return err
 	}
@@ -112,15 +148,54 @@ func Main() error {
 		},
 	}
 
-	if err := s.Start(items, links, players, rooms); err != nil {
+	return s.Start(items, links, players, rooms)
+}
+
+func startPostgres(s RestServer, dsn string) error {
+	if dsn == "" {
+		return fmt.Errorf("postgres dsn required")
+	}
+
+	db, err := postgres.Open(s.Ctx(), dsn)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func main() {
-	if err := Main(); err != nil {
-		l.Fatal(err)
+	items := server.ItemsService{
+		Storage: data.ItemStorage{
+			DB: db,
+			Driver: postgres.ItemDriver{
+				Driver: postgres.Driver{},
+			},
+		},
 	}
+
+	links := server.LinksService{
+		Storage: data.LinkStorage{
+			DB: db,
+			Driver: postgres.LinkDriver{
+				Driver: postgres.Driver{},
+			},
+		},
+	}
+
+	players := server.PlayersService{
+		Storage: data.PlayerStorage{
+			DB: db,
+			Driver: postgres.PlayerDriver{
+				Driver: postgres.Driver{},
+			},
+		},
+	}
+
+	rooms := server.RoomsService{
+		Storage: data.RoomStorage{
+			DB: db,
+			Driver: postgres.RoomDriver{
+				Driver: postgres.Driver{},
+			},
+		},
+	}
+
+	return s.Start(items, links, players, rooms)
 }

@@ -74,7 +74,7 @@ services:
     volumes: 
       - postgres_volume:/var/lib/postgres/data
       - certificates_volume:/etc/certs
-      - ./env/postgresql.conf:/etc/postgresql.conf
+      - ./env/postgresql.conf:/etc/postgresql.conf:rw
     networks:
       - database_network
 
@@ -99,7 +99,18 @@ services:
     depends_on:
       - cockroach
     env_file:
-      - env/migrate
+      - env/cockroach-migrate
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - database_network
+
+  postgres-migrate:
+    image: assets-postgres-migrate:latest
+    depends_on:
+      - postgres
+    env_file:
+      - env/postgres-migrate
     volumes:
       - certificates_volume:/etc/certs
     networks:
@@ -107,7 +118,7 @@ services:
 
   psql:
     image: postgres:16-alpine
-    entrypoint: ["psql", "--host=postgres", "--username=arcadium", "--password", "sslmode=verify-full sslcert=/etc/certs/postgres_client.pem sslkey=/etc/certs/postgres_client_key.pem sslrootcert=/etc/certs/postgres_rootCA.pem"]
+    entrypoint: ["psql", "postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/postgres_client.pem&sslkey=/etc/certs/postgres_client_key.pem&sslrootcert=/etc/certs/postgres_rootCA.pem"]
     volumes:
       - certificates_volume:/etc/certs
     networks:

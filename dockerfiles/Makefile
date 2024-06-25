@@ -1,4 +1,4 @@
-# Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+# Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 go_version := 1.22
-migrate_version := v4.17.0
+migrate_version := v4.17.1
 mkcert_version := v1.4.4
 
 # ____ all __________________________________________________________________
@@ -27,7 +27,7 @@ all: images tools
 
 .PHONY: images assets assets-migrate
 
-images: assets assets-cockroach-migrate
+images: assets assets-cockroach-migrate assets-postgres-migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -49,6 +49,14 @@ assets-cockroach-migrate: Dockerfile.assets-cockroach-migrate
     --build-arg migrate_version=$(migrate_version) \
     --rm --force-rm \
     --tag assets-cockroach-migrate:latest \
+    ..
+
+assets-postgres-migrate: Dockerfile.assets-postgres-migrate
+	DOCKER_BUILDKIT=1 docker build \
+    --file Dockerfile.assets-postgres-migrate \
+    --build-arg migrate_version=$(migrate_version) \
+    --rm --force-rm \
+    --tag assets-postgres-migrate:latest \
     ..
 
 # ____ tools _________________________________________________________________

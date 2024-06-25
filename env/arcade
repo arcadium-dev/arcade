@@ -15,6 +15,7 @@ ASSETS_TLS_CERT="/etc/certs/assets.pem"
 
 
 ASSETS_DSN="postgres://arcadium@cockroach:26257/arcade?sslmode-verify-full&sslrootcert=/etc/certs/ca.crt&sslcert=/etc/certs/client.arcadium.crt&sslkey=/etc/certs/client.arcadium.key"
+#ASSETS_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/postgres_client.pem&sslkey=/etc/certs/postgres_client_key.pem&sslrootcert=/etc/certs/postgres_rootCA.pem"
 
 # TLS_CACERT and MTLS_ENABLED are used to require MTLS communication.
 # TLS_CACERT="/etc/certs/rootCA.pem"

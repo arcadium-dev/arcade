@@ -55,7 +55,7 @@ declare -Ar influxdb_config=(
 
 declare -ar migrations=(
 	"cockroach-migrate"
-	#"postgres_migrate"
+	"postgres-migrate"
 )
 
 docker_compose() {
@@ -197,7 +197,7 @@ create_cockroach_db() {
 	local -r db="${1}"
 	local user="arcadium" role="${db}_role" passwd="arcadium"
 
-	info "${db} database initialization"
+	info "Cockroach ${db} database initialization"
 	if ! docker_compose run --rm csql --execute="
     create database ${db};
     show databases;

@@ -27,7 +27,7 @@ all: images tools
 
 .PHONY: images assets assets-migrate
 
-images: assets assets-migrate
+images: assets assets-cockroach-migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -43,12 +43,12 @@ assets: Dockerfile.assets
 		--tag assets:latest \
 		..
 
-assets-migrate: Dockerfile.assets-migrate
+assets-cockroach-migrate: Dockerfile.assets-cockroach-migrate
 	DOCKER_BUILDKIT=1 docker build \
-    --file Dockerfile.assets-migrate \
+    --file Dockerfile.assets-cockroach-migrate \
     --build-arg migrate_version=$(migrate_version) \
     --rm --force-rm \
-    --tag assets-migrate:latest \
+    --tag assets-cockroach-migrate:latest \
     ..
 
 # ____ tools _________________________________________________________________

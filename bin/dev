@@ -31,10 +31,14 @@ declare -ar tls_servers=(
   "postgres"
 )
 
+declare -ar tls_clients=(
+  "postgres"
+)
+
 declare -ar networks=(
 	"arcadium_network"
-  #"database_network"
-  #"observability_network"
+  "database_network"
+  "observability_network"
 )
 
 declare -ar services=(
@@ -50,8 +54,8 @@ declare -Ar influxdb_config=(
 )
 
 declare -ar migrations=(
-  "cockroach_migrate"
-  "postgres_migrate"
+  "cockroach-migrate"
+  #"postgres_migrate"
 )
 
 docker_compose() {
@@ -95,7 +99,7 @@ init_certs() {
 	# Remove the old certs
 	docker volume rm -f certificates_volume 2>/dev/null
 
-  #init_cockroach_certs
+  init_cockroach_certs
 
 	# Create the CA cert for TLS communication.
 	info "Installing root CA certificate"
@@ -111,13 +115,20 @@ init_certs() {
 			failed
 		fi
 	done
-                                                                                                                                                                                                                                                              
+
+  # Create the client certs for TLS clients.
+	local client_cert
+	for client_cert in "${tls_clients[@]}"; do
+		info "Creating ${client_cert} client cert"
+		if ! docker_compose run --rm mkcert -client -cert-file "${certs_dir}/${client_cert}_client.pem" -key-file "${certs_dir}/${client_cert}_client_key.pem" "${client_cert}"; then
+			failed
+		fi
+	done
+
 	success
 }
 
 init_cockroach_certs() {
-  set -x
-
   # Create the cockroach CA cert.
   info "Installing Cockroach CA certificate"
   if ! docker_compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
@@ -162,7 +173,7 @@ init_influxdb() {
 		--token "${influxdb_config[token]}"
 }
 
-init_db() {                                                                                                                   
+init_db() {
   info "Database initialization"
 
   init_cockroach_db
@@ -171,15 +182,14 @@ init_db() {
 
 init_cockroach_db() {
   # Remove the db volume.
-  docker_compose down &>/dev/null
+  docker_compose down cockroach &>/dev/null
   docker volume rm arcade_cockroach_volume #&>/dev/null
   docker_compose up -d "cockroach"
   sleep 1
-  set +x
 
   local db
   for db in "${cockroach_dbs[@]}"; do
-    create_cockroack_db "${db}"
+    create_cockroach_db "${db}"
   done
 }
 
@@ -202,6 +212,13 @@ create_cockroach_db() {
   "; then
     failed
   fi
+}
+
+init_postgres_db() {
+  docker_compose down postgres&>/dev/null
+  docker volume rm arcade_postgres_volume #&>/dev/null
+  docker_compose up -d "postgres"
+  sleep 1
 }
 
 init_migrate() {
@@ -288,7 +305,7 @@ pull() {
 clean() {
 	local command="${1:-all}"
 	shift >/dev/null
-	if ! cmd_check "init_${command}"; then
+	if ! cmd_check "clean_${command}"; then
 		help
 		failed
 	fi
@@ -341,6 +358,9 @@ completion() {
 		;;
 	"dev")
 		echo "init start up pull status ps logs stop down clean help"
+		;;
+	"clean")
+		echo "system volumes network"
 		;;
 	esac
 	exit 0

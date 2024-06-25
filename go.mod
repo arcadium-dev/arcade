@@ -2,7 +2,7 @@ module arcadium.dev/arcade
 
 go 1.22
 
-toolchain go1.22.2
+toolchain go1.22.4
 
 require (
 	arcadium.dev/core v0.0.13

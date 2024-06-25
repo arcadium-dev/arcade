@@ -69,8 +69,6 @@ services:
     shm_size: 128mb
     env_file:
       - env/postgres
-    ports:
-      - 4010:8080
     volumes: 
       - postgres_volume:/var/lib/postgres/data
       - certificates_volume:/etc/certs
@@ -118,7 +116,7 @@ services:
 
   psql:
     image: postgres:16-alpine
-    entrypoint: ["psql", "postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/postgres_client.pem&sslkey=/etc/certs/postgres_client_key.pem&sslrootcert=/etc/certs/postgres_rootCA.pem"]
+    entrypoint: ["psql", "postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/psql_client.pem&sslkey=/etc/certs/psql_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"]
     volumes:
       - certificates_volume:/etc/certs
     networks:

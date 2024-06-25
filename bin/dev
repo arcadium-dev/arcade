@@ -11,34 +11,34 @@ declare -r app
 declare -ar infrastructure=(
 	"influxdb"
 	"telegraf"
-  "cockroach"
-  "postgres"
+	"cockroach"
+	"postgres"
 )
 
 declare -ar cockroach_dbs=(
-  "arcade"
+	"arcade"
 )
 
 declare -ar cockroach_clients=(
-  "root"
-  "arcadium"
+	"root"
+	"arcadium"
 )
-  
+
 declare -ar tls_servers=(
 	"assets"
 	"influxdb"
-  "cockroachdb"
-  "postgres"
+	"cockroachdb"
+	"postgres"
 )
 
 declare -ar tls_clients=(
-  "postgres"
+	"postgres"
 )
 
 declare -ar networks=(
 	"arcadium_network"
-  "database_network"
-  "observability_network"
+	"database_network"
+	"observability_network"
 )
 
 declare -ar services=(
@@ -54,16 +54,16 @@ declare -Ar influxdb_config=(
 )
 
 declare -ar migrations=(
-  "cockroach-migrate"
-  #"postgres_migrate"
+	"cockroach-migrate"
+	#"postgres_migrate"
 )
 
 docker_compose() {
-  if command -v docker-compose; then
-    docker-compse "$@"
-  else
-    docker compose "$@"
-  fi
+	if command -v docker-compose; then
+		docker-compse "$@"
+	else
+		docker compose "$@"
+	fi
 }
 
 #----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ init_certs() {
 	# Remove the old certs
 	docker volume rm -f certificates_volume 2>/dev/null
 
-  init_cockroach_certs
+	init_cockroach_certs
 
 	# Create the CA cert for TLS communication.
 	info "Installing root CA certificate"
@@ -116,7 +116,7 @@ init_certs() {
 		fi
 	done
 
-  # Create the client certs for TLS clients.
+	# Create the client certs for TLS clients.
 	local client_cert
 	for client_cert in "${tls_clients[@]}"; do
 		info "Creating ${client_cert} client cert"
@@ -129,28 +129,28 @@ init_certs() {
 }
 
 init_cockroach_certs() {
-  # Create the cockroach CA cert.
-  info "Installing Cockroach CA certificate"
-  if ! docker_compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-    failed
-  fi
+	# Create the cockroach CA cert.
+	info "Installing Cockroach CA certificate"
+	if ! docker_compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+		failed
+	fi
 
-  # Create the cockroach node cert.
-  info "Creating Cockroach node certificate"
-  if ! docker_compose run --rm cockroach cert create-node cockroach --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-    failed
-  fi
-  
-  # Create the cockroach client cert.
-  local cockroach_client
-  for cockroach_client in "${cockroach_clients[@]}"; do
-    info "Creating Cockroach client certificate for user ${cockroach_client}"
-    if ! docker_compose run --rm cockroach cert create-client "${cockroach_client}" --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-      failed
-    fi
-  done
+	# Create the cockroach node cert.
+	info "Creating Cockroach node certificate"
+	if ! docker_compose run --rm cockroach cert create-node cockroach --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+		failed
+	fi
 
-  docker_compose run --rm cockroach cert list --certs-dir="${certs_dir}"
+	# Create the cockroach client cert.
+	local cockroach_client
+	for cockroach_client in "${cockroach_clients[@]}"; do
+		info "Creating Cockroach client certificate for user ${cockroach_client}"
+		if ! docker_compose run --rm cockroach cert create-client "${cockroach_client}" --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
+			failed
+		fi
+	done
+
+	docker_compose run --rm cockroach cert list --certs-dir="${certs_dir}"
 }
 
 init_influxdb() {
@@ -174,31 +174,31 @@ init_influxdb() {
 }
 
 init_db() {
-  info "Database initialization"
+	info "Database initialization"
 
-  init_cockroach_db
-  init_postgres_db
+	init_cockroach_db
+	init_postgres_db
 }
 
 init_cockroach_db() {
-  # Remove the db volume.
-  docker_compose down cockroach &>/dev/null
-  docker volume rm arcade_cockroach_volume #&>/dev/null
-  docker_compose up -d "cockroach"
-  sleep 1
+	# Remove the db volume.
+	docker_compose down cockroach &>/dev/null
+	docker volume rm arcade_cockroach_volume #&>/dev/null
+	docker_compose up -d "cockroach"
+	sleep 1
 
-  local db
-  for db in "${cockroach_dbs[@]}"; do
-    create_cockroach_db "${db}"
-  done
+	local db
+	for db in "${cockroach_dbs[@]}"; do
+		create_cockroach_db "${db}"
+	done
 }
 
 create_cockroach_db() {
-  local -r db="${1}"
-  local user="arcadium" role="${db}_role" passwd="arcadium"
+	local -r db="${1}"
+	local user="arcadium" role="${db}_role" passwd="arcadium"
 
-  info "${db} database initialization"
-  if ! docker_compose run --rm csql --execute="
+	info "${db} database initialization"
+	if ! docker_compose run --rm csql --execute="
     create database ${db};
     show databases;
     use ${db};
@@ -210,32 +210,32 @@ create_cockroach_db() {
     grant ${role} to ${user};
     show roles;
   "; then
-    failed
-  fi
+		failed
+	fi
 }
 
 init_postgres_db() {
-  docker_compose down postgres&>/dev/null
-  docker volume rm arcade_postgres_volume #&>/dev/null
-  docker_compose up -d "postgres"
-  sleep 1
+	docker_compose down postgres &>/dev/null
+	docker volume rm arcade_postgres_volume #&>/dev/null
+	docker_compose up -d "postgres"
+	sleep 1
 }
 
 init_migrate() {
-  local -a args=( "up" )
-  if [[ "$*" != "" ]]; then
-    args=( "$@" )
-  fi
+	local -a args=("up")
+	if [[ "$*" != "" ]]; then
+		args=("$@")
+	fi
 
-  info "Running database migrations"
+	info "Running database migrations"
 
-  local migrate
-  for migrate in "${migrations[@]}"; do
-    info "Running ${migrate} ${args[*]}"
-    if ! docker_compose run --rm "${migrate}" "${args[@]}"; then
-      failed
-    fi
-  done
+	local migrate
+	for migrate in "${migrations[@]}"; do
+		info "Running ${migrate} ${args[*]}"
+		if ! docker_compose run --rm "${migrate}" "${args[@]}"; then
+			failed
+		fi
+	done
 }
 
 #----------------------------------------------------------------------------
@@ -296,7 +296,7 @@ down() {
 }
 
 pull() {
-  docker_compose pull "$@"
+	docker_compose pull "$@"
 }
 
 #----------------------------------------------------------------------------
@@ -314,9 +314,9 @@ clean() {
 
 nuke() {
 	stop
-  clean_system
-  clean_volumes
-  clean_network
+	clean_system
+	clean_volumes
+	clean_network
 }
 
 clean_all() {
@@ -377,7 +377,7 @@ help() {
 		    init [networks|certs|influxdb|db|migrate]
 		    start
 		    up
-        pull
+		        pull
 		    status
 		    ps
 		    logs

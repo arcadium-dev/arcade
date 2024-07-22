@@ -26,7 +26,6 @@ import (
 	"arcadium.dev/core/rest"
 
 	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/cockroach"
 	"arcadium.dev/arcade/asset/data/postgres"
 
 	"arcadium.dev/arcade/asset/rest/server"
@@ -48,15 +47,13 @@ type (
 	}
 
 	Config struct {
-		Database     string `required:"true"`
-		CockroachDsn string `split_words:"true"`
-		PostgresDsn  string `split_words:"true"`
+		Database    string `required:"true"`
+		PostgresDsn string `split_words:"true"`
 	}
 )
 
 const (
-	cockroachDatabase = "cockroach"
-	postgresDatabase  = "postgres"
+	postgresDatabase = "postgres"
 )
 
 // New creates a new rest server. This is provided as a function variable to
@@ -81,10 +78,6 @@ func Main() error {
 	}
 
 	switch cfg.Database {
-	case cockroachDatabase:
-		if err := startCockroach(s, cfg.CockroachDsn); err != nil {
-			return err
-		}
 	case postgresDatabase:
 		if err := startPostgres(s, cfg.PostgresDsn); err != nil {
 			return err
@@ -100,55 +93,6 @@ func main() {
 	if err := Main(); err != nil {
 		l.Fatal(err)
 	}
-}
-
-func startCockroach(s RestServer, dsn string) error {
-	if dsn == "" {
-		return fmt.Errorf("cockroach dsn required")
-	}
-
-	db, err := cockroach.Open(s.Ctx(), dsn)
-	if err != nil {
-		return err
-	}
-
-	items := server.ItemsService{
-		Storage: data.ItemStorage{
-			DB: db,
-			Driver: cockroach.ItemDriver{
-				Driver: cockroach.Driver{},
-			},
-		},
-	}
-
-	links := server.LinksService{
-		Storage: data.LinkStorage{
-			DB: db,
-			Driver: cockroach.LinkDriver{
-				Driver: cockroach.Driver{},
-			},
-		},
-	}
-
-	players := server.PlayersService{
-		Storage: data.PlayerStorage{
-			DB: db,
-			Driver: cockroach.PlayerDriver{
-				Driver: cockroach.Driver{},
-			},
-		},
-	}
-
-	rooms := server.RoomsService{
-		Storage: data.RoomStorage{
-			DB: db,
-			Driver: cockroach.RoomDriver{
-				Driver: cockroach.Driver{},
-			},
-		},
-	}
-
-	return s.Start(items, links, players, rooms)
 }
 
 func startPostgres(s RestServer, dsn string) error {

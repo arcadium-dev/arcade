@@ -18,17 +18,17 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/data/postgres"
 )
 
 func TestRoomsList(t *testing.T) {
 	const (
-		cockroachListQ               = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms$"
-		cockroachListWithBothFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
+		postgresListQ               = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms$"
+		postgresListWithBothFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
 			" WHERE owner_id = (.+) AND parent_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
+		postgresListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
 			" WHERE owner_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithParentFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
+		postgresListWithParentFilterQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms" +
 			" WHERE parent_id = (.+) LIMIT (.+) OFFSET (.+)$"
 	)
 
@@ -49,8 +49,8 @@ func TestRoomsList(t *testing.T) {
 			driver data.RoomDriver
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresListQ,
+				driver: postgres.RoomDriver{},
 			},
 		}
 
@@ -75,8 +75,8 @@ func TestRoomsList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresListQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -105,42 +105,42 @@ func TestRoomsList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresListQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
 			{
-				query: cockroachListWithBothFilterQ,
+				query: postgresListWithBothFilterQ,
 				filter: asset.RoomFilter{
 					OwnerID:  ownerID,
 					ParentID: parentID,
 					Limit:    asset.DefaultRoomFilterLimit,
 					Offset:   10,
 				},
-				driver: cockroach.RoomDriver{},
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
 			{
-				query: cockroachListWithOwnerFilterQ,
+				query: postgresListWithOwnerFilterQ,
 				filter: asset.RoomFilter{
 					OwnerID: ownerID,
 					Limit:   asset.DefaultRoomFilterLimit,
 					Offset:  10,
 				},
-				driver: cockroach.RoomDriver{},
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
 			{
-				query: cockroachListWithParentFilterQ,
+				query: postgresListWithParentFilterQ,
 				filter: asset.RoomFilter{
 					ParentID: parentID,
 					Limit:    asset.DefaultRoomFilterLimit,
 					Offset:   10,
 				},
-				driver: cockroach.RoomDriver{},
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
@@ -173,7 +173,7 @@ func TestRoomsList(t *testing.T) {
 
 func TestRoomsGet(t *testing.T) {
 	const (
-		cockroachGetQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE id = (.+)$"
+		postgresGetQ = "^SELECT id, name, description, owner_id, parent_id, created, updated FROM rooms WHERE id = (.+)$"
 	)
 
 	var (
@@ -195,14 +195,14 @@ func TestRoomsGet(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresGetQ,
+				driver: postgres.RoomDriver{},
 				err:    sql.ErrNoRows,
 				msg:    "failed to get room: not found",
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresGetQ,
+				driver: postgres.RoomDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to get room: internal server error: unknown error",
 			},
@@ -229,8 +229,8 @@ func TestRoomsGet(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresGetQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
@@ -262,7 +262,7 @@ func TestRoomsGet(t *testing.T) {
 
 func TestRoomsCreate(t *testing.T) {
 	const (
-		cockroachCreateQ = `^INSERT INTO rooms \(name, description, owner_id, parent_id\) ` +
+		postgresCreateQ = `^INSERT INTO rooms \(name, description, owner_id, parent_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
 			`RETURNING id, name, description, owner_id, parent_id, created, updated$`
 	)
@@ -287,8 +287,8 @@ func TestRoomsCreate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -296,8 +296,8 @@ func TestRoomsCreate(t *testing.T) {
 					"ownerID '%s', parentID '%s'", ownerID, parentID),
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -329,8 +329,8 @@ func TestRoomsCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -361,8 +361,8 @@ func TestRoomsCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
@@ -398,7 +398,7 @@ func TestRoomsCreate(t *testing.T) {
 
 func TestRoomsUpdate(t *testing.T) {
 	const (
-		cockroachUpdateQ = `^UPDATE rooms SET name = (.+), description = (.+), owner_id = (.+), parent_id = (.+) ` +
+		postgresUpdateQ = `^UPDATE rooms SET name = (.+), description = (.+), owner_id = (.+), parent_id = (.+) ` +
 			`WHERE id = (.+) ` +
 			`RETURNING id, name, description, owner_id, parent_id, created, updated$`
 	)
@@ -423,16 +423,16 @@ func TestRoomsUpdate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: sql.ErrNoRows,
 				msg: "failed to update room: not found",
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -440,8 +440,8 @@ func TestRoomsUpdate(t *testing.T) {
 					"ownerID '%s', parentID '%s'", ownerID, parentID),
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -473,8 +473,8 @@ func TestRoomsUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -505,8 +505,8 @@ func TestRoomsUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.RoomDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "parent_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, parentID, created, updated),
 			},
@@ -541,7 +541,7 @@ func TestRoomsUpdate(t *testing.T) {
 
 func TestRoomsRemove(t *testing.T) {
 	const (
-		cockroachRemoveQ = `^DELETE FROM rooms WHERE id = (.+)$`
+		postgresRemoveQ = `^DELETE FROM rooms WHERE id = (.+)$`
 	)
 
 	var (
@@ -557,8 +557,8 @@ func TestRoomsRemove(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.RoomDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove room: internal server error: unknown error",
 			},
@@ -584,8 +584,8 @@ func TestRoomsRemove(t *testing.T) {
 			driver data.RoomDriver
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.RoomDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.RoomDriver{},
 			},
 		}
 

@@ -11,23 +11,12 @@ declare -r app
 declare -ar infrastructure=(
 	"influxdb"
 	"telegraf"
-	"cockroach"
 	"postgres"
-)
-
-declare -ar cockroach_dbs=(
-	"arcade"
-)
-
-declare -ar cockroach_clients=(
-	"root"
-	"arcadium"
 )
 
 declare -ar tls_servers=(
 	"assets"
 	"influxdb"
-	"cockroachdb"
 	"postgres"
 )
 
@@ -56,7 +45,6 @@ declare -Ar influxdb_config=(
 )
 
 declare -ar migrations=(
-	"cockroach-migrate"
 	"postgres-migrate"
 )
 
@@ -101,8 +89,6 @@ init_certs() {
 	# Remove the old certs
 	docker volume rm -f certificates_volume 2>/dev/null
 
-	init_cockroach_certs
-
 	# Create the CA cert for TLS communication.
 	info "Installing root CA certificate"
 	if ! docker_compose run --rm mkcert -install; then
@@ -130,31 +116,6 @@ init_certs() {
 	success
 }
 
-init_cockroach_certs() {
-	# Create the cockroach CA cert.
-	info "Installing Cockroach CA certificate"
-	if ! docker_compose run --rm cockroach cert create-ca --allow-ca-key-reuse --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-		failed
-	fi
-
-	# Create the cockroach node cert.
-	info "Creating Cockroach node certificate"
-	if ! docker_compose run --rm cockroach cert create-node cockroach --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-		failed
-	fi
-
-	# Create the cockroach client cert.
-	local cockroach_client
-	for cockroach_client in "${cockroach_clients[@]}"; do
-		info "Creating Cockroach client certificate for user ${cockroach_client}"
-		if ! docker_compose run --rm cockroach cert create-client "${cockroach_client}" --overwrite --certs-dir="${certs_dir}" --ca-key="${certs_dir}/ca.key"; then
-			failed
-		fi
-	done
-
-	docker_compose run --rm cockroach cert list --certs-dir="${certs_dir}"
-}
-
 init_influxdb() {
 	info "Influxdb initialization"
 
@@ -178,42 +139,7 @@ init_influxdb() {
 init_db() {
 	info "Database initialization"
 
-	init_cockroach_db
 	init_postgres_db
-}
-
-init_cockroach_db() {
-	# Remove the db volume.
-	docker_compose down cockroach &>/dev/null
-	docker volume rm arcade_cockroach_volume #&>/dev/null
-	docker_compose up -d "cockroach"
-	sleep 1
-
-	local db
-	for db in "${cockroach_dbs[@]}"; do
-		create_cockroach_db "${db}"
-	done
-}
-
-create_cockroach_db() {
-	local -r db="${1}"
-	local user="arcadium" role="${db}_role" passwd="arcadium"
-
-	info "Cockroach ${db} database initialization"
-	if ! docker_compose run --rm csql --execute="
-    create database ${db};
-    show databases;
-    use ${db};
-    create role ${role};
-    grant create, drop on database ${db} to ${role};
-    alter default privileges grant delete, insert, select, update on tables to ${role};
-    show grants on database ${db};
-    create user ${user} with password ${passwd};
-    grant ${role} to ${user};
-    show roles;
-  "; then
-		failed
-	fi
 }
 
 init_postgres_db() {

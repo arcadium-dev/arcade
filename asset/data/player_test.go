@@ -18,13 +18,13 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/data/postgres"
 )
 
 func TestPlayersList(t *testing.T) {
 	const (
-		cockroachListQ           = "^SELECT id, name, description, home_id, location_id, created, updated FROM players$"
-		cockroachListWithFilterQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players" +
+		postgresListQ           = "^SELECT id, name, description, home_id, location_id, created, updated FROM players$"
+		postgresListWithFilterQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players" +
 			" WHERE location_id = (.+) LIMIT (.+) OFFSET (.+)$"
 	)
 
@@ -45,8 +45,8 @@ func TestPlayersList(t *testing.T) {
 			driver data.PlayerDriver
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresListQ,
+				driver: postgres.PlayerDriver{},
 			},
 		}
 
@@ -71,8 +71,8 @@ func TestPlayersList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresListQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -101,19 +101,19 @@ func TestPlayersList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresListQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 			},
 			{
-				query: cockroachListWithFilterQ,
+				query: postgresListWithFilterQ,
 				filter: asset.PlayerFilter{
 					LocationID: locationID,
 					Limit:      asset.DefaultPlayerFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.PlayerDriver{},
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 			},
@@ -146,7 +146,7 @@ func TestPlayersList(t *testing.T) {
 
 func TestPlayersGet(t *testing.T) {
 	const (
-		cockroachGetQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE id = (.+)$"
+		postgresGetQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE id = (.+)$"
 	)
 
 	var (
@@ -168,14 +168,14 @@ func TestPlayersGet(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresGetQ,
+				driver: postgres.PlayerDriver{},
 				err:    sql.ErrNoRows,
 				msg:    "failed to get player: not found",
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresGetQ,
+				driver: postgres.PlayerDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to get player: internal server error: unknown error",
 			},
@@ -202,8 +202,8 @@ func TestPlayersGet(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresGetQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 			},
@@ -235,7 +235,7 @@ func TestPlayersGet(t *testing.T) {
 
 func TestPlayersCreate(t *testing.T) {
 	const (
-		cockroachCreateQ = `^INSERT INTO players \(name, description, home_id, location_id\) ` +
+		postgresCreateQ = `^INSERT INTO players \(name, description, home_id, location_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
 			`RETURNING id, name, description, home_id, location_id, created, updated$`
 	)
@@ -260,8 +260,8 @@ func TestPlayersCreate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -269,8 +269,8 @@ func TestPlayersCreate(t *testing.T) {
 					"homeID '%s', locationID '%s'", homeID, locationID),
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -302,8 +302,8 @@ func TestPlayersCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -334,8 +334,8 @@ func TestPlayersCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 			},
@@ -371,7 +371,7 @@ func TestPlayersCreate(t *testing.T) {
 
 func TestPlayersUpdate(t *testing.T) {
 	const (
-		cockroachUpdateQ = `^UPDATE players SET name = (.+), description = (.+), home_id = (.+), location_id = (.+) ` +
+		postgresUpdateQ = `^UPDATE players SET name = (.+), description = (.+), home_id = (.+), location_id = (.+) ` +
 			`WHERE id = (.+) ` +
 			`RETURNING id, name, description, home_id, location_id, created, updated$`
 	)
@@ -396,16 +396,16 @@ func TestPlayersUpdate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 				err: sql.ErrNoRows,
 				msg: "failed to update player: not found",
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -413,8 +413,8 @@ func TestPlayersUpdate(t *testing.T) {
 					"homeID '%s', locationID '%s'", homeID, locationID),
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -446,8 +446,8 @@ func TestPlayersUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -478,8 +478,8 @@ func TestPlayersUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.PlayerDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "home_id", "location_id", "created", "updated"}).
 					AddRow(id, name, desc, homeID, locationID, created, updated),
 			},
@@ -514,7 +514,7 @@ func TestPlayersUpdate(t *testing.T) {
 
 func TestPlayersRemove(t *testing.T) {
 	const (
-		cockroachRemoveQ = `^DELETE FROM players WHERE id = (.+)$`
+		postgresRemoveQ = `^DELETE FROM players WHERE id = (.+)$`
 	)
 
 	var (
@@ -530,8 +530,8 @@ func TestPlayersRemove(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.PlayerDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove player: internal server error: unknown error",
 			},
@@ -557,8 +557,8 @@ func TestPlayersRemove(t *testing.T) {
 			driver data.PlayerDriver
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.PlayerDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.PlayerDriver{},
 			},
 		}
 

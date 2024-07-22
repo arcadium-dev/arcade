@@ -18,19 +18,19 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/data/postgres"
 )
 
 func TestLinksList(t *testing.T) {
 	const (
-		cockroachListQ              = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links$"
-		cockroachListWithAllFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
+		postgresListQ              = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links$"
+		postgresListWithAllFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
 			" WHERE owner_id = (.+) AND location_id (.+) AND destination_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
+		postgresListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
 			" WHERE owner_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithLocationFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
+		postgresListWithLocationFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
 			" WHERE location_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithDestinationFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
+		postgresListWithDestinationFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
 			" WHERE destination_id = (.+) LIMIT (.+) OFFSET (.+)$"
 	)
 
@@ -52,8 +52,8 @@ func TestLinksList(t *testing.T) {
 			driver data.LinkDriver
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresListQ,
+				driver: postgres.LinkDriver{},
 			},
 		}
 
@@ -78,8 +78,8 @@ func TestLinksList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresListQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -108,13 +108,13 @@ func TestLinksList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresListQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
 			{
-				query: cockroachListWithAllFilterQ,
+				query: postgresListWithAllFilterQ,
 				filter: asset.LinkFilter{
 					OwnerID:       ownerID,
 					LocationID:    locationID,
@@ -122,40 +122,40 @@ func TestLinksList(t *testing.T) {
 					Limit:         asset.DefaultLinkFilterLimit,
 					Offset:        10,
 				},
-				driver: cockroach.LinkDriver{},
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
 			{
-				query: cockroachListWithOwnerFilterQ,
+				query: postgresListWithOwnerFilterQ,
 				filter: asset.LinkFilter{
 					OwnerID: ownerID,
 					Limit:   asset.DefaultLinkFilterLimit,
 					Offset:  10,
 				},
-				driver: cockroach.LinkDriver{},
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
 			{
-				query: cockroachListWithLocationFilterQ,
+				query: postgresListWithLocationFilterQ,
 				filter: asset.LinkFilter{
 					LocationID: locationID,
 					Limit:      asset.DefaultLinkFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.LinkDriver{},
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
 			{
-				query: cockroachListWithDestinationFilterQ,
+				query: postgresListWithDestinationFilterQ,
 				filter: asset.LinkFilter{
 					DestinationID: destinationID,
 					Limit:         asset.DefaultLinkFilterLimit,
 					Offset:        10,
 				},
-				driver: cockroach.LinkDriver{},
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
@@ -189,7 +189,7 @@ func TestLinksList(t *testing.T) {
 
 func TestLinksGet(t *testing.T) {
 	const (
-		cockroachGetQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE id = (.+)$"
+		postgresGetQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE id = (.+)$"
 	)
 
 	var (
@@ -212,14 +212,14 @@ func TestLinksGet(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresGetQ,
+				driver: postgres.LinkDriver{},
 				err:    sql.ErrNoRows,
 				msg:    "failed to get link: not found",
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresGetQ,
+				driver: postgres.LinkDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to get link: internal server error: unknown error",
 			},
@@ -246,8 +246,8 @@ func TestLinksGet(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresGetQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
@@ -280,7 +280,7 @@ func TestLinksGet(t *testing.T) {
 
 func TestLinksCreate(t *testing.T) {
 	const (
-		cockroachCreateQ = `^INSERT INTO links \(name, description, owner_id, location_id, destination_id\) ` +
+		postgresCreateQ = `^INSERT INTO links \(name, description, owner_id, location_id, destination_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
 			`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated$`
 	)
@@ -306,8 +306,8 @@ func TestLinksCreate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -315,8 +315,8 @@ func TestLinksCreate(t *testing.T) {
 					"ownerID '%s', locationID '%s', destinationID '%s'", ownerID, locationID, destinationID),
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -348,8 +348,8 @@ func TestLinksCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -380,8 +380,8 @@ func TestLinksCreate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
@@ -418,7 +418,7 @@ func TestLinksCreate(t *testing.T) {
 
 func TestLinksUpdate(t *testing.T) {
 	const (
-		cockroachUpdateQ = `^UPDATE links SET name = (.+), description = (.+), owner_id = (.+), location_id = (.+), destination_id = (.+) ` +
+		postgresUpdateQ = `^UPDATE links SET name = (.+), description = (.+), owner_id = (.+), location_id = (.+), destination_id = (.+) ` +
 			`WHERE id = (.+) ` +
 			`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated$`
 	)
@@ -444,16 +444,16 @@ func TestLinksUpdate(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 				err: sql.ErrNoRows,
 				msg: "failed to update link: not found",
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.ForeignKeyViolation},
@@ -461,8 +461,8 @@ func TestLinksUpdate(t *testing.T) {
 					"ownerID '%s', locationID '%s', destinationID '%s'", ownerID, locationID, destinationID),
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 				err: &pgconn.PgError{Code: pgerrcode.UniqueViolation},
@@ -494,8 +494,8 @@ func TestLinksUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -526,8 +526,8 @@ func TestLinksUpdate(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.LinkDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_id", "destination_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationID, destinationID, created, updated),
 			},
@@ -563,7 +563,7 @@ func TestLinksUpdate(t *testing.T) {
 
 func TestLinksRemove(t *testing.T) {
 	const (
-		cockroachRemoveQ = `^DELETE FROM links WHERE id = (.+)$`
+		postgresRemoveQ = `^DELETE FROM links WHERE id = (.+)$`
 	)
 
 	var (
@@ -579,8 +579,8 @@ func TestLinksRemove(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.LinkDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove link: internal server error: unknown error",
 			},
@@ -606,8 +606,8 @@ func TestLinksRemove(t *testing.T) {
 			driver data.LinkDriver
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.LinkDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.LinkDriver{},
 			},
 		}
 

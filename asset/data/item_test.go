@@ -19,21 +19,21 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/cockroach"
+	"arcadium.dev/arcade/asset/data/postgres"
 )
 
 func TestItemsList(t *testing.T) {
 	const (
-		cockroachListQ                = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items$"
-		cockroachListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
+		postgresListQ                = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items$"
+		postgresListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
 			" WHERE owner_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithItemFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
+		postgresListWithItemFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
 			" WHERE location_item_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithPlayerFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
+		postgresListWithPlayerFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
 			" WHERE location_player_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithRoomFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
+		postgresListWithRoomFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
 			" WHERE location_room_id = (.+) LIMIT (.+) OFFSET (.+)$"
-		cockroachListWithBothFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
+		postgresListWithBothFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
 			" WHERE owner_id = (.+) AND location_room_id = (.+) LIMIT (.+) OFFSET (.+)$"
 	)
 
@@ -56,8 +56,8 @@ func TestItemsList(t *testing.T) {
 			driver data.ItemDriver
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresListQ,
+				driver: postgres.ItemDriver{},
 			},
 		}
 
@@ -82,8 +82,8 @@ func TestItemsList(t *testing.T) {
 			rows   *sqlmock.Rows
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresListQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -113,83 +113,83 @@ func TestItemsList(t *testing.T) {
 			locationID asset.ItemLocationID
 		}{
 			{
-				query:  cockroachListQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresListQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
 			},
 			{
-				query:  cockroachListQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresListQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
 			},
 			{
-				query:  cockroachListQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresListQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
 			},
 			{
-				query: cockroachListWithOwnerFilterQ,
+				query: postgresListWithOwnerFilterQ,
 				filter: asset.ItemFilter{
 					OwnerID: ownerID,
 					Limit:   asset.DefaultItemFilterLimit,
 					Offset:  10,
 				},
-				driver: cockroach.ItemDriver{},
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
 			},
 			{
-				query: cockroachListWithItemFilterQ,
+				query: postgresListWithItemFilterQ,
 				filter: asset.ItemFilter{
 					LocationID: locationItemID,
 					Limit:      asset.DefaultItemFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.ItemDriver{},
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
 			},
 			{
-				query: cockroachListWithPlayerFilterQ,
+				query: postgresListWithPlayerFilterQ,
 				filter: asset.ItemFilter{
 					LocationID: locationPlayerID,
 					Limit:      asset.DefaultItemFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.ItemDriver{},
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
 			},
 			{
-				query: cockroachListWithRoomFilterQ,
+				query: postgresListWithRoomFilterQ,
 				filter: asset.ItemFilter{
 					LocationID: locationRoomID,
 					Limit:      asset.DefaultItemFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.ItemDriver{},
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
 			},
 			{
-				query: cockroachListWithBothFilterQ,
+				query: postgresListWithBothFilterQ,
 				filter: asset.ItemFilter{
 					OwnerID:    ownerID,
 					LocationID: locationRoomID,
 					Limit:      asset.DefaultItemFilterLimit,
 					Offset:     10,
 				},
-				driver: cockroach.ItemDriver{},
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
@@ -223,7 +223,7 @@ func TestItemsList(t *testing.T) {
 
 func TestItemsGet(t *testing.T) {
 	const (
-		cockroachGetQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items WHERE id = (.+)$"
+		postgresGetQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items WHERE id = (.+)$"
 	)
 
 	var (
@@ -247,14 +247,14 @@ func TestItemsGet(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresGetQ,
+				driver: postgres.ItemDriver{},
 				err:    sql.ErrNoRows,
 				msg:    "failed to get item: not found",
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresGetQ,
+				driver: postgres.ItemDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to get item: internal server error: unknown error",
 			},
@@ -282,22 +282,22 @@ func TestItemsGet(t *testing.T) {
 			locationID asset.ItemLocationID
 		}{
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresGetQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresGetQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
 			},
 			{
-				query:  cockroachGetQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresGetQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
@@ -330,7 +330,7 @@ func TestItemsGet(t *testing.T) {
 
 func TestItemsCreate(t *testing.T) {
 	const (
-		cockroachCreateQ = `^INSERT INTO items \(name, description, owner_id, location_item_id, location_player_id, location_room_id\) ` +
+		postgresCreateQ = `^INSERT INTO items \(name, description, owner_id, location_item_id, location_player_id, location_room_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
 			`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated$`
 	)
@@ -359,8 +359,8 @@ func TestItemsCreate(t *testing.T) {
 			msg        string
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
@@ -370,8 +370,8 @@ func TestItemsCreate(t *testing.T) {
 					"ownerID '%s', locationID '%s (%s)'", ownerID, locationItemID, "item"),
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
@@ -407,8 +407,8 @@ func TestItemsCreate(t *testing.T) {
 			args       []driver.Value
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -443,24 +443,24 @@ func TestItemsCreate(t *testing.T) {
 			args       []driver.Value
 		}{
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
 				args:       []driver.Value{locationItemID, uuid.NullUUID{}, uuid.NullUUID{}},
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
 				args:       []driver.Value{uuid.NullUUID{}, locationPlayerID, uuid.NullUUID{}},
 			},
 			{
-				query:  cockroachCreateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresCreateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
@@ -498,7 +498,7 @@ func TestItemsCreate(t *testing.T) {
 
 func TestItemsUpdate(t *testing.T) {
 	const (
-		cockroachUpdateQ = `^UPDATE items SET name = (.+), description = (.+), owner_id = (.+), location_item_id = (.+), location_player_id = (.+), location_room_id = (.+) ` +
+		postgresUpdateQ = `^UPDATE items SET name = (.+), description = (.+), owner_id = (.+), location_item_id = (.+), location_player_id = (.+), location_room_id = (.+) ` +
 			`WHERE id = (.+) ` +
 			`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated$`
 	)
@@ -527,8 +527,8 @@ func TestItemsUpdate(t *testing.T) {
 			msg        string
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
@@ -537,8 +537,8 @@ func TestItemsUpdate(t *testing.T) {
 				msg:        "failed to update item: not found",
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
@@ -548,8 +548,8 @@ func TestItemsUpdate(t *testing.T) {
 					"ownerID '%s', locationID '%s (%s)'", ownerID, locationPlayerID, "player"),
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
@@ -585,8 +585,8 @@ func TestItemsUpdate(t *testing.T) {
 			args       []driver.Value
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated).
 					RowError(0, errors.New("scan error")),
@@ -621,24 +621,24 @@ func TestItemsUpdate(t *testing.T) {
 			args       []driver.Value
 		}{
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, locationItemID, nil, nil, created, updated),
 				locationID: locationItemID,
 				args:       []driver.Value{locationItemID, uuid.NullUUID{}, uuid.NullUUID{}},
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
 				locationID: locationPlayerID,
 				args:       []driver.Value{uuid.NullUUID{}, locationPlayerID, uuid.NullUUID{}},
 			},
 			{
-				query:  cockroachUpdateQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresUpdateQ,
+				driver: postgres.ItemDriver{},
 				rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_item_id", "location_player_id", "location_room_id", "created", "updated"}).
 					AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
 				locationID: locationRoomID,
@@ -675,7 +675,7 @@ func TestItemsUpdate(t *testing.T) {
 
 func TestItemsRemove(t *testing.T) {
 	const (
-		cockroachRemoveQ = `^DELETE FROM items WHERE id = (.+)$`
+		postgresRemoveQ = `^DELETE FROM items WHERE id = (.+)$`
 	)
 
 	var (
@@ -691,8 +691,8 @@ func TestItemsRemove(t *testing.T) {
 			msg    string
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.ItemDriver{},
 				err:    errors.New("unknown error"),
 				msg:    "failed to remove item: internal server error: unknown error",
 			},
@@ -718,8 +718,8 @@ func TestItemsRemove(t *testing.T) {
 			driver data.ItemDriver
 		}{
 			{
-				query:  cockroachRemoveQ,
-				driver: cockroach.ItemDriver{},
+				query:  postgresRemoveQ,
+				driver: postgres.ItemDriver{},
 			},
 		}
 

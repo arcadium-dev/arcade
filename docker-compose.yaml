@@ -76,33 +76,8 @@ services:
     networks:
       - database_network
 
-  cockroach:
-    image: cockroachdb/cockroach:v21.2.8
-    #image: cockroachdb/cockroach:latest-v23.2
-    container_name: cockroach
-    hostname: cockroach
-    command: ["start-single-node", "--certs-dir=/etc/certs"]
-    ports:
-      - 4000:8080
-    volumes:
-      - cockroach_volume:/cockroach/cockroach-data
-      - certificates_volume:/etc/certs
-    networks:
-      - database_network
-
   # database clients
   #--------------------------------------------------------------------------
-  cockroach-migrate:
-    image: assets-cockroach-migrate:latest
-    depends_on:
-      - cockroach
-    env_file:
-      - env/cockroach-migrate
-    volumes:
-      - certificates_volume:/etc/certs
-    networks:
-      - database_network
-
   postgres-migrate:
     image: assets-postgres-migrate:latest
     depends_on:
@@ -117,17 +92,6 @@ services:
   psql:
     image: postgres:16-alpine
     entrypoint: ["psql", "postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/psql_client.pem&sslkey=/etc/certs/psql_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"]
-    volumes:
-      - certificates_volume:/etc/certs
-    networks:
-      - database_network
-
-  csql:
-    image: cockroachdb/cockroach:v21.2.8
-    #image: cockroachdb/cockroach:latest-v23.2
-    entrypoint: ["./cockroach", "sql", "--certs-dir=/etc/certs"]
-    env_file:
-      - env/csql
     volumes:
       - certificates_volume:/etc/certs
     networks:
@@ -152,7 +116,6 @@ services:
 volumes:
   certificates_volume:
   influxdb_volume:
-  cockroach_volume:
   postgres_volume:
 
 

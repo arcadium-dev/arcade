@@ -1,7 +1,0 @@
-ARG migrate_version
-FROM migrate/migrate:${migrate_version}
-
-COPY --chown=root:root ./dockerfiles/migrate.sh /migrate.sh
-COPY --chown=root:root ./asset/data/cockroach/migrations/* /migrations/
-
-ENTRYPOINT ["/migrate.sh"]

@@ -83,7 +83,8 @@ vet:
 staticcheck:
 	@if [[ ! -x "$$(go env GOPATH)/bin/staticcheck" ]]; then \
 		printf "\nInstalling staticcheck...\n"; \
-		go install "honnef.co/go/tools/cmd/staticcheck@latest"; \
+		go get "honnef.co/go/tools/cmd/staticcheck"; \
+		go install "honnef.co/go/tools/cmd/staticcheck"; \
 	fi
 	@printf "\nRunning staticcheck...\n"
 	$$(go env GOPATH)/bin/staticcheck ./...
@@ -91,7 +92,8 @@ staticcheck:
 vuln:
 	@if [[ ! -x "$$(go env GOPATH)/bin/govulncheck" ]]; then \
 		printf "\nInstalling govulncheck...\n"; \
-		go install "golang.org/x/vuln/cmd/govulncheck@latest"; \
+		go install "golang.org/x/vuln/cmd/govulncheck"; \
+		go install "golang.org/x/vuln/cmd/govulncheck"; \
 	fi
 	@printf "\nRunning govulncheck...\n"
 	$$(go env GOPATH)/bin/govulncheck ./...

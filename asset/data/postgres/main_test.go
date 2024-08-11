@@ -167,18 +167,3 @@ func (m *migration) Down() error {
 	}
 	return nil
 }
-
-/*
-func getCount(t *testing.T, ctx context.Context, table string) int {
-	t.Helper()
-	var count int
-	assert.Nil(t, db.QueryRowContext(ctx, "SELECT COUNT(0) from "+table).Scan(&count))
-	return count
-}
-
-func truncateTable(t *testing.T, ctx context.Context, table string) {
-	t.Helper()
-	_, err := db.ExecContext(ctx, "truncate "+table)
-	assert.Nil(t, err)
-}
-*/

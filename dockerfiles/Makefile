@@ -16,7 +16,6 @@ go_version := 1.22
 migrate_version := v4.17.1
 mkcert_version := v1.4.4
 
-
 # ____ all __________________________________________________________________
 
 .PHONY: all

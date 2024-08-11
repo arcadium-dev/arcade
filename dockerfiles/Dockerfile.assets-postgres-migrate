@@ -1,5 +1,5 @@
 ARG migrate_version
-FROM migrate/migrate:${migrate_version}
+FROM migrate/migrate:${migrate_version:-v4.17.1}
 
 COPY --chown=root:root ./dockerfiles/migrate.sh /migrate.sh
 COPY --chown=root:root ./asset/data/postgres/migrations/* /migrations/

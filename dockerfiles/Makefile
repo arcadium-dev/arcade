@@ -16,6 +16,7 @@ go_version := 1.22
 migrate_version := v4.17.1
 mkcert_version := v1.4.4
 
+
 # ____ all __________________________________________________________________
 
 .PHONY: all
@@ -34,6 +35,7 @@ assets: Dockerfile.assets
 		--file Dockerfile.assets \
 		--ssh default \
 		--build-arg go_version=$(go_version) \
+		--build-arg arc=$(arch) \
 		--build-arg version=$(version) \
 		--build-arg branch=$(branch) \
 		--build-arg commit=$(commit) \

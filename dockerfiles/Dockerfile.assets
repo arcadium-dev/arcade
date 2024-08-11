@@ -1,9 +1,11 @@
 # Build
 ARG go_version
-FROM --platform=linux/amd64 golang:${go_version}-alpine as builder
+ARG arch
+
+FROM --platform=linux/${arch:-amd64} golang:${go_version:-1.22}-alpine AS builder
 LABEL stage=intermediate
 
-ENV GOPRIVATE arcadium.dev
+ENV GOPRIVATE=arcadium.dev
 
 WORKDIR /src
 
@@ -24,8 +26,9 @@ ARG branch
 ARG commit
 ARG build_date
 ARG buildargs
+ARG arch
 
-RUN GOOS="linux" GOARCH="amd64" CGO_ENAGLED=0 \
+RUN GOOS="linux" GOARCH="${arch:-amd64}" CGO_ENAGLED=0 \
     go build ${buildargs} -ldflags="-s -w \
       -X 'main.Version=${version}' \
       -X 'main.Branch=${branch}' \
@@ -36,7 +39,7 @@ RUN GOOS="linux" GOARCH="amd64" CGO_ENAGLED=0 \
 
 
 # Assets image.
-FROM --platform=linux/amd64 alpine
+FROM --platform=linux/${arch:-amd64} alpine
 
 RUN apk update && \
   apk add --no-cache ca-certificates tzdata bash && update-ca-certificates && \

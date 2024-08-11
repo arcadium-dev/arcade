@@ -1,9 +1,9 @@
 # Build mkcert
 ARG     go_version
-FROM    golang:${go_version}-alpine as mkcert_builder
+FROM    golang:${go_version:-1.22}-alpine AS mkcert_builder
 LABEL   stage=intermediate
 ARG     mkcert_version
-RUN     go install filippo.io/mkcert@${mkcert_version}
+RUN     go install filippo.io/mkcert@${mkcert_version:-v1.4.4}
 
 
 # Mkcert container

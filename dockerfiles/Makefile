@@ -34,6 +34,7 @@ assets: Dockerfile.assets
 		--file Dockerfile.assets \
 		--ssh default \
 		--build-arg go_version=$(go_version) \
+		--build-arg arc=$(arch) \
 		--build-arg version=$(version) \
 		--build-arg branch=$(branch) \
 		--build-arg commit=$(commit) \

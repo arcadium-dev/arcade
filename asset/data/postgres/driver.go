@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"arcadium.dev/core/sql"
 

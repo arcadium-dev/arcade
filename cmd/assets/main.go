@@ -19,7 +19,6 @@ import (
 	"fmt"
 	l "log"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kelseyhightower/envconfig"
 
 	httpserver "arcadium.dev/core/http/server"

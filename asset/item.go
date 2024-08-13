@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ import (
 	"database/sql/driver"
 
 	"github.com/google/uuid"
+
+	"arcadium.dev/arcade"
 )
 
 const (
@@ -47,8 +49,8 @@ type (
 		Description string
 		OwnerID     PlayerID
 		LocationID  ItemLocationID
-		Created     Timestamp
-		Updated     Timestamp
+		Created     arcade.Timestamp
+		Updated     arcade.Timestamp
 	}
 
 	// ItemFilter is used to filter results from a list of all items.

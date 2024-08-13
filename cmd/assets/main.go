@@ -1,4 +1,4 @@
-// Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ import (
 	httpserver "arcadium.dev/core/http/server"
 	"arcadium.dev/core/rest"
 
-	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/postgres"
-
 	"arcadium.dev/arcade/asset/rest/server"
+	"arcadium.dev/arcade/data"
+	"arcadium.dev/arcade/data/postgres"
 )
 
 var (

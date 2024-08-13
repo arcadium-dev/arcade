@@ -18,6 +18,7 @@ import (
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/errors"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/server"
@@ -76,8 +77,8 @@ func TestLinksList(t *testing.T) {
 			ownerID       = asset.PlayerID(uuid.New())
 			locationID    = asset.RoomID(uuid.New())
 			destinationID = asset.RoomID(uuid.New())
-			created       = asset.Timestamp{Time: time.Now()}
-			updated       = asset.Timestamp{Time: time.Now()}
+			created       = arcade.Timestamp{Time: time.Now()}
+			updated       = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkStorage{
@@ -161,8 +162,8 @@ func TestLinkGet(t *testing.T) {
 			ownerID       = asset.PlayerID(uuid.New())
 			locationID    = asset.RoomID(ownerID)
 			destinationID = asset.RoomID(ownerID)
-			created       = asset.Timestamp{Time: time.Now()}
-			updated       = asset.Timestamp{Time: time.Now()}
+			created       = arcade.Timestamp{Time: time.Now()}
+			updated       = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkStorage{
@@ -353,8 +354,8 @@ func TestLinkCreate(t *testing.T) {
 			ownerID = asset.PlayerID(uuid.New())
 			locID   = asset.RoomID(uuid.New())
 			destID  = asset.RoomID(uuid.New())
-			created = asset.Timestamp{Time: time.Now()}
-			updated = asset.Timestamp{Time: time.Now()}
+			created = arcade.Timestamp{Time: time.Now()}
+			updated = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkStorage{
@@ -587,8 +588,8 @@ func TestLinkUpdate(t *testing.T) {
 			ownerID = asset.PlayerID(uuid.New())
 			locID   = asset.RoomID(uuid.New())
 			destID  = asset.RoomID(uuid.New())
-			created = asset.Timestamp{Time: time.Now()}
-			updated = asset.Timestamp{Time: time.Now()}
+			created = arcade.Timestamp{Time: time.Now()}
+			updated = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockLinkStorage{

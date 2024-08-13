@@ -10,13 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
+
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/require"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/uuid"
 )
 
 func TestListRooms(t *testing.T) {
@@ -93,8 +96,8 @@ func TestListRooms(t *testing.T) {
 			roomID   = asset.RoomID(uuid.MustParse(id))
 			ownerID  = asset.PlayerID(uuid.MustParse(owner))
 			parentID = asset.RoomID(uuid.MustParse(parent))
-			created  = asset.Timestamp{Time: time.Now().UTC()}
-			updated  = asset.Timestamp{Time: time.Now().UTC()}
+			created  = arcade.Timestamp{Time: time.Now().UTC()}
+			updated  = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rRooms := []rest.Room{
@@ -223,8 +226,8 @@ func TestGetRoom(t *testing.T) {
 			roomID   = asset.RoomID(uuid.MustParse(id))
 			ownerID  = asset.PlayerID(uuid.MustParse(owner))
 			parentID = asset.RoomID(uuid.MustParse(parent))
-			created  = asset.Timestamp{Time: time.Now().UTC()}
-			updated  = asset.Timestamp{Time: time.Now().UTC()}
+			created  = arcade.Timestamp{Time: time.Now().UTC()}
+			updated  = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rRoom := rest.Room{
@@ -347,8 +350,8 @@ func TestCreateRoom(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rRoom := rest.Room{
@@ -494,8 +497,8 @@ func TestUpdateRoom(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rRoom := rest.Room{
@@ -654,8 +657,8 @@ func TestTranslateRoom(t *testing.T) {
 			roomID   = asset.RoomID(uuid.MustParse(id))
 			ownerID  = asset.PlayerID(uuid.MustParse(owner))
 			parentID = asset.RoomID(uuid.MustParse(parent))
-			created  = asset.Timestamp{Time: time.Now().UTC()}
-			updated  = asset.Timestamp{Time: time.Now().UTC()}
+			created  = arcade.Timestamp{Time: time.Now().UTC()}
+			updated  = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rRoom := rest.Room{

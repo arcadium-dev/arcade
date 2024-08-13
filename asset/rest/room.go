@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
 
 package rest // import "arcadium.dev/arcade/asset/rest"
 
-import (
-	"arcadium.dev/arcade/asset"
-)
+import "arcadium.dev/arcade"
 
 type (
 	// RoomCreateRequest is used to request an room be created.
@@ -98,10 +96,10 @@ type (
 
 		// Created is the time of the room's creation.
 		// in: body
-		Created asset.Timestamp `json:"created"`
+		Created arcade.Timestamp `json:"created"`
 
 		// Updated is the time the room was last updated.
 		// in: body
-		Updated asset.Timestamp `json:"updated"`
+		Updated arcade.Timestamp `json:"updated"`
 	}
 )

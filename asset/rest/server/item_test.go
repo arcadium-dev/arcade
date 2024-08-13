@@ -18,6 +18,7 @@ import (
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/errors"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/server"
@@ -79,8 +80,8 @@ func TestItemsList(t *testing.T) {
 			itemID     = asset.ItemID(uuid.New())
 			ownerID    = asset.PlayerID(uuid.New())
 			locationID = asset.RoomID(uuid.New())
-			created    = asset.Timestamp{Time: time.Now()}
-			updated    = asset.Timestamp{Time: time.Now()}
+			created    = arcade.Timestamp{Time: time.Now()}
+			updated    = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockItemStorage{
@@ -165,8 +166,8 @@ func TestItemGet(t *testing.T) {
 		var (
 			ownerID    = asset.PlayerID(uuid.New())
 			locationID = asset.PlayerID(ownerID)
-			created    = asset.Timestamp{Time: time.Now()}
-			updated    = asset.Timestamp{Time: time.Now()}
+			created    = arcade.Timestamp{Time: time.Now()}
+			updated    = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockItemStorage{
@@ -360,8 +361,8 @@ func TestItemCreate(t *testing.T) {
 		var (
 			itemID  = asset.ItemID(uuid.New())
 			ownerID = asset.PlayerID(uuid.New())
-			created = asset.Timestamp{Time: time.Now()}
-			updated = asset.Timestamp{Time: time.Now()}
+			created = arcade.Timestamp{Time: time.Now()}
+			updated = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockItemStorage{
@@ -598,8 +599,8 @@ func TestItemUpdate(t *testing.T) {
 		var (
 			itemID  = asset.ItemID(uuid.New())
 			ownerID = asset.PlayerID(uuid.New())
-			created = asset.Timestamp{Time: time.Now()}
-			updated = asset.Timestamp{Time: time.Now()}
+			created = arcade.Timestamp{Time: time.Now()}
+			updated = arcade.Timestamp{Time: time.Now()}
 		)
 
 		m := mockItemStorage{

@@ -111,7 +111,7 @@ services:
     image: migrate/migrate:v4.17.0
     entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
     volumes:
-      - ./migrations:/migration
+      - ./data/postgres/migrations:/migrations
 
 volumes:
   certificates_volume:

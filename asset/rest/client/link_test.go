@@ -10,13 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
+
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/require"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/uuid"
 )
 
 func TestListLinks(t *testing.T) {
@@ -95,8 +98,8 @@ func TestListLinks(t *testing.T) {
 			ownerID       = asset.PlayerID(uuid.MustParse(owner))
 			locationID    = asset.RoomID(uuid.MustParse(location))
 			destinationID = asset.RoomID(uuid.MustParse(destination))
-			created       = asset.Timestamp{Time: time.Now().UTC()}
-			updated       = asset.Timestamp{Time: time.Now().UTC()}
+			created       = arcade.Timestamp{Time: time.Now().UTC()}
+			updated       = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rLinks := []rest.Link{
@@ -232,8 +235,8 @@ func TestGetLink(t *testing.T) {
 			ownerID       = asset.PlayerID(uuid.MustParse(owner))
 			locationID    = asset.RoomID(uuid.MustParse(location))
 			destinationID = asset.RoomID(uuid.MustParse(destination))
-			created       = asset.Timestamp{Time: time.Now().UTC()}
-			updated       = asset.Timestamp{Time: time.Now().UTC()}
+			created       = arcade.Timestamp{Time: time.Now().UTC()}
+			updated       = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rLink := rest.Link{
@@ -363,8 +366,8 @@ func TestCreateLink(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rLink := rest.Link{
@@ -519,8 +522,8 @@ func TestUpdateLink(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rLink := rest.Link{
@@ -695,8 +698,8 @@ func TestTranslateLink(t *testing.T) {
 			ownerID       = asset.PlayerID(uuid.MustParse(owner))
 			locationID    = asset.RoomID(uuid.MustParse(location))
 			destinationID = asset.RoomID(uuid.MustParse(destination))
-			created       = asset.Timestamp{Time: time.Now().UTC()}
-			updated       = asset.Timestamp{Time: time.Now().UTC()}
+			created       = arcade.Timestamp{Time: time.Now().UTC()}
+			updated       = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rLink := rest.Link{

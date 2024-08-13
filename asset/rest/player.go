@@ -14,9 +14,7 @@
 
 package rest // import "arcadium.dev/arcade/asset/rest"
 
-import (
-	"arcadium.dev/arcade/asset"
-)
+import "arcadium.dev/arcade"
 
 type (
 	// PlayerCreateRequest is used to request an player be created.
@@ -98,10 +96,10 @@ type (
 
 		// Created is the time of the player's creation.
 		// in: body
-		Created asset.Timestamp `json:"created"`
+		Created arcade.Timestamp `json:"created"`
 
 		// Updated is the time the player was last updated.
 		// in: body
-		Updated asset.Timestamp `json:"updated"`
+		Updated arcade.Timestamp `json:"updated"`
 	}
 )

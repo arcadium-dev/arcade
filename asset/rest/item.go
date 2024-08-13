@@ -14,9 +14,7 @@
 
 package rest // import "arcadium.dev/arcade/asset/rest"
 
-import (
-	"arcadium.dev/arcade/asset"
-)
+import "arcadium.dev/arcade"
 
 type (
 	// ItemCreateRequest is used to request an item be created.
@@ -98,11 +96,11 @@ type (
 
 		// Created is the time of the item's creation.
 		// in: body
-		Created asset.Timestamp `json:"created"`
+		Created arcade.Timestamp `json:"created"`
 
 		// Updated is the time the item was last updated.
 		// in: body
-		Updated asset.Timestamp `json:"updated"`
+		Updated arcade.Timestamp `json:"updated"`
 	}
 
 	// ItemLocationID holds the locationID of the item, and the type of location.

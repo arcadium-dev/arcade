@@ -14,7 +14,7 @@
 
 package rest // import "arcadium.dev/arcade/asset/rest"
 
-import "arcadium.dev/arcade/asset"
+import "arcadium.dev/arcade"
 
 type (
 	// LinkCreateRequest is used to request an link be created.
@@ -104,10 +104,10 @@ type (
 
 		// Created is the time of the link's creation.
 		// in: body
-		Created asset.Timestamp `json:"created"`
+		Created arcade.Timestamp `json:"created"`
 
 		// Updated is the time the link was last updated.
 		// in: body
-		Updated asset.Timestamp `json:"updated"`
+		Updated arcade.Timestamp `json:"updated"`
 	}
 )

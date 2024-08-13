@@ -17,6 +17,7 @@ package asset // import "arcadium.dev/arcade/asset"
 import (
 	"database/sql/driver"
 
+	"arcadium.dev/arcade"
 	"github.com/google/uuid"
 )
 
@@ -47,8 +48,8 @@ type (
 		Description string
 		OwnerID     PlayerID
 		LocationID  ItemLocationID
-		Created     Timestamp
-		Updated     Timestamp
+		Created     arcade.Timestamp
+		Updated     arcade.Timestamp
 	}
 
 	// ItemFilter is used to filter results from a list of all items.

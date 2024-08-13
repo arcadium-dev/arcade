@@ -18,7 +18,7 @@ import (
 
 	"arcadium.dev/core/sql"
 
-	pg "arcadium.dev/arcade/asset/data/postgres"
+	pg "arcadium.dev/arcade/data/postgres"
 )
 
 var (
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 		Hostname:   "postgres-dockertest",
 		Name:       "postgres-dockertest",
 		Repository: "postgres",
-		Tag:        "16",
+		Tag:        "16-alpine",
 		Env: []string{
 			"POSTGRES_PASSWORD=arcadium",
 			"POSTGRES_USER=arcadium",

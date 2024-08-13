@@ -12,8 +12,8 @@ import (
 	"arcadium.dev/core/require"
 
 	"arcadium.dev/arcade/asset"
-	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/postgres"
+	"arcadium.dev/arcade/data"
+	"arcadium.dev/arcade/data/postgres"
 )
 
 var (

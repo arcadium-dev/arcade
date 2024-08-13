@@ -18,6 +18,8 @@ import (
 	"database/sql/driver"
 
 	"github.com/google/uuid"
+
+	"arcadium.dev/arcade"
 )
 
 const (
@@ -50,8 +52,8 @@ type (
 		OwnerID       PlayerID
 		LocationID    RoomID
 		DestinationID RoomID
-		Created       Timestamp
-		Updated       Timestamp
+		Created       arcade.Timestamp
+		Updated       arcade.Timestamp
 	}
 
 	// LinkFilter is used to filter results from a List.

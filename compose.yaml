@@ -78,12 +78,12 @@ services:
 
   # database clients
   #--------------------------------------------------------------------------
-  postgres-migrate:
-    image: assets-postgres-migrate:latest
+  migrate:
+    image: migrate:latest
     depends_on:
       - postgres
     env_file:
-      - env/postgres-migrate
+      - env/migrate
     volumes:
       - certificates_volume:/etc/certs
     networks:
@@ -111,7 +111,7 @@ services:
     image: migrate/migrate:v4.17.0
     entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
     volumes:
-      - ./migrations:/migration
+      - ./data/postgres/migrations:/migrations
 
 volumes:
   certificates_volume:

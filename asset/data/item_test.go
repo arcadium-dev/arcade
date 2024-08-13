@@ -17,6 +17,7 @@ import (
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/sql"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
 	"arcadium.dev/arcade/asset/data/postgres"
@@ -46,8 +47,8 @@ func TestItemsList(t *testing.T) {
 		locationItemID   = asset.ItemID(uuid.New())
 		locationPlayerID = asset.PlayerID(uuid.New())
 		locationRoomID   = asset.RoomID(uuid.New())
-		created          = asset.Timestamp{Time: time.Now()}
-		updated          = asset.Timestamp{Time: time.Now()}
+		created          = arcade.Timestamp{Time: time.Now()}
+		updated          = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("query error", func(t *testing.T) {
@@ -235,8 +236,8 @@ func TestItemsGet(t *testing.T) {
 		locationItemID   = asset.ItemID(uuid.New())
 		locationPlayerID = asset.PlayerID(uuid.New())
 		locationRoomID   = asset.RoomID(uuid.New())
-		created          = asset.Timestamp{Time: time.Now()}
-		updated          = asset.Timestamp{Time: time.Now()}
+		created          = arcade.Timestamp{Time: time.Now()}
+		updated          = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("failures", func(t *testing.T) {
@@ -344,8 +345,8 @@ func TestItemsCreate(t *testing.T) {
 		locationItemID   = asset.ItemID(uuid.New())
 		locationPlayerID = asset.PlayerID(uuid.New())
 		locationRoomID   = asset.RoomID(uuid.New())
-		created          = asset.Timestamp{Time: time.Now()}
-		updated          = asset.Timestamp{Time: time.Now()}
+		created          = arcade.Timestamp{Time: time.Now()}
+		updated          = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("violations", func(t *testing.T) {
@@ -512,8 +513,8 @@ func TestItemsUpdate(t *testing.T) {
 		locationItemID   = asset.ItemID(uuid.New())
 		locationPlayerID = asset.PlayerID(uuid.New())
 		locationRoomID   = asset.RoomID(uuid.New())
-		created          = asset.Timestamp{Time: time.Now()}
-		updated          = asset.Timestamp{Time: time.Now()}
+		created          = arcade.Timestamp{Time: time.Now()}
+		updated          = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("failures", func(t *testing.T) {

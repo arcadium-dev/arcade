@@ -18,6 +18,8 @@ import (
 	"database/sql/driver"
 
 	"github.com/google/uuid"
+
+	"arcadium.dev/arcade"
 )
 
 const (
@@ -47,8 +49,8 @@ type (
 		Description string
 		OwnerID     PlayerID
 		LocationID  ItemLocationID
-		Created     Timestamp
-		Updated     Timestamp
+		Created     arcade.Timestamp
+		Updated     arcade.Timestamp
 	}
 
 	// ItemFilter is used to filter results from a list of all items.

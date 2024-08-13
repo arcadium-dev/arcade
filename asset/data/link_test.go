@@ -16,6 +16,7 @@ import (
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/sql"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/data"
 	"arcadium.dev/arcade/asset/data/postgres"
@@ -42,8 +43,8 @@ func TestLinksList(t *testing.T) {
 		ownerID       = asset.PlayerID(uuid.New())
 		locationID    = asset.RoomID(uuid.New())
 		destinationID = asset.RoomID(uuid.New())
-		created       = asset.Timestamp{Time: time.Now()}
-		updated       = asset.Timestamp{Time: time.Now()}
+		created       = arcade.Timestamp{Time: time.Now()}
+		updated       = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("query error", func(t *testing.T) {
@@ -200,8 +201,8 @@ func TestLinksGet(t *testing.T) {
 		ownerID       = asset.PlayerID(uuid.New())
 		locationID    = asset.RoomID(uuid.New())
 		destinationID = asset.RoomID(uuid.New())
-		created       = asset.Timestamp{Time: time.Now()}
-		updated       = asset.Timestamp{Time: time.Now()}
+		created       = arcade.Timestamp{Time: time.Now()}
+		updated       = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("failures", func(t *testing.T) {
@@ -293,8 +294,8 @@ func TestLinksCreate(t *testing.T) {
 		ownerID       = asset.PlayerID(uuid.New())
 		locationID    = asset.RoomID(uuid.New())
 		destinationID = asset.RoomID(uuid.New())
-		created       = asset.Timestamp{Time: time.Now()}
-		updated       = asset.Timestamp{Time: time.Now()}
+		created       = arcade.Timestamp{Time: time.Now()}
+		updated       = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("violations", func(t *testing.T) {
@@ -431,8 +432,8 @@ func TestLinksUpdate(t *testing.T) {
 		ownerID       = asset.PlayerID(uuid.New())
 		locationID    = asset.RoomID(uuid.New())
 		destinationID = asset.RoomID(uuid.New())
-		created       = asset.Timestamp{Time: time.Now()}
-		updated       = asset.Timestamp{Time: time.Now()}
+		created       = arcade.Timestamp{Time: time.Now()}
+		updated       = arcade.Timestamp{Time: time.Now()}
 	)
 
 	t.Run("failures", func(t *testing.T) {

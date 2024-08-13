@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package asset // import "arcadium.dev/arcade/asset"
+package arcade // import "arcadium.dev/arcade"
 
 import (
 	"database/sql/driver"

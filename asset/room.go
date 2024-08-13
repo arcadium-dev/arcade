@@ -18,6 +18,8 @@ import (
 	"database/sql/driver"
 
 	"github.com/google/uuid"
+
+	"arcadium.dev/arcade"
 )
 
 const (
@@ -51,8 +53,8 @@ type (
 		Description string
 		OwnerID     PlayerID
 		ParentID    RoomID
-		Created     Timestamp
-		Updated     Timestamp
+		Created     arcade.Timestamp
+		Updated     arcade.Timestamp
 	}
 
 	// RoomFilter is used to filter results from a List.

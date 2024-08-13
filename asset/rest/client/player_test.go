@@ -10,13 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
+
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/require"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/uuid"
 )
 
 func TestListPlayers(t *testing.T) {
@@ -93,8 +96,8 @@ func TestListPlayers(t *testing.T) {
 			playerID   = asset.PlayerID(uuid.MustParse(id))
 			homeID     = asset.RoomID(uuid.MustParse(home))
 			locationID = asset.RoomID(uuid.MustParse(loc))
-			created    = asset.Timestamp{Time: time.Now().UTC()}
-			updated    = asset.Timestamp{Time: time.Now().UTC()}
+			created    = arcade.Timestamp{Time: time.Now().UTC()}
+			updated    = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayers := []rest.Player{
@@ -220,8 +223,8 @@ func TestGetPlayer(t *testing.T) {
 			playerID   = asset.PlayerID(uuid.MustParse(id))
 			homeID     = asset.RoomID(uuid.MustParse(home))
 			locationID = asset.RoomID(uuid.MustParse(loc))
-			created    = asset.Timestamp{Time: time.Now().UTC()}
-			updated    = asset.Timestamp{Time: time.Now().UTC()}
+			created    = arcade.Timestamp{Time: time.Now().UTC()}
+			updated    = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{
@@ -346,8 +349,8 @@ func TestCreatePlayer(t *testing.T) {
 		)
 		var (
 			playerID = asset.PlayerID(uuid.MustParse(id))
-			created  = asset.Timestamp{Time: time.Now().UTC()}
-			updated  = asset.Timestamp{Time: time.Now().UTC()}
+			created  = arcade.Timestamp{Time: time.Now().UTC()}
+			updated  = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{
@@ -493,8 +496,8 @@ func TestUpdatePlayer(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{
@@ -653,8 +656,8 @@ func TestTranslatePlayer(t *testing.T) {
 			playerID   = asset.PlayerID(uuid.MustParse(id))
 			homeID     = asset.RoomID(uuid.MustParse(home))
 			locationID = asset.RoomID(uuid.MustParse(loc))
-			created    = asset.Timestamp{Time: time.Now().UTC()}
-			updated    = asset.Timestamp{Time: time.Now().UTC()}
+			created    = arcade.Timestamp{Time: time.Now().UTC()}
+			updated    = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rPlayer := rest.Player{

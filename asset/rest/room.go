@@ -15,7 +15,7 @@
 package rest // import "arcadium.dev/arcade/asset/rest"
 
 import (
-	"arcadium.dev/arcade/asset"
+	"arcadium.dev/arcade"
 )
 
 type (
@@ -98,10 +98,10 @@ type (
 
 		// Created is the time of the room's creation.
 		// in: body
-		Created asset.Timestamp `json:"created"`
+		Created arcade.Timestamp `json:"created"`
 
 		// Updated is the time the room was last updated.
 		// in: body
-		Updated asset.Timestamp `json:"updated"`
+		Updated arcade.Timestamp `json:"updated"`
 	}
 )

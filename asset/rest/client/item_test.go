@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/asset/rest"
 	"arcadium.dev/arcade/asset/rest/client"
@@ -94,8 +95,8 @@ func TestListItems(t *testing.T) {
 			itemID     = asset.ItemID(uuid.MustParse(id))
 			ownerID    = asset.PlayerID(uuid.MustParse(owner))
 			locationID = asset.RoomID(uuid.MustParse(loc))
-			created    = asset.Timestamp{Time: time.Now().UTC()}
-			updated    = asset.Timestamp{Time: time.Now().UTC()}
+			created    = arcade.Timestamp{Time: time.Now().UTC()}
+			updated    = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItems := []rest.Item{
@@ -229,8 +230,8 @@ func TestGetItem(t *testing.T) {
 			itemID     = asset.ItemID(uuid.MustParse(id))
 			ownerID    = asset.PlayerID(uuid.MustParse(owner))
 			locationID = asset.RoomID(uuid.MustParse(loc))
-			created    = asset.Timestamp{Time: time.Now().UTC()}
-			updated    = asset.Timestamp{Time: time.Now().UTC()}
+			created    = arcade.Timestamp{Time: time.Now().UTC()}
+			updated    = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItem := rest.Item{
@@ -358,8 +359,8 @@ func TestCreateItem(t *testing.T) {
 		)
 		var (
 			itemID  = asset.ItemID(uuid.MustParse(id))
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItem := rest.Item{
@@ -513,8 +514,8 @@ func TestUpdateItem(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		var (
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		rItem := rest.Item{
@@ -689,8 +690,8 @@ func TestTranslateItem(t *testing.T) {
 		)
 		var (
 			id      = uuid.MustParse(ids)
-			created = asset.Timestamp{Time: time.Now().UTC()}
-			updated = asset.Timestamp{Time: time.Now().UTC()}
+			created = arcade.Timestamp{Time: time.Now().UTC()}
+			updated = arcade.Timestamp{Time: time.Now().UTC()}
 		)
 
 		tests := []struct {

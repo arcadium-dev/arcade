@@ -45,7 +45,7 @@ declare -Ar influxdb_config=(
 )
 
 declare -ar migrations=(
-	"postgres-migrate"
+	"migrate"
 )
 
 docker_compose() {

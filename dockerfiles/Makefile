@@ -25,9 +25,9 @@ all: images tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: images assets assets-migrate
+.PHONY: images assets migrate
 
-images: assets assets-postgres-migrate
+images: assets migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -44,12 +44,12 @@ assets: Dockerfile.assets
 		--tag assets:latest \
 		..
 
-assets-postgres-migrate: Dockerfile.assets-postgres-migrate
+migrate: Dockerfile.migrate
 	DOCKER_BUILDKIT=1 docker build \
-    --file Dockerfile.assets-postgres-migrate \
+    --file Dockerfile.migrate \
     --build-arg migrate_version=$(migrate_version) \
     --rm --force-rm \
-    --tag assets-postgres-migrate:latest \
+    --tag migrate:latest \
     ..
 
 # ____ tools _________________________________________________________________

@@ -24,10 +24,9 @@ import (
 	httpserver "arcadium.dev/core/http/server"
 	"arcadium.dev/core/rest"
 
-	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/postgres"
-
 	"arcadium.dev/arcade/asset/rest/server"
+	"arcadium.dev/arcade/data"
+	"arcadium.dev/arcade/data/postgres"
 )
 
 var (

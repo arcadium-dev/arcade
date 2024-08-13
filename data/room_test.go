@@ -18,8 +18,8 @@ import (
 
 	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
-	"arcadium.dev/arcade/asset/data"
-	"arcadium.dev/arcade/asset/data/postgres"
+	"arcadium.dev/arcade/data"
+	"arcadium.dev/arcade/data/postgres"
 )
 
 func TestRoomsList(t *testing.T) {

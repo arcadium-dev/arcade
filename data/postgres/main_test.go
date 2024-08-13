@@ -18,7 +18,7 @@ import (
 
 	"arcadium.dev/core/sql"
 
-	pg "arcadium.dev/arcade/asset/data/postgres"
+	pg "arcadium.dev/arcade/data/postgres"
 )
 
 var (

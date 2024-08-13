@@ -59,7 +59,7 @@ const (
 	ItemCreateQuery = `INSERT INTO items (name, description, owner_id, location_item_id, location_player_id, location_room_id) ` +
 		`VALUES ($1, $2, $3, $4, $5, $6) ` +
 		`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated`
-	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_item_id = $5, location_player_id = $6, location_room_id = $7, updated = now() ` +
+	ItemUpdateQuery = `UPDATE items SET name = $2, description = $3, owner_id = $4, location_item_id = $5, location_player_id = $6, location_room_id = $7 ` +
 		`WHERE id = $1 ` +
 		`RETURNING id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated`
 	ItemRemoveQuery = `DELETE FROM items WHERE id = $1`
@@ -114,7 +114,7 @@ const (
 	LinkCreateQuery = `INSERT INTO links (name, description, owner_id, location_id, destination_id) ` +
 		`VALUES ($1, $2, $3, $4, $5) ` +
 		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
-	LinkUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6,  updated = now() ` +
+	LinkUpdateQuery = `UPDATE links SET name = $2, description = $3, owner_id = $4, location_id = $5, destination_id = $6) ` +
 		`WHERE id = $1 ` +
 		`RETURNING id, name, description, owner_id, location_id, destination_id, created, updated`
 	LinkRemoveQuery = `DELETE FROM links WHERE id = $1`
@@ -163,7 +163,7 @@ const (
 	PlayerCreateQuery = `INSERT INTO players (name, description, home_id, location_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
 		`RETURNING id, name, description, home_id, location_id, created, updated`
-	PlayerUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5, updated = now() ` +
+	PlayerUpdateQuery = `UPDATE players SET name = $2, description = $3, home_id = $4, location_id = $5 ` +
 		`WHERE id = $1 ` +
 		`RETURNING id, name, description, home_id, location_id, created, updated`
 	PlayerRemoveQuery = `DELETE FROM players WHERE id = $1`
@@ -203,7 +203,7 @@ const (
 	RoomCreateQuery = `INSERT INTO rooms (name, description, owner_id, parent_id) ` +
 		`VALUES ($1, $2, $3, $4) ` +
 		`RETURNING id, name, description, owner_id, parent_id, created, updated`
-	RoomUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5, updated = now() ` +
+	RoomUpdateQuery = `UPDATE rooms SET name = $2, description = $3, owner_id = $4, parent_id = $5 ` +
 		`WHERE id = $1 ` +
 		`RETURNING id, name, description, owner_id, parent_id, created, updated`
 	RoomRemoveQuery = `DELETE FROM rooms WHERE id = $1`

@@ -15,34 +15,12 @@
 package postgres // import "arcadium.dev/arcade/asset/data/postgres"
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	_ "github.com/jackc/pgx/v5/stdlib"
-
-	"arcadium.dev/core/sql"
 )
-
-// Open opens a database.
-func Open(ctx context.Context, dsn string) (*sql.DB, error) {
-	if dsn == "" {
-		return nil, errors.New("failed to open database: dsn required")
-	}
-
-	db, err := sql.Open(ctx, "pgx/v5", dsn, sql.WithReconnect(3), sql.WithTxRetries(3))
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-	db.DB.SetConnMaxLifetime(time.Minute * 3)
-	db.DB.SetMaxOpenConns(20)
-	db.DB.SetMaxIdleConns(20)
-
-	return db, nil
-}
 
 type (
 	Driver struct{}

@@ -136,7 +136,7 @@ integration_test: integration_test_up
 integration_test_down:
 	@echo ""
 	@dev stop
-	@rm -rf ./asset/test/coverage
+	@rm -rf ./asset/test/coverage/*
 
 # ____ docs __________________________________________________________________
 
@@ -151,7 +151,7 @@ docs:
 
 # ____ image artifacts  __________________________________________________
 
-.PHONY: images assets assets-postgres-migrate mkcert curl
+.PHONY: images assets migrate mkcert curl
 
 export buildargs :=
 
@@ -162,7 +162,7 @@ dev-images: buildargs := -cover
 dev-images:
 	make -C dockerfiles all
 
-assets assets-postgres-migrate mkcert curl:
+assets migrate mkcert curl:
 	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________

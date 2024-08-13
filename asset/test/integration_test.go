@@ -41,7 +41,7 @@ func TestAssets(t *testing.T) {
 				ParentID:    nowhere,
 			},
 		})
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		for i := 0; i < 10; i++ {
 			name := randName(8)
@@ -54,7 +54,7 @@ func TestAssets(t *testing.T) {
 					LocationID:  nowhere,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			players[player.Name] = player
 
 			home, err := assets.CreateRoom(ctx, asset.RoomCreate{
@@ -65,7 +65,7 @@ func TestAssets(t *testing.T) {
 					ParentID:    outside.ID,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			homes[player.Name] = home
 
 			player, err = assets.UpdatePlayer(ctx, player.ID, asset.PlayerUpdate{
@@ -76,7 +76,7 @@ func TestAssets(t *testing.T) {
 					LocationID:  home.ID,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, player.HomeID, home.ID)
 			assert.Equal(t, player.LocationID, home.ID)
 			assert.NotNil(t, players[player.Name])
@@ -90,7 +90,7 @@ func TestAssets(t *testing.T) {
 					LocationID:  home.ID,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, bed.OwnerID, player.ID)
 			assert.Equal(t, bed.LocationID.ID(), asset.LocationID(home.ID))
 			beds[player.Name] = bed
@@ -104,7 +104,7 @@ func TestAssets(t *testing.T) {
 					DestinationID: outside.ID,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, out.OwnerID, player.ID)
 			assert.Equal(t, out.LocationID, home.ID)
 			assert.Equal(t, out.DestinationID, outside.ID)
@@ -119,7 +119,7 @@ func TestAssets(t *testing.T) {
 					DestinationID: home.ID,
 				},
 			})
-			assert.Nil(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, in.OwnerID, player.ID)
 			assert.Equal(t, in.LocationID, outside.ID)
 			assert.Equal(t, in.DestinationID, home.ID)

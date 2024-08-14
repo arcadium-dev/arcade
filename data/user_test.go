@@ -27,13 +27,13 @@ import (
 func TestUserStorageList(t *testing.T) {
 	t.Parallel()
 	const (
-		postgresListQ           = "^SELECT id, name, public_key, player_id, created, updated FROM users$"
-		postgresListWithFilterQ = "^SELECT id, name, public_key, player_id, created, updated FROM users LIMIT (.+) OFFSET (.+)$"
+		postgresListQ           = "^SELECT id, login, public_key, player_id, created, updated FROM users$"
+		postgresListWithFilterQ = "^SELECT id, login, public_key, player_id, created, updated FROM users LIMIT (.+) OFFSET (.+)$"
 	)
 
 	var (
 		id        = user.ID(uuid.New())
-		name      = "Alice Jones"
+		login     = "ajones"
 		publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
 		playerID  = asset.PlayerID(uuid.New())
 		created   = arcade.Timestamp{Time: time.Now()}
@@ -63,8 +63,8 @@ func TestUserStorageList(t *testing.T) {
 			name:  "rows failure",
 			query: postgresListQ,
 			mockSetup: func(mock sqlmock.Sqlmock, query string) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_kd", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated).
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_kd", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated).
 					RowError(0, errors.New("rows failure"))
 				mock.ExpectQuery(query).WillReturnRows(rows).RowsWillBeClosed()
 			},
@@ -78,8 +78,8 @@ func TestUserStorageList(t *testing.T) {
 			name:  "success - without filter",
 			query: postgresListQ,
 			mockSetup: func(mock sqlmock.Sqlmock, query string) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_kd", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_kd", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(query).WillReturnRows(rows).RowsWillBeClosed()
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, users []*user.User, err error) {
@@ -87,7 +87,7 @@ func TestUserStorageList(t *testing.T) {
 				require.Equal(t, len(users), 1)
 				assert.Compare(t, *users[0], user.User{
 					ID:        id,
-					Name:      name,
+					Login:     login,
 					PublicKey: publicKey,
 					PlayerID:  playerID,
 					Created:   created,
@@ -104,8 +104,8 @@ func TestUserStorageList(t *testing.T) {
 			},
 			query: postgresListWithFilterQ,
 			mockSetup: func(mock sqlmock.Sqlmock, query string) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_kd", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_kd", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(query).WillReturnRows(rows).RowsWillBeClosed()
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, users []*user.User, err error) {
@@ -113,7 +113,7 @@ func TestUserStorageList(t *testing.T) {
 				assert.Equal(t, len(users), 1)
 				assert.Compare(t, *users[0], user.User{
 					ID:        id,
-					Name:      name,
+					Login:     login,
 					PublicKey: publicKey,
 					PlayerID:  playerID,
 					Created:   created,
@@ -147,12 +147,12 @@ func TestUserStorageList(t *testing.T) {
 
 func TestUserStorageGet(t *testing.T) {
 	const (
-		postgresGetQ = "^SELECT id, name, public_key, player_id, created, updated FROM users WHERE id = (.+)$"
+		postgresGetQ = "^SELECT id, login, public_key, player_id, created, updated FROM users WHERE id = (.+)$"
 	)
 
 	var (
 		id        = user.ID(uuid.New())
-		name      = "Alice Jones"
+		login     = "ajones"
 		publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
 		playerID  = asset.PlayerID(uuid.New())
 		created   = arcade.Timestamp{Time: time.Now()}
@@ -189,8 +189,8 @@ func TestUserStorageGet(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(postgresGetQ).WillReturnRows(rows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
@@ -198,7 +198,7 @@ func TestUserStorageGet(t *testing.T) {
 				require.NotNil(t, u)
 				assert.Compare(t, *u, user.User{
 					ID:        id,
-					Name:      name,
+					Login:     login,
 					PublicKey: publicKey,
 					PlayerID:  playerID,
 					Created:   created,
@@ -232,14 +232,14 @@ func TestUserStorageGet(t *testing.T) {
 
 func TestUserStorageCreate(t *testing.T) {
 	const (
-		postgresCreateQ = `^INSERT INTO users \(name, public_key, player_id\) ` +
+		postgresCreateQ = `^INSERT INTO users \(login, public_key, player_id\) ` +
 			`VALUES \((.+), (.+), (.+)\) ` +
-			`RETURNING id, name, public_key, player_id, created, updated$`
+			`RETURNING id, login, public_key, player_id, created, updated$`
 	)
 
 	var (
 		id        = user.ID(uuid.New())
-		name      = "Alice Jones"
+		login     = "ajones"
 		publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
 		playerID  = asset.PlayerID(uuid.New())
 		created   = arcade.Timestamp{Time: time.Now()}
@@ -254,10 +254,10 @@ func TestUserStorageCreate(t *testing.T) {
 		{
 			name: "foreign key violation - player does not exist",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(postgresCreateQ).
-					WithArgs(name, publicKey, playerID).
+					WithArgs(login, publicKey, playerID).
 					WillReturnRows(rows).
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 			},
@@ -270,27 +270,27 @@ func TestUserStorageCreate(t *testing.T) {
 		{
 			name: "unique violation - player already exists",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(postgresCreateQ).
-					WithArgs(name, publicKey, playerID).
+					WithArgs(login, publicKey, playerID).
 					WillReturnRows(rows).
 					WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
-				assert.Error(t, err, "failed to create user: bad request: user 'Alice Jones' already exists")
+				assert.Error(t, err, "failed to create user: bad request: user login 'ajones' already exists")
 				assert.MockExpectationsMet(t, mock)
 			},
 		},
 		{
 			name: "scan failure",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated).
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated).
 					RowError(0, errors.New("scan failure"))
 				mock.ExpectQuery(postgresCreateQ).
-					WithArgs(name, publicKey, playerID).
+					WithArgs(login, publicKey, playerID).
 					WillReturnRows(rows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
@@ -302,10 +302,10 @@ func TestUserStorageCreate(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(postgresCreateQ).
-					WithArgs(name, publicKey, playerID).
+					WithArgs(login, publicKey, playerID).
 					WillReturnRows(rows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
@@ -313,7 +313,7 @@ func TestUserStorageCreate(t *testing.T) {
 				require.NotNil(t, u)
 				assert.Compare(t, *u, user.User{
 					ID:        id,
-					Name:      name,
+					Login:     login,
 					PublicKey: publicKey,
 					PlayerID:  playerID,
 					Created:   created,
@@ -332,7 +332,7 @@ func TestUserStorageCreate(t *testing.T) {
 
 			test.mockSetup(mock)
 
-			create := user.Create{Change: user.Change{Name: name, PublicKey: publicKey, PlayerID: playerID}}
+			create := user.Create{Change: user.Change{Login: login, PublicKey: publicKey, PlayerID: playerID}}
 
 			us := data.UserStorage{
 				DB: &sql.DB{DB: db},
@@ -349,14 +349,14 @@ func TestUserStorageCreate(t *testing.T) {
 
 func TestUserStorageUpdate(t *testing.T) {
 	const (
-		postgresUpdateQ = `^UPDATE users SET name = (.+), public_key = (.+), player_id = (.+) ` +
+		postgresUpdateQ = `^UPDATE users SET login = (.+), public_key = (.+), player_id = (.+) ` +
 			`WHERE id = (.+) ` +
-			`RETURNING id, name, public_key, player_id, created, updated$`
+			`RETURNING id, login, public_key, player_id, created, updated$`
 	)
 
 	var (
 		id        = user.ID(uuid.New())
-		name      = "Alice Jones"
+		login     = "ajones"
 		publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
 		playerID  = asset.PlayerID(uuid.New())
 		created   = arcade.Timestamp{Time: time.Now()}
@@ -371,7 +371,7 @@ func TestUserStorageUpdate(t *testing.T) {
 		{
 			name: "user not found failure",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, name, publicKey, playerID).WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, login, publicKey, playerID).WillReturnError(sql.ErrNoRows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
@@ -382,7 +382,7 @@ func TestUserStorageUpdate(t *testing.T) {
 		{
 			name: "foreign key violation - player does not exist",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, name, publicKey, playerID).WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
+				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, login, publicKey, playerID).WillReturnError(&pgconn.PgError{Code: pgerrcode.ForeignKeyViolation})
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
@@ -393,22 +393,22 @@ func TestUserStorageUpdate(t *testing.T) {
 		{
 			name: "unique violation - player already exists",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, name, publicKey, playerID).WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
+				mock.ExpectQuery(postgresUpdateQ).WithArgs(id, login, publicKey, playerID).WillReturnError(&pgconn.PgError{Code: pgerrcode.UniqueViolation})
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
-				assert.Error(t, err, "failed to update user: bad request: user name 'Alice Jones' already exists")
+				assert.Error(t, err, "failed to update user: bad request: user login 'ajones' already exists")
 				assert.MockExpectationsMet(t, mock)
 			},
 		},
 		{
 			name: "scan failure",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated).
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated).
 					RowError(0, errors.New("scan failure"))
 				mock.ExpectQuery(postgresUpdateQ).
-					WithArgs(id, name, publicKey, playerID).
+					WithArgs(id, login, publicKey, playerID).
 					WillReturnRows(rows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
@@ -420,10 +420,10 @@ func TestUserStorageUpdate(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "public_key", "player_id", "created", "updated"}).
-					AddRow(id, name, publicKey, playerID, created, updated)
+				rows := sqlmock.NewRows([]string{"id", "login", "public_key", "player_id", "created", "updated"}).
+					AddRow(id, login, publicKey, playerID, created, updated)
 				mock.ExpectQuery(postgresUpdateQ).
-					WithArgs(id, name, publicKey, playerID).
+					WithArgs(id, login, publicKey, playerID).
 					WillReturnRows(rows)
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
@@ -431,7 +431,7 @@ func TestUserStorageUpdate(t *testing.T) {
 				assert.NotNil(t, u)
 				assert.Compare(t, *u, user.User{
 					ID:        id,
-					Name:      name,
+					Login:     login,
 					PublicKey: publicKey,
 					PlayerID:  playerID,
 					Created:   created,
@@ -450,7 +450,7 @@ func TestUserStorageUpdate(t *testing.T) {
 
 			test.mockSetup(mock)
 
-			update := user.Update{Change: user.Change{Name: name, PublicKey: publicKey, PlayerID: playerID}}
+			update := user.Update{Change: user.Change{Login: login, PublicKey: publicKey, PlayerID: playerID}}
 
 			us := data.UserStorage{
 				DB: &sql.DB{DB: db},
@@ -463,67 +463,6 @@ func TestUserStorageUpdate(t *testing.T) {
 			test.verify(t, mock, u, err)
 		})
 	}
-	/*
-		t.Run("success", func(t *testing.T) {
-			tests := []struct {
-				query      string
-				driver     data.userDriver
-				rows       *sqlmock.Rows
-				locationID asset.userLocationID
-				args       []driver.Value
-			}{
-				{
-					query:  postgresUpdateQ,
-					driver: postgres.userDriver{},
-					rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_user_id", "location_player_id", "location_room_id", "created", "updated"}).
-						AddRow(id, name, desc, ownerID, locationuserID, nil, nil, created, updated),
-					locationID: locationuserID,
-					args:       []driver.Value{locationuserID, uuid.NullUUID{}, uuid.NullUUID{}},
-				},
-				{
-					query:  postgresUpdateQ,
-					driver: postgres.userDriver{},
-					rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_user_id", "location_player_id", "location_room_id", "created", "updated"}).
-						AddRow(id, name, desc, ownerID, nil, locationPlayerID, nil, created, updated),
-					locationID: locationPlayerID,
-					args:       []driver.Value{uuid.NullUUID{}, locationPlayerID, uuid.NullUUID{}},
-				},
-				{
-					query:  postgresUpdateQ,
-					driver: postgres.userDriver{},
-					rows: sqlmock.NewRows([]string{"id", "name", "description", "owner_id", "location_user_id", "location_player_id", "location_room_id", "created", "updated"}).
-						AddRow(id, name, desc, ownerID, nil, nil, locationRoomID, created, updated),
-					locationID: locationRoomID,
-					args:       []driver.Value{uuid.NullUUID{}, uuid.NullUUID{}, locationRoomID},
-				},
-			}
-
-			for _, test := range tests {
-				db, mock, err := sqlmock.New()
-				assert.Nil(t, err)
-
-				i := data.userStorage{DB: &sql.DB{DB: db}, Driver: test.driver}
-				update := asset.userUpdate{
-					userChange: asset.userChange{Name: name, Description: desc, OwnerID: ownerID, LocationID: test.locationID},
-				}
-				mock.ExpectQuery(test.query).WithArgs(id, name, desc, ownerID, test.args[0], test.args[1], test.args[2]).WillReturnRows(test.rows)
-
-				user, err := i.Update(ctx, id, update)
-
-				assert.Nil(t, err)
-				assert.Compare(t, *user, asset.user{
-					ID:          id,
-					Name:        name,
-					Description: desc,
-					OwnerID:     ownerID,
-					LocationID:  test.locationID,
-					Created:     created,
-					Updated:     updated,
-				}, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
-				assert.MockExpectationsMet(t, mock)
-			}
-		})
-	*/
 }
 
 func TestUsersRemove(t *testing.T) {

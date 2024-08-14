@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	MaxNameLen = 256
+	MaxLoginLen = 256
 
 	DefaultUserFilterLimit = 50
 	MaxUserFilterLimit     = 100
@@ -43,7 +43,7 @@ type (
 	// User is the internal representation of an user.
 	User struct {
 		ID        ID
-		Name      string
+		Login     string
 		PublicKey []byte
 		PlayerID  asset.PlayerID
 		Created   arcade.Timestamp
@@ -73,7 +73,7 @@ type (
 
 	// UserChange holds information to change an user.
 	Change struct {
-		Name      string
+		Login     string
 		PublicKey []byte
 		PlayerID  asset.PlayerID
 	}

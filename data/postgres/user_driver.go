@@ -25,14 +25,14 @@ type (
 )
 
 const (
-	UserListQuery   = `SELECT id, name, public_key, player_id, created, updated FROM users`
-	UserGetQuery    = `SELECT id, name, public_key, player_id, created, updated FROM users WHERE id = $1`
-	UserCreateQuery = `INSERT INTO users (name, public_key, player_id) ` +
+	UserListQuery   = `SELECT id, login, public_key, player_id, created, updated FROM users`
+	UserGetQuery    = `SELECT id, login, public_key, player_id, created, updated FROM users WHERE id = $1`
+	UserCreateQuery = `INSERT INTO users (login, public_key, player_id) ` +
 		`VALUES ($1, $2, $3) ` +
-		`RETURNING id, name, public_key, player_id, created, updated`
-	UserUpdateQuery = `UPDATE users SET name = $2, public_key = $3, player_id = $4 ` +
+		`RETURNING id, login, public_key, player_id, created, updated`
+	UserUpdateQuery = `UPDATE users SET login = $2, public_key = $3, player_id = $4 ` +
 		`WHERE id = $1 ` +
-		`RETURNING id, name, public_key, player_id, created, updated`
+		`RETURNING id, login, public_key, player_id, created, updated`
 	UserRemoveQuery = `DELETE FROM users WHERE id = $1`
 )
 

@@ -66,7 +66,7 @@ func (u UserStorage) List(ctx context.Context, filter user.Filter) ([]*user.User
 		var user user.User
 		err := rows.Scan(
 			&user.ID,
-			&user.Name,
+			&user.Login,
 			&user.PublicKey,
 			&user.PlayerID,
 			&user.Created,
@@ -94,7 +94,7 @@ func (u UserStorage) Get(ctx context.Context, userID user.ID) (*user.User, error
 	var user user.User
 	err := u.DB.QueryRow(ctx, u.Driver.GetQuery(), userID).Scan(
 		&user.ID,
-		&user.Name,
+		&user.Login,
 		&user.PublicKey,
 		&user.PlayerID,
 		&user.Created,
@@ -115,16 +115,16 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 	failMsg := "failed to create user"
 	logger := zerolog.Ctx(ctx)
 
-	logger.Info().Msgf("create user: %s", create.Name)
+	logger.Info().Msgf("create user: %s", create.Login)
 
 	var user user.User
 	err := u.DB.QueryRow(ctx, u.Driver.CreateQuery(),
-		create.Name,
+		create.Login,
 		create.PublicKey,
 		create.PlayerID,
 	).Scan(
 		&user.ID,
-		&user.Name,
+		&user.Login,
 		&user.PublicKey,
 		&user.PlayerID,
 		&user.Created,
@@ -141,16 +141,16 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 		)
 
 	// A UniqueViolation means the inserted user violated a uniqueness
-	// constraint. The user record already exists in the table or the name
+	// constraint. The user record already exists in the table or the login
 	// is not unique.
 	case u.Driver.IsUniqueViolation(err):
-		return nil, fmt.Errorf("%s: %w: user '%s' already exists", failMsg, errors.ErrBadRequest, create.Name)
+		return nil, fmt.Errorf("%s: %w: user login '%s' already exists", failMsg, errors.ErrBadRequest, create.Login)
 
 	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
-	logger.Info().Msgf("created user, name: %s id: %s", user.Name, user.ID)
+	logger.Info().Msgf("created user, login: %s id: %s", user.Login, user.ID)
 
 	return &user, nil
 }
@@ -168,12 +168,12 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 
 	err := u.DB.QueryRow(ctx, u.Driver.UpdateQuery(),
 		userID,
-		update.Name,
+		update.Login,
 		update.PublicKey,
 		update.PlayerID,
 	).Scan(
 		&user.ID,
-		&user.Name,
+		&user.Login,
 		&user.PublicKey,
 		&user.PlayerID,
 		&user.Created,
@@ -194,9 +194,9 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 		)
 
 	// A UniqueViolation means the inserted user violated a uniqueness
-	// constraint. The user name is not unique.
+	// constraint. The user login is not unique.
 	case u.Driver.IsUniqueViolation(err):
-		return nil, fmt.Errorf("%s: %w: user name '%s' already exists", failMsg, errors.ErrBadRequest, update.Name)
+		return nil, fmt.Errorf("%s: %w: user login '%s' already exists", failMsg, errors.ErrBadRequest, update.Login)
 
 	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())

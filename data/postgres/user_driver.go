@@ -28,7 +28,7 @@ const (
 	UserListQuery   = `SELECT id, name, public_key, player_id, created, updated FROM users`
 	UserGetQuery    = `SELECT id, name, public_key, player_id, created, updated FROM users WHERE id = $1`
 	UserCreateQuery = `INSERT INTO users (name, public_key, player_id) ` +
-		`VALUES ($1, $2, $3 ) ` +
+		`VALUES ($1, $2, $3) ` +
 		`RETURNING id, name, public_key, player_id, created, updated`
 	UserUpdateQuery = `UPDATE users SET name = $2, public_key = $3, player_id = $4 ` +
 		`WHERE id = $1 ` +

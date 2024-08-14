@@ -32,17 +32,17 @@ const (
 
 type (
 	// UserID is the unique identifier of an user.
-	UserID uuid.UUID
+	ID uuid.UUID
 )
 
-func (i UserID) String() string               { return uuid.UUID(i).String() }
-func (i *UserID) Scan(src any) error          { return (*uuid.UUID)(i).Scan(src) }
-func (i UserID) Value() (driver.Value, error) { return uuid.UUID(i).Value() }
+func (i ID) String() string               { return uuid.UUID(i).String() }
+func (i *ID) Scan(src any) error          { return (*uuid.UUID)(i).Scan(src) }
+func (i ID) Value() (driver.Value, error) { return uuid.UUID(i).Value() }
 
 type (
 	// User is the internal representation of an user.
 	User struct {
-		ID        UserID
+		ID        ID
 		Name      string
 		PublicKey []byte
 		PlayerID  asset.PlayerID
@@ -73,8 +73,8 @@ type (
 
 	// UserChange holds information to change an user.
 	Change struct {
-		Name       string
-		PlublicKey []byte
-		PlayerID   asset.PlayerID
+		Name      string
+		PublicKey []byte
+		PlayerID  asset.PlayerID
 	}
 )

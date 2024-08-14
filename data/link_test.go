@@ -22,7 +22,7 @@ import (
 	"arcadium.dev/arcade/data/postgres"
 )
 
-func TestLinksList(t *testing.T) {
+func TestLinkStorageList(t *testing.T) {
 	const (
 		postgresListQ              = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links$"
 		postgresListWithAllFilterQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links" +
@@ -188,7 +188,7 @@ func TestLinksList(t *testing.T) {
 	})
 }
 
-func TestLinksGet(t *testing.T) {
+func TestLinkStorageGet(t *testing.T) {
 	const (
 		postgresGetQ = "^SELECT id, name, description, owner_id, location_id, destination_id, created, updated FROM links WHERE id = (.+)$"
 	)
@@ -279,7 +279,7 @@ func TestLinksGet(t *testing.T) {
 	})
 }
 
-func TestLinksCreate(t *testing.T) {
+func TestLinkStorageCreate(t *testing.T) {
 	const (
 		postgresCreateQ = `^INSERT INTO links \(name, description, owner_id, location_id, destination_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
@@ -417,7 +417,7 @@ func TestLinksCreate(t *testing.T) {
 	})
 }
 
-func TestLinksUpdate(t *testing.T) {
+func TestLinkStorageUpdate(t *testing.T) {
 	const (
 		postgresUpdateQ = `^UPDATE links SET name = (.+), description = (.+), owner_id = (.+), location_id = (.+), destination_id = (.+) ` +
 			`WHERE id = (.+) ` +
@@ -562,7 +562,7 @@ func TestLinksUpdate(t *testing.T) {
 	})
 }
 
-func TestLinksRemove(t *testing.T) {
+func TestLinkStorageRemove(t *testing.T) {
 	const (
 		postgresRemoveQ = `^DELETE FROM links WHERE id = (.+)$`
 	)

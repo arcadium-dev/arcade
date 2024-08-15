@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	MaxLoginLen = 256
+	MaxLoginLen     = 256
+	MaxPublicKeyLen = 4096
 
 	DefaultUserFilterLimit = 50
 	MaxUserFilterLimit     = 100

@@ -164,7 +164,7 @@ docs:
 
 # ____ image artifacts  __________________________________________________
 
-.PHONY: images assets migrate mkcert curl
+.PHONY: images assets users migrate mkcert curl
 
 export buildargs :=
 
@@ -175,7 +175,7 @@ dev-images: buildargs := -cover
 dev-images:
 	make -C dockerfiles all
 
-assets migrate mkcert curl:
+assets users migrate mkcert curl:
 	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________

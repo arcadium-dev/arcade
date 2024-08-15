@@ -1,12 +1,14 @@
 # GOCOVERDIR defines the directory to place integration test coverage files.
 GOCOVERDIR="/arcadium/coverage"
 
+#___ assets _________________________________________________________________
+
 # LOG_LEVEL defines the level of logging.
 ASSETS_LOG_LEVEL="info"
 
 # SERVER_ADDR defines the address the arcade API service will listen to.
 # This is required.
-ASSETS_SERVER_ADDR=":4202"
+ASSETS_SERVER_ADDR=":443"
 
 # TLS_CERT and TLS_KEY define the file path where the certificates used to
 # serve https traffic are stored. These are optional.
@@ -41,3 +43,21 @@ ASSETS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=v
 # PPROF_ENABLED adds the pprof endpoints to the server.
 # See: https://pkg.go.dev/net/http/pprof and https://go.dev/blog/pprof
 #PPROF_ENABLED="true"
+
+#___ users _________________________________________________________________
+
+# LOG_LEVEL defines the level of logging.
+USERS_LOG_LEVEL="info"
+
+# SERVER_ADDR defines the address the arcade API service will listen to.
+# This is required.
+USERS_SERVER_ADDR=":443"
+
+# TLS_CERT and TLS_KEY define the file path where the certificates used to
+# serve https traffic are stored. These are optional.
+USERS_TLS_KEY="/etc/certs/users_key.pem"
+USERS_TLS_CERT="/etc/certs/users.pem"
+
+
+USERS_DATABASE="postgres"
+USERS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/users_client.pem&sslkey=/etc/certs/users_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"

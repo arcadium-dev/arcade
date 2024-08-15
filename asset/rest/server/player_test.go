@@ -615,7 +615,7 @@ func TestPlayerRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
-	t.Run("player manager remove eailure", func(t *testing.T) {
+	t.Run("player manager remove failure", func(t *testing.T) {
 		m := mockPlayerStorage{
 			t:         t,
 			removeID:  playerID,

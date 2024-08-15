@@ -25,9 +25,9 @@ all: images tools
 
 # ____ application ___________________________________________________________
 
-.PHONY: images assets migrate
+.PHONY: images assets users migrate
 
-images: assets migrate
+images: assets users migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -42,6 +42,21 @@ assets: Dockerfile.assets
 		--build-arg buildargs=$(buildargs) \
 		--rm --force-rm \
 		--tag assets:latest \
+		..
+
+users: Dockerfile.users
+	DOCKER_BUILDKIT=1 docker build \
+		--file Dockerfile.users \
+		--ssh default \
+		--build-arg go_version=$(go_version) \
+		--build-arg arc=$(arch) \
+		--build-arg version=$(version) \
+		--build-arg branch=$(branch) \
+		--build-arg commit=$(commit) \
+		--build-arg build_date=$(date) \
+		--build-arg buildargs=$(buildargs) \
+		--rm --force-rm \
+		--tag users:latest \
 		..
 
 migrate: Dockerfile.migrate

@@ -9,7 +9,11 @@ chown -R arcadium:arcadium \
 	/etc/certs/assets.pem \
 	/etc/certs/assets_client.pem \
 	/etc/certs/assets_client_key.pem \
-	/etc/certs/rootCA.pem
+	/etc/certs/users_key.pem \
+	/etc/certs/users.pem \
+	/etc/certs/users_client.pem \
+	/etc/certs/users_client_key.pem \
+	/etc/certs/rootCA.pem &>/dev/null
 chmod 0644 /etc/certs/influx* || true
 
 cp /etc/certs/rootCA.pem /etc/certs/postgres_rootCA.pem

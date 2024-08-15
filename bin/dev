@@ -16,12 +16,14 @@ declare -ar infrastructure=(
 
 declare -ar tls_servers=(
 	"assets"
+  "users"
 	"influxdb"
 	"postgres"
 )
 
 declare -ar tls_clients=(
 	"assets"
+	"users"
 	"migrate"
 	"psql"
 )
@@ -34,6 +36,7 @@ declare -ar networks=(
 
 declare -ar services=(
 	"assets"
+  "users"
 )
 
 declare -Ar influxdb_config=(

@@ -20,7 +20,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	assets = client.New("https://localhost:4202", client.WithInsecure())
+	assets = client.New("https://localhost:4210", client.WithInsecure())
 	os.Exit(m.Run())
 }
 

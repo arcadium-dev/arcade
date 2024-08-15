@@ -67,7 +67,7 @@ all: generate test lint
 
 # ____ generate ______________________________________________________________
 
-.PHONY: generate
+.PHONY: generate openapi
 
 openapi_src := ./users/rest/server/user.gen.go
 
@@ -201,3 +201,4 @@ clean:
 	-rm -f $$(go env GOPATH)/bin/staticcheck
 	-rm -f $$(go env GOPATH)/bin/govulncheck
 	-rm -f $$(go env GOPATH)/bin/swagger
+	-rm -f $$(go env GOPATH)/bin/oapi-codegen

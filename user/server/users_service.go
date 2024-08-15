@@ -31,7 +31,6 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/user"
-	"arcadium.dev/arcade/user/rest"
 )
 
 const (
@@ -56,9 +55,6 @@ type (
 
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
-	r := router.PathPrefix(V1UserRoute).Subrouter()
-	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
-
 	options := GorillaServerOptions{
 		BaseRouter: router,
 		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -81,7 +77,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewUserFilter(r)
+	filter, err := NewUserFilter(params)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -97,7 +93,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 	// Translate from user users, to network users.
 	users := make([]User, 0)
 	for _, uUser := range uUsers {
-		users = append(users, NewTranslateUser(uUser))
+		users = append(users, TranslateUser(uUser))
 	}
 
 	// Return list as body.
@@ -136,7 +132,7 @@ func (s UsersService) Get(w http.ResponseWriter, r *http.Request, id string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(rest.UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -194,7 +190,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 
-	err = json.NewEncoder(w).Encode(rest.UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Msgf("failed to encode create user response, error %s", err)
 		return
@@ -257,7 +253,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(rest.UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
 		return
@@ -265,11 +261,10 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 }
 
 // Remove handles a request to remove an user.
-func (s UsersService) Remove(w http.ResponseWriter, r *http.Request) {
+func (s UsersService) Remove(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 
 	// Parse the userID from the uri.
-	id := mux.Vars(r)["id"]
 	userID, err := uuid.Parse(id)
 	if err != nil {
 		err := fmt.Errorf("%w: invalid user id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
@@ -286,33 +281,7 @@ func (s UsersService) Remove(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewUserFilter creates an user users filter from the the given request's query parameters.
-func NewUserFilter(r *http.Request) (user.Filter, error) {
-	q := r.URL.Query()
-	filter := user.Filter{
-		Limit: user.DefaultUserFilterLimit,
-	}
-
-	if values := q["offset"]; len(values) > 0 {
-		offset, err := strconv.Atoi(values[0])
-		if err != nil || offset <= 0 {
-			return user.Filter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, values[0])
-		}
-		filter.Offset = uint(offset)
-	}
-
-	if values := q["limit"]; len(values) > 0 {
-		limit, err := strconv.Atoi(values[0])
-		if err != nil || limit <= 0 || limit > user.MaxUserFilterLimit {
-			return user.Filter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, values[0])
-		}
-		filter.Limit = uint(limit)
-	}
-
-	return filter, nil
-}
-
-// NewNewUserFilter creates an user users filter from the the given request's query parameters.
-func NewNewUserFilter(params ListParams) (user.Filter, error) {
+func NewUserFilter(params ListParams) (user.Filter, error) {
 	filter := user.Filter{
 		Limit: user.DefaultUserFilterLimit,
 	}
@@ -336,36 +305,6 @@ func NewNewUserFilter(params ListParams) (user.Filter, error) {
 	}
 
 	return filter, nil
-}
-
-// TranslateUserRequest translates a network user user request to an user user request.
-func TranslateUserRequest(u rest.UserRequest) (user.Change, error) {
-	empty := user.Change{}
-
-	if u.Login == "" {
-		return empty, fmt.Errorf("%w: empty user login", errors.ErrBadRequest)
-	}
-	if len(u.Login) > user.MaxLoginLen {
-		return empty, fmt.Errorf("%w: user login exceeds maximum length", errors.ErrBadRequest)
-	}
-	if u.PublicKey == "" {
-		return empty, fmt.Errorf("%w: empty user ssh public key", errors.ErrBadRequest)
-	}
-	if len(u.PublicKey) > user.MaxPublicKeyLen {
-		return empty, fmt.Errorf("%w: user ssh public key exceeds maximum length", errors.ErrBadRequest)
-	}
-	playerID, err := uuid.Parse(u.PlayerID)
-	if err != nil {
-		return empty, fmt.Errorf("%w: invalid playerID: '%s'", errors.ErrBadRequest, u.PlayerID)
-	}
-
-	userReq := user.Change{
-		Login:     u.Login,
-		PublicKey: []byte(u.PublicKey),
-		PlayerID:  asset.PlayerID(playerID),
-	}
-
-	return userReq, nil
 }
 
 // TranslateUserCreateRequest translates a user create request to an user change.
@@ -429,19 +368,7 @@ func TranslateUserUpdateRequest(r UserUpdateRequest) (user.Change, error) {
 }
 
 // TranslateUser translates an user user to a network user.
-func TranslateUser(u *user.User) rest.User {
-	return rest.User{
-		ID:        u.ID.String(),
-		Login:     u.Login,
-		PublicKey: string(u.PublicKey),
-		PlayerID:  u.PlayerID.String(),
-		Created:   u.Created,
-		Updated:   u.Updated,
-	}
-}
-
-// NewTranslateUser translates an user user to a network user.
-func NewTranslateUser(u *user.User) User {
+func TranslateUser(u *user.User) User {
 	return User{
 		ID:        u.ID.String(),
 		Login:     u.Login,

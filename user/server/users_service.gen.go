@@ -70,6 +70,9 @@ type ServerInterface interface {
 	// Create creates a user.
 	// (POST /v1/user)
 	Create(w http.ResponseWriter, r *http.Request)
+	// Remove removes a user.
+	// (DELETE /v1/user/{id})
+	Remove(w http.ResponseWriter, r *http.Request, id string)
 	// Get returns a user.
 	// (GET /v1/user/{id})
 	Get(w http.ResponseWriter, r *http.Request, id string)
@@ -129,6 +132,32 @@ func (siw *ServerInterfaceWrapper) Create(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Create(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Remove operation middleware
+func (siw *ServerInterfaceWrapper) Remove(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", mux.Vars(r)["id"], &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Remove(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -306,6 +335,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.List).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.Create).Methods("POST")
+
+	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Remove).Methods("DELETE")
 
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Get).Methods("GET")
 

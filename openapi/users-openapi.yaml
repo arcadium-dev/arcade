@@ -165,6 +165,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      summary: Remove removes a user.
+      description: On successful completion, the user is removed.
+      operationId: Remove
+      parameters:
+        - name: id
+          description: The ID of the user.
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: UserResponse returns the user.
+        "500":
+          description: An internal server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:

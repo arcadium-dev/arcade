@@ -619,7 +619,7 @@ func TestRoomRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
 	})
 
-	t.Run("room manager remove eailure", func(t *testing.T) {
+	t.Run("room manager remove failure", func(t *testing.T) {
 		m := mockRoomStorage{
 			t:         t,
 			removeID:  roomID,

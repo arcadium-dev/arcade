@@ -667,7 +667,7 @@ func TestLinkRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
-	t.Run("link manager remove eailure", func(t *testing.T) {
+	t.Run("link manager remove failure", func(t *testing.T) {
 		m := mockLinkStorage{
 			t:            t,
 			removeLinkID: linkID,

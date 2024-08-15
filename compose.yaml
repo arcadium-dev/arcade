@@ -7,10 +7,24 @@ services:
     env_file:
       - env/arcade
     ports:
-      - 4202:4202
+      - 4210:443
     volumes:
       - certificates_volume:/etc/certs
       - ./asset/test/coverage:/arcadium/coverage
+    networks:
+      - arcadium_network
+      - database_network
+      - observability_network
+
+  users:
+    image: users:latest
+    container_name: users
+    env_file:
+      - env/arcade
+    ports:
+      - 4220:443
+    volumes:
+      - certificates_volume:/etc/certs
     networks:
       - arcadium_network
       - database_network

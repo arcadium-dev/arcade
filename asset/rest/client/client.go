@@ -22,8 +22,9 @@ import (
 	"net/http"
 	"time"
 
-	"arcadium.dev/core/errors"
 	"github.com/rs/zerolog"
+
+	"arcadium.dev/core/errors"
 )
 
 const (

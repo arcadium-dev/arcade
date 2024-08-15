@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/require"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 
 	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"

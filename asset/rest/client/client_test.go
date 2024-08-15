@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"arcadium.dev/arcade/asset/rest/client"
 	"arcadium.dev/core/assert"
+
+	"arcadium.dev/arcade/asset/rest/client"
 )
 
 func TestClientSend(t *testing.T) {

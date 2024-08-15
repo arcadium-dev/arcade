@@ -14,7 +14,9 @@
 
 package rest // import "arcadium.dev/arcade/asset/rest"
 
-import "arcadium.dev/arcade"
+import (
+	"arcadium.dev/arcade"
+)
 
 type (
 	// LinkCreateRequest is used to request an link be created.

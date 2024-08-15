@@ -92,7 +92,7 @@ func TestUserDriver(t *testing.T) {
 				PlayerID:  player.ID,
 			},
 		})
-
+		require.Nil(t, err)
 		assert.Equal(t, u1.Login, u2.Login)
 		assert.Compare(t, u1.PublicKey, u2.PublicKey)
 	}

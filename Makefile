@@ -66,7 +66,7 @@ all: test lint
 
 # ____ lint __________________________________________________________________
 
-.PHONY: fmt tidy vet staticcheck vuln lint
+.PHONY: fmt tidy vet staticcheck vuln openapi lint
 
 fmt:
 	@printf "\nRunning go fmt...\n"
@@ -84,6 +84,7 @@ staticcheck:
 	@if [[ ! -x "$$(go env GOPATH)/bin/staticcheck" ]]; then \
 		printf "\nInstalling staticcheck...\n"; \
 		go get "honnef.co/go/tools/cmd/staticcheck"; \
+		go mod tidy; \
 		go install "honnef.co/go/tools/cmd/staticcheck"; \
 	fi
 	@printf "\nRunning staticcheck...\n"
@@ -92,11 +93,23 @@ staticcheck:
 vuln:
 	@if [[ ! -x "$$(go env GOPATH)/bin/govulncheck" ]]; then \
 		printf "\nInstalling govulncheck...\n"; \
-		go install "golang.org/x/vuln/cmd/govulncheck"; \
+		go get "golang.org/x/vuln/cmd/govulncheck"; \
+		go mod tidy; \
 		go install "golang.org/x/vuln/cmd/govulncheck"; \
 	fi
 	@printf "\nRunning govulncheck...\n"
 	$$(go env GOPATH)/bin/govulncheck ./...
+
+openapi:
+	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
+    printf "\nInstalling oapi-codegen...\n"; \
+    go get "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
+		go mod tidy; \
+    go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
+  fi
+	@printf "\nRunning oapi-codegen...\n"
+	#$$(go env GOPATH)/bin/oapi-codegen --config=./api/users-server.yaml ./api/users-api.yaml
+	#go mod tidy
 
 lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
@@ -151,7 +164,7 @@ docs:
 
 # ____ image artifacts  __________________________________________________
 
-.PHONY: images assets migrate mkcert curl
+.PHONY: images assets users migrate mkcert curl
 
 export buildargs :=
 
@@ -162,7 +175,7 @@ dev-images: buildargs := -cover
 dev-images:
 	make -C dockerfiles all
 
-assets migrate mkcert curl:
+assets users migrate mkcert curl:
 	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________

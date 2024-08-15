@@ -22,7 +22,7 @@ import (
 	"arcadium.dev/arcade/data/postgres"
 )
 
-func TestPlayersList(t *testing.T) {
+func TestPlayerStorageList(t *testing.T) {
 	const (
 		postgresListQ           = "^SELECT id, name, description, home_id, location_id, created, updated FROM players$"
 		postgresListWithFilterQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players" +
@@ -145,7 +145,7 @@ func TestPlayersList(t *testing.T) {
 	})
 }
 
-func TestPlayersGet(t *testing.T) {
+func TestPlayerStorageGet(t *testing.T) {
 	const (
 		postgresGetQ = "^SELECT id, name, description, home_id, location_id, created, updated FROM players WHERE id = (.+)$"
 	)
@@ -234,7 +234,7 @@ func TestPlayersGet(t *testing.T) {
 	})
 }
 
-func TestPlayersCreate(t *testing.T) {
+func TestPlayerStorageCreate(t *testing.T) {
 	const (
 		postgresCreateQ = `^INSERT INTO players \(name, description, home_id, location_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
@@ -370,7 +370,7 @@ func TestPlayersCreate(t *testing.T) {
 	})
 }
 
-func TestPlayersUpdate(t *testing.T) {
+func TestPlayerStorageUpdate(t *testing.T) {
 	const (
 		postgresUpdateQ = `^UPDATE players SET name = (.+), description = (.+), home_id = (.+), location_id = (.+) ` +
 			`WHERE id = (.+) ` +
@@ -513,7 +513,7 @@ func TestPlayersUpdate(t *testing.T) {
 	})
 }
 
-func TestPlayersRemove(t *testing.T) {
+func TestPlayerStorageRemove(t *testing.T) {
 	const (
 		postgresRemoveQ = `^DELETE FROM players WHERE id = (.+)$`
 	)

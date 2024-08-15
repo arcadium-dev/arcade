@@ -1,0 +1,61 @@
+# Build
+ARG go_version
+ARG arch
+
+FROM --platform=linux/${arch:-amd64} golang:${go_version:-1.22}-alpine AS builder
+LABEL stage=intermediate
+
+ENV GOPRIVATE=arcadium.dev
+
+WORKDIR /src
+
+# Create a layer for accessing a private github repo via ssh.
+RUN apk update && apk add --no-cache git libcap openssh \
+    && git config --global url."git@github.com:".insteadOf "https://github.com/" \
+    && mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+# Create a separate layer for the go dependencies to facilitate faster builds.
+COPY go.mod go.sum ./
+RUN --mount=type=ssh go mod download && go mod verify
+
+# Create a layer for the build.
+COPY . ./
+
+ARG version
+ARG branch
+ARG commit
+ARG build_date
+ARG buildargs
+ARG arch
+
+RUN GOOS="linux" GOARCH="${arch:-amd64}" CGO_ENAGLED=0 \
+    go build ${buildargs} -ldflags="-s -w \
+      -X 'main.Version=${version}' \
+      -X 'main.Branch=${branch}' \
+      -X 'main.Commit=${commit}' \
+      -X 'main.Date=${build_date}'" \
+      -o ./dist/users ./cmd/users \
+    && setcap 'cap_net_bind_service=+ep' ./dist/users
+
+
+# Users image.
+FROM --platform=linux/${arch:-amd64} alpine
+
+RUN apk update && \
+  apk add --no-cache ca-certificates tzdata bash && update-ca-certificates && \
+  adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "10001" \
+    arcadium
+
+COPY --from=builder --chown=arcadium:arcadium /src/dist/users /arcadium/users
+
+USER  arcadium:arcadium
+EXPOSE 4202
+VOLUME ["/etc/certs"]
+WORKDIR /arcadium
+ENTRYPOINT ["/arcadium/users"]

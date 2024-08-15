@@ -23,7 +23,7 @@ import (
 	"arcadium.dev/arcade/data/postgres"
 )
 
-func TestItemsList(t *testing.T) {
+func TestItemStorageList(t *testing.T) {
 	const (
 		postgresListQ                = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items$"
 		postgresListWithOwnerFilterQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items" +
@@ -222,7 +222,7 @@ func TestItemsList(t *testing.T) {
 	})
 }
 
-func TestItemsGet(t *testing.T) {
+func TestItemStorageGet(t *testing.T) {
 	const (
 		postgresGetQ = "^SELECT id, name, description, owner_id, location_item_id, location_player_id, location_room_id, created, updated FROM items WHERE id = (.+)$"
 	)
@@ -329,7 +329,7 @@ func TestItemsGet(t *testing.T) {
 	})
 }
 
-func TestItemsCreate(t *testing.T) {
+func TestItemStorageCreate(t *testing.T) {
 	const (
 		postgresCreateQ = `^INSERT INTO items \(name, description, owner_id, location_item_id, location_player_id, location_room_id\) ` +
 			`VALUES \((.+), (.+), (.+), (.+)\) ` +
@@ -497,7 +497,7 @@ func TestItemsCreate(t *testing.T) {
 	})
 }
 
-func TestItemsUpdate(t *testing.T) {
+func TestItemStorageUpdate(t *testing.T) {
 	const (
 		postgresUpdateQ = `^UPDATE items SET name = (.+), description = (.+), owner_id = (.+), location_item_id = (.+), location_player_id = (.+), location_room_id = (.+) ` +
 			`WHERE id = (.+) ` +
@@ -674,7 +674,7 @@ func TestItemsUpdate(t *testing.T) {
 	})
 }
 
-func TestItemsRemove(t *testing.T) {
+func TestItemStorageRemove(t *testing.T) {
 	const (
 		postgresRemoveQ = `^DELETE FROM items WHERE id = (.+)$`
 	)

@@ -680,7 +680,7 @@ func TestItemRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
 	})
 
-	t.Run("item manager remove eailure", func(t *testing.T) {
+	t.Run("item manager remove failure", func(t *testing.T) {
 		m := mockItemStorage{
 			t:         t,
 			removeID:  itemID,

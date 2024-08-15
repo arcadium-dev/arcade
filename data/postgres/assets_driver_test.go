@@ -36,7 +36,7 @@ func randName(size int) string {
 	return string(b)
 }
 
-func TestDriver(t *testing.T) {
+func TestAssetsDrivers(t *testing.T) {
 	var (
 		ctx = context.Background()
 

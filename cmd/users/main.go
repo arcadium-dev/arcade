@@ -26,7 +26,7 @@ import (
 
 	"arcadium.dev/arcade/data"
 	"arcadium.dev/arcade/data/postgres"
-	"arcadium.dev/arcade/user/rest/server"
+	"arcadium.dev/arcade/user/server"
 )
 
 var (

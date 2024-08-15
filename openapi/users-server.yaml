@@ -2,7 +2,7 @@ package: server
 generate:
   models: true
   gorilla-server: true
-output: user/rest/server/users_service.gen.go
+output: user/server/users_service.gen.go
 output-options:
   exclude-schemas:
     - "ErrorResponse"

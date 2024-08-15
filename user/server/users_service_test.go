@@ -21,8 +21,7 @@ import (
 	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/user"
-	"arcadium.dev/arcade/user/rest"
-	"arcadium.dev/arcade/user/rest/server"
+	"arcadium.dev/arcade/user/server"
 )
 
 func TestUsersList(t *testing.T) {
@@ -89,10 +88,10 @@ func TestUsersList(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var usersResp rest.UsersResponse
+		var usersResp server.UsersResponse
 		assert.Nil(t, json.Unmarshal(body, &usersResp))
 
-		assert.Compare(t, usersResp, rest.UsersResponse{Users: []rest.User{
+		assert.Compare(t, usersResp, server.UsersResponse{Users: []server.User{
 			{
 				ID:        userID.String(),
 				Login:     login,
@@ -163,10 +162,10 @@ func TestUserGet(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp rest.UserResponse
+		var userResp server.UserResponse
 		assert.Nil(t, json.Unmarshal(body, &userResp))
 
-		assert.Compare(t, userResp, rest.UserResponse{User: rest.User{
+		assert.Compare(t, userResp, server.UserResponse{User: server.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
@@ -205,26 +204,26 @@ func TestUserCreate(t *testing.T) {
 		m := mockUserStorage{}
 
 		tests := []struct {
-			req    rest.UserRequest
+			req    server.UserCreateRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: rest.UserRequest{
+				req: server.UserCreateRequest{
 					Login: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty user login",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserCreateRequest{
 					Login: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user login exceeds maximum length",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserCreateRequest{
 					Login:     login,
 					PublicKey: "",
 				},
@@ -232,7 +231,7 @@ func TestUserCreate(t *testing.T) {
 				errMsg: "bad request: empty user ssh public key",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserCreateRequest{
 					Login:     login,
 					PublicKey: randString(4097),
 				},
@@ -240,7 +239,7 @@ func TestUserCreate(t *testing.T) {
 				errMsg: "bad request: user ssh public key exceeds maximum length",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserCreateRequest{
 					Login:     randString(256),
 					PublicKey: randString(4096),
 					PlayerID:  "bad player id",
@@ -251,7 +250,7 @@ func TestUserCreate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(rest.UserCreateRequest{UserRequest: test.req})
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			w := invokeUsersEndpoint(t, m, http.MethodPost, route, body)
@@ -278,12 +277,10 @@ func TestUserCreate(t *testing.T) {
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		create := rest.UserCreateRequest{
-			UserRequest: rest.UserRequest{
-				Login:     login,
-				PublicKey: string(publicKey),
-				PlayerID:  playerID.String(),
-			},
+		create := server.UserCreateRequest{
+			Login:     login,
+			PublicKey: string(publicKey),
+			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(create)
 		assert.Nil(t, err)
@@ -321,12 +318,10 @@ func TestUserCreate(t *testing.T) {
 			},
 		}
 
-		createReq := rest.UserCreateRequest{
-			UserRequest: rest.UserRequest{
-				Login:     login,
-				PublicKey: string(publicKey),
-				PlayerID:  playerID.String(),
-			},
+		createReq := server.UserCreateRequest{
+			Login:     login,
+			PublicKey: string(publicKey),
+			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -340,10 +335,10 @@ func TestUserCreate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp rest.UserResponse
+		var userResp server.UserResponse
 		assert.Nil(t, json.Unmarshal(respBody, &userResp))
 
-		assert.Compare(t, userResp, rest.UserResponse{User: rest.User{
+		assert.Compare(t, userResp, server.UserResponse{User: server.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
@@ -395,26 +390,26 @@ func TestUserUpdate(t *testing.T) {
 		m := mockUserStorage{}
 
 		tests := []struct {
-			req    rest.UserRequest
+			req    server.UserUpdateRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: rest.UserRequest{
+				req: server.UserUpdateRequest{
 					Login: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty user login",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserUpdateRequest{
 					Login: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user login exceeds maximum length",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserUpdateRequest{
 					Login:     login,
 					PublicKey: "",
 				},
@@ -422,7 +417,7 @@ func TestUserUpdate(t *testing.T) {
 				errMsg: "bad request: empty user ssh public key",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserUpdateRequest{
 					Login:     login,
 					PublicKey: randString(4097),
 				},
@@ -430,7 +425,7 @@ func TestUserUpdate(t *testing.T) {
 				errMsg: "bad request: user ssh public key exceeds maximum length",
 			},
 			{
-				req: rest.UserRequest{
+				req: server.UserUpdateRequest{
 					Login:     randString(256),
 					PublicKey: randString(4096),
 					PlayerID:  "bad player id",
@@ -441,7 +436,7 @@ func TestUserUpdate(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			body, err := json.Marshal(rest.UserUpdateRequest{UserRequest: test.req})
+			body, err := json.Marshal(test.req)
 			assert.Nil(t, err)
 
 			userID := uuid.New()
@@ -473,12 +468,10 @@ func TestUserUpdate(t *testing.T) {
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		updateReq := rest.UserUpdateRequest{
-			UserRequest: rest.UserRequest{
-				Login:     login,
-				PublicKey: string(publicKey),
-				PlayerID:  playerID.String(),
-			},
+		updateReq := server.UserUpdateRequest{
+			Login:     login,
+			PublicKey: string(publicKey),
+			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -519,12 +512,10 @@ func TestUserUpdate(t *testing.T) {
 			},
 		}
 
-		updateReq := rest.UserUpdateRequest{
-			UserRequest: rest.UserRequest{
-				Login:     login,
-				PublicKey: string(publicKey),
-				PlayerID:  playerID.String(),
-			},
+		updateReq := server.UserUpdateRequest{
+			Login:     login,
+			PublicKey: string(publicKey),
+			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -540,10 +531,10 @@ func TestUserUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp rest.UserResponse
+		var userResp server.UserResponse
 		assert.Nil(t, json.Unmarshal(respBody, &userResp))
 
-		assert.Compare(t, userResp, rest.UserResponse{User: rest.User{
+		assert.Compare(t, userResp, server.UserResponse{User: server.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),

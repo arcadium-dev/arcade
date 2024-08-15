@@ -6,8 +6,9 @@ info:
     name: "arcadium.dev"
     email: "info@arcadium.dev"
   license:
-    name: "Apache"
-  version: "2.0"
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+  version: "3.0.1"
 
 paths:
   /v1/user:
@@ -37,6 +38,44 @@ paths:
                 $ref: "#/components/schemas/UsersResponse"
         "400":
           description: A bad request was sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: An internal server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/user/{id}:
+    get:
+      summary: Get returns a user.
+      description: On successful completion, this returns a user.
+      operationId: Get
+      parameters:
+        - name: id
+          description: The ID of the user.
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: UserResponse returns the user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: A bad request was sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: The user associated with the userID does not exist.
           content:
             application/json:
               schema:

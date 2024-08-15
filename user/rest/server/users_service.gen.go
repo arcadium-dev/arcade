@@ -22,6 +22,12 @@ type User struct {
 	Updated   arcade.Timestamp `json:"updated"`
 }
 
+// UserResponse returns a single user in the response.
+type UserResponse struct {
+	// User holds a user's information, and is sent in a response.
+	User User `json:"user"`
+}
+
 // UsersResponse returns a multiple users.
 type UsersResponse struct {
 	Users []User `json:"users"`
@@ -41,6 +47,9 @@ type ServerInterface interface {
 	// List returns a list of users.
 	// (GET /v1/user)
 	List(w http.ResponseWriter, r *http.Request, params ListParams)
+	// Get returns a user.
+	// (GET /v1/user/{id})
+	Get(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -79,6 +88,32 @@ func (siw *ServerInterfaceWrapper) List(w http.ResponseWriter, r *http.Request) 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.List(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Get operation middleware
+func (siw *ServerInterfaceWrapper) Get(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", mux.Vars(r)["id"], &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Get(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -202,6 +237,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	}
 
 	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.List).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Get).Methods("GET")
 
 	return r
 }

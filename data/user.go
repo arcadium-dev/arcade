@@ -89,7 +89,7 @@ func (u UserStorage) Get(ctx context.Context, userID user.ID) (*user.User, error
 	failMsg := "failed to get user"
 	logger := zerolog.Ctx(ctx)
 
-	logger.Info().Msgf("get user: %s", userID)
+	logger.Info().Msgf("get user, id: '%s'", userID)
 
 	var user user.User
 	err := u.DB.QueryRow(ctx, u.Driver.GetQuery(), userID).Scan(
@@ -136,7 +136,7 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 	// in the player table, thus we will return an invalid argument error.
 	case u.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
-			"%s: %w: the given playerID does not exist: playerID '%s'",
+			"%s: %w: the given playerID does not exist, playerID: '%s'",
 			failMsg, errors.ErrBadRequest, create.PlayerID,
 		)
 
@@ -150,7 +150,7 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
 	}
 
-	logger.Info().Msgf("created user, login: %s id: %s", user.Login, user.ID)
+	logger.Info().Msgf("created user, login: '%s' id: '%s'", user.Login, user.ID)
 
 	return &user, nil
 }
@@ -160,7 +160,7 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 	failMsg := "failed to update user"
 	logger := zerolog.Ctx(ctx)
 
-	logger.Info().Msgf("update user: %s", userID)
+	logger.Info().Msgf("update user, id: '%s'", userID)
 
 	var (
 		user user.User
@@ -189,7 +189,7 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 	// in the rooms table, thus we will return an invalid argument error.
 	case u.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
-			"%s: %w: the given playerID not exist: playerID '%s'",
+			"%s: %w: the given playerID not exist, playerID: '%s'",
 			failMsg, errors.ErrBadRequest, update.PlayerID,
 		)
 
@@ -202,6 +202,8 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
+	logger.Info().Msgf("updated user, login: '%s' id: '%s'", user.Login, user.ID)
+
 	return &user, nil
 }
 
@@ -209,7 +211,7 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 func (u UserStorage) Remove(ctx context.Context, userID user.ID) error {
 	failMsg := "failed to remove user"
 
-	zerolog.Ctx(ctx).Info().Msgf("remove user %s", userID)
+	zerolog.Ctx(ctx).Info().Msgf("remove user, id: '%s'", userID)
 
 	if _, err := u.DB.Exec(ctx, u.Driver.RemoveQuery(), userID); err != nil {
 		return fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)

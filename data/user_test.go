@@ -263,7 +263,7 @@ func TestUserStorageCreate(t *testing.T) {
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
-				assert.Error(t, err, fmt.Sprintf("failed to create user: bad request: the given playerID does not exist: playerID '%s'", playerID))
+				assert.Error(t, err, fmt.Sprintf("failed to create user: bad request: the given playerID does not exist, playerID: '%s'", playerID))
 				assert.MockExpectationsMet(t, mock)
 			},
 		},
@@ -386,7 +386,7 @@ func TestUserStorageUpdate(t *testing.T) {
 			},
 			verify: func(t *testing.T, mock sqlmock.Sqlmock, u *user.User, err error) {
 				assert.Nil(t, u)
-				assert.Error(t, err, fmt.Sprintf("failed to update user: bad request: the given playerID not exist: playerID '%s'", playerID))
+				assert.Error(t, err, fmt.Sprintf("failed to update user: bad request: the given playerID not exist, playerID: '%s'", playerID))
 				assert.MockExpectationsMet(t, mock)
 			},
 		},

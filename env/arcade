@@ -15,7 +15,6 @@ ASSETS_SERVER_ADDR=":443"
 ASSETS_TLS_KEY="/etc/certs/assets_key.pem"
 ASSETS_TLS_CERT="/etc/certs/assets.pem"
 
-
 ASSETS_DATABASE="postgres"
 ASSETS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/assets_client.pem&sslkey=/etc/certs/assets_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"
 
@@ -57,7 +56,6 @@ USERS_SERVER_ADDR=":443"
 # serve https traffic are stored. These are optional.
 USERS_TLS_KEY="/etc/certs/users_key.pem"
 USERS_TLS_CERT="/etc/certs/users.pem"
-
 
 USERS_DATABASE="postgres"
 USERS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/users_client.pem&sslkey=/etc/certs/users_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"

@@ -64,7 +64,6 @@ export ldflags := -s -w \
 
 all: generate test lint
 
-
 # ____ generate ______________________________________________________________
 
 .PHONY: generate openapi

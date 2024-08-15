@@ -56,7 +56,6 @@ type (
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1UserRoute).Subrouter()
-	r.HandleFunc("/{id}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)
 	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
@@ -118,11 +117,10 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 }
 
 // Get handles a request to retrieve an user.
-func (s UsersService) Get(w http.ResponseWriter, r *http.Request) {
+func (s UsersService) Get(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 
 	// Parse the userID from the uri.
-	id := mux.Vars(r)["id"]
 	userID, err := uuid.Parse(id)
 	if err != nil {
 		err := fmt.Errorf("%w: invalid user id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)

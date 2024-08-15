@@ -127,6 +127,8 @@ func TestUserStorageList(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
@@ -146,6 +148,7 @@ func TestUserStorageList(t *testing.T) {
 }
 
 func TestUserStorageGet(t *testing.T) {
+	t.Parallel()
 	const (
 		postgresGetQ = "^SELECT id, login, public_key, player_id, created, updated FROM users WHERE id = (.+)$"
 	)
@@ -212,6 +215,8 @@ func TestUserStorageGet(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
@@ -231,6 +236,7 @@ func TestUserStorageGet(t *testing.T) {
 }
 
 func TestUserStorageCreate(t *testing.T) {
+	t.Parallel()
 	const (
 		postgresCreateQ = `^INSERT INTO users \(login, public_key, player_id\) ` +
 			`VALUES \((.+), (.+), (.+)\) ` +
@@ -327,6 +333,8 @@ func TestUserStorageCreate(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
@@ -348,6 +356,7 @@ func TestUserStorageCreate(t *testing.T) {
 }
 
 func TestUserStorageUpdate(t *testing.T) {
+	t.Parallel()
 	const (
 		postgresUpdateQ = `^UPDATE users SET login = (.+), public_key = (.+), player_id = (.+) ` +
 			`WHERE id = (.+) ` +
@@ -445,6 +454,7 @@ func TestUserStorageUpdate(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 
@@ -466,6 +476,7 @@ func TestUserStorageUpdate(t *testing.T) {
 }
 
 func TestUsersRemove(t *testing.T) {
+	t.Parallel()
 	const (
 		postgresRemoveQ = `^DELETE FROM users WHERE id = (.+)$`
 	)
@@ -504,6 +515,7 @@ func TestUsersRemove(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			db, mock, err := sqlmock.New()
 			assert.Nil(t, err)
 

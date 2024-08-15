@@ -334,7 +334,7 @@ func TestUserCreate(t *testing.T) {
 		w := invokeUsersEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
+		assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 		respBody, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)

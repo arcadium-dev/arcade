@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
@@ -56,7 +57,6 @@ type (
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1UserRoute).Subrouter()
-	r.HandleFunc("", s.Create).Methods(http.MethodPost)
 	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
 
@@ -80,8 +80,6 @@ func (UsersService) Shutdown() {}
 // List handles a request to retrieve multiple users.
 func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListParams) {
 	ctx := r.Context()
-
-	// TODO: start here
 
 	// Create a filter from the quesry parameters.
 	filter, err := NewUserFilter(r)
@@ -169,7 +167,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq rest.UserCreateRequest
+	var createReq UserCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -179,7 +177,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the user request to the user manager.
-	change, err := TranslateUserRequest(createReq.UserRequest)
+	change, err := TranslateUserChangeRequest(createReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -195,11 +193,11 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
+	w.WriteHeader(http.StatusCreated)
+
 	err = json.NewEncoder(w).Encode(rest.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode create user response, error %s", err)
 		return
 	}
 }
@@ -368,6 +366,36 @@ func TranslateUserRequest(u rest.UserRequest) (user.Change, error) {
 	userReq := user.Change{
 		Login:     u.Login,
 		PublicKey: []byte(u.PublicKey),
+		PlayerID:  asset.PlayerID(playerID),
+	}
+
+	return userReq, nil
+}
+
+// TranslateUserCreateRequest translates a network user user create request to an user change.
+func TranslateUserChangeRequest(r UserCreateRequest) (user.Change, error) {
+	empty := user.Change{}
+
+	if r.Login == "" {
+		return empty, fmt.Errorf("%w: empty user login", errors.ErrBadRequest)
+	}
+	if len(r.Login) > user.MaxLoginLen {
+		return empty, fmt.Errorf("%w: user login exceeds maximum length", errors.ErrBadRequest)
+	}
+	if r.PublicKey == "" {
+		return empty, fmt.Errorf("%w: empty user ssh public key", errors.ErrBadRequest)
+	}
+	if len(r.PublicKey) > user.MaxPublicKeyLen {
+		return empty, fmt.Errorf("%w: user ssh public key exceeds maximum length", errors.ErrBadRequest)
+	}
+	playerID, err := uuid.Parse(r.PlayerID)
+	if err != nil {
+		return empty, fmt.Errorf("%w: invalid playerID: '%s'", errors.ErrBadRequest, r.PlayerID)
+	}
+
+	userReq := user.Change{
+		Login:     r.Login,
+		PublicKey: []byte(r.PublicKey),
 		PlayerID:  asset.PlayerID(playerID),
 	}
 

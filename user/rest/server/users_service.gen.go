@@ -22,6 +22,13 @@ type User struct {
 	Updated   arcade.Timestamp `json:"updated"`
 }
 
+// UserCreateRequest UserCreateRequest is used to request a user be created.
+type UserCreateRequest struct {
+	Login     string `json:"login"`
+	PublicKey string `json:"publicKey"`
+	PlayerID  string `json:"playerID"`
+}
+
 // UserResponse returns a single user in the response.
 type UserResponse struct {
 	// User holds a user's information, and is sent in a response.
@@ -42,11 +49,17 @@ type ListParams struct {
 	Limit *string `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateJSONRequestBody defines body for Create for application/json ContentType.
+type CreateJSONRequestBody = UserCreateRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List returns a list of users.
 	// (GET /v1/user)
 	List(w http.ResponseWriter, r *http.Request, params ListParams)
+	// Create creates a user.
+	// (POST /v1/user)
+	Create(w http.ResponseWriter, r *http.Request)
 	// Get returns a user.
 	// (GET /v1/user/{id})
 	Get(w http.ResponseWriter, r *http.Request, id string)
@@ -88,6 +101,21 @@ func (siw *ServerInterfaceWrapper) List(w http.ResponseWriter, r *http.Request) 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.List(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Create operation middleware
+func (siw *ServerInterfaceWrapper) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Create(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -237,6 +265,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	}
 
 	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.List).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.Create).Methods("POST")
 
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Get).Methods("GET")
 

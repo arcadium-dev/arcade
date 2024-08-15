@@ -1,0 +1,123 @@
+openapi: "3.0.1"
+info:
+  title: "Arcadium Users Service"
+  description: "The Arcadium Users Service provides a REST API to manage users."
+  contact:
+    name: "arcadium.dev"
+    email: "info@arcadium.dev"
+  license:
+    name: "Apache"
+  version: "2.0"
+
+paths:
+  /v1/user:
+    get:
+      summary: List returns a list of users.
+      description: On successful completion, this returns a list of users.
+      operationId: List
+      parameters:
+        - name: offset
+          description: An offset into the total list of users.
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: limit
+          description: An limit to the number of users returned.
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: UsersResponse returns the list of users.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersResponse"
+        "400":
+          description: A bad request was sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: An internal server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    User:
+      type: object
+      description: holds a user's information, and is sent in a response.
+      required:
+        - id
+        - login
+        - publicKey
+        - playerID
+        - created
+        - updated
+      properties:
+        id:
+          type: string
+          x-order: 1
+          x-go-name: ID
+        login:
+          type: string
+          x-order: 2
+        publicKey:
+          type: string
+          x-order: 3
+        playerID:
+          type: string
+          x-order: 4
+        created:
+          type: string
+          x-go-type: arcade.Timestamp
+          x-go-type-import:
+            path: arcadium.dev/arcade
+          x-order: 5
+        updated:
+          type: string
+          x-go-type: arcade.Timestamp
+          x-go-type-import:
+            path: arcadium.dev/arcade
+          x-order: 6
+
+    UserResponse:
+      type: object
+      description: returns a single user in the response.
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+
+    UsersResponse:
+      type: object
+      description: returns a multiple users.
+      required:
+        - users
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+    ErrorResponse:
+      type: object
+      description: ErrorResponse provides additional information about problems encounted while performing an operation.
+      required:
+        - status
+        - detail
+      properties:
+        detail:
+          description: Message is a human-readable explanation specific to this occurrence of the problem.
+          type: string
+        status:
+          description: Status is the HTTP status code applicable to this problem.
+          type: integer
+          format: int

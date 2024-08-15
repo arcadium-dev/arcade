@@ -1,0 +1,8 @@
+package: server
+generate:
+  models: true
+  gorilla-server: true
+output: user/rest/server/user.gen.go
+output-options:
+  exclude-schemas:
+    - "ErrorResponse"

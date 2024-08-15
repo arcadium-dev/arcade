@@ -35,6 +35,13 @@ type UserResponse struct {
 	User User `json:"user"`
 }
 
+// UserUpdateRequest UserUpdateRequest is used to request a user be updated.
+type UserUpdateRequest struct {
+	Login     string `json:"login"`
+	PublicKey string `json:"publicKey"`
+	PlayerID  string `json:"playerID"`
+}
+
 // UsersResponse returns a multiple users.
 type UsersResponse struct {
 	Users []User `json:"users"`
@@ -52,6 +59,9 @@ type ListParams struct {
 // CreateJSONRequestBody defines body for Create for application/json ContentType.
 type CreateJSONRequestBody = UserCreateRequest
 
+// UpdateJSONRequestBody defines body for Update for application/json ContentType.
+type UpdateJSONRequestBody = UserUpdateRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// List returns a list of users.
@@ -63,6 +73,9 @@ type ServerInterface interface {
 	// Get returns a user.
 	// (GET /v1/user/{id})
 	Get(w http.ResponseWriter, r *http.Request, id string)
+	// Update updates a user.
+	// (PUT /v1/user/{id})
+	Update(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -142,6 +155,32 @@ func (siw *ServerInterfaceWrapper) Get(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Get(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// Update operation middleware
+func (siw *ServerInterfaceWrapper) Update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", mux.Vars(r)["id"], &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Update(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -269,6 +308,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/v1/user", wrapper.Create).Methods("POST")
 
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Get).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Update).Methods("PUT")
 
 	return r
 }

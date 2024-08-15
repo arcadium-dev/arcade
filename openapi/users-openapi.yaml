@@ -72,6 +72,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: The user already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: An internal server error occurred.
           content:
@@ -98,6 +104,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: A bad request was sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: The user associated with the userID does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: An internal server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Update updates a user.
+      description: On successful completion, this updates an existing user.
+      operationId: Update
+      parameters:
+        - name: id
+          description: The ID of the user.
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersResponse"
         "400":
           description: A bad request was sent.
           content:
@@ -179,6 +228,24 @@ components:
     UserCreateRequest:
       type: object
       description: UserCreateRequest is used to request a user be created.
+      required:
+        - login
+        - publicKey
+        - playerID
+      properties:
+        login:
+          type: string
+          x-order: 1
+        publicKey:
+          type: string
+          x-order: 2
+        playerID:
+          type: string
+          x-order: 3
+
+    UserUpdateRequest:
+      type: object
+      description: UserUpdateRequest is used to request a user be updated.
       required:
         - login
         - publicKey

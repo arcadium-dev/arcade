@@ -13,11 +13,11 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 
-	"arcadium.dev/arcade"
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/require"
 	"arcadium.dev/core/sql"
 
+	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
 	"arcadium.dev/arcade/data"
 	"arcadium.dev/arcade/data/postgres"

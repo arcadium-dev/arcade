@@ -57,7 +57,6 @@ type (
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1UserRoute).Subrouter()
-	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
 
 	options := GorillaServerOptions{
@@ -177,7 +176,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the user request to the user manager.
-	change, err := TranslateUserChangeRequest(createReq)
+	change, err := TranslateUserCreateRequest(createReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -203,11 +202,10 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update handles a request to update an user.
-func (s UsersService) Update(w http.ResponseWriter, r *http.Request) {
+func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 
 	// Grab the userID from the uri.
-	id := mux.Vars(r)["id"]
 	userID, err := uuid.Parse(id)
 	if err != nil {
 		err := fmt.Errorf("%w: invalid user id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
@@ -233,7 +231,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Populate the network user from the body.
-	var updateReq rest.UserUpdateRequest
+	var updateReq UserUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -243,7 +241,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate the user request.
-	change, err := TranslateUserRequest(updateReq.UserRequest)
+	change, err := TranslateUserUpdateRequest(updateReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -261,9 +259,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
 		return
 	}
 }
@@ -372,8 +368,38 @@ func TranslateUserRequest(u rest.UserRequest) (user.Change, error) {
 	return userReq, nil
 }
 
-// TranslateUserCreateRequest translates a network user user create request to an user change.
-func TranslateUserChangeRequest(r UserCreateRequest) (user.Change, error) {
+// TranslateUserCreateRequest translates a user create request to an user change.
+func TranslateUserCreateRequest(r UserCreateRequest) (user.Change, error) {
+	empty := user.Change{}
+
+	if r.Login == "" {
+		return empty, fmt.Errorf("%w: empty user login", errors.ErrBadRequest)
+	}
+	if len(r.Login) > user.MaxLoginLen {
+		return empty, fmt.Errorf("%w: user login exceeds maximum length", errors.ErrBadRequest)
+	}
+	if r.PublicKey == "" {
+		return empty, fmt.Errorf("%w: empty user ssh public key", errors.ErrBadRequest)
+	}
+	if len(r.PublicKey) > user.MaxPublicKeyLen {
+		return empty, fmt.Errorf("%w: user ssh public key exceeds maximum length", errors.ErrBadRequest)
+	}
+	playerID, err := uuid.Parse(r.PlayerID)
+	if err != nil {
+		return empty, fmt.Errorf("%w: invalid playerID: '%s'", errors.ErrBadRequest, r.PlayerID)
+	}
+
+	userReq := user.Change{
+		Login:     r.Login,
+		PublicKey: []byte(r.PublicKey),
+		PlayerID:  asset.PlayerID(playerID),
+	}
+
+	return userReq, nil
+}
+
+// TranslateUserUpdateRequest translates a user create request to an user change.
+func TranslateUserUpdateRequest(r UserUpdateRequest) (user.Change, error) {
 	empty := user.Change{}
 
 	if r.Login == "" {

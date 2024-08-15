@@ -16,7 +16,7 @@ declare -ar infrastructure=(
 
 declare -ar tls_servers=(
 	"assets"
-  "users"
+	"users"
 	"influxdb"
 	"postgres"
 )
@@ -36,7 +36,7 @@ declare -ar networks=(
 
 declare -ar services=(
 	"assets"
-  "users"
+	"users"
 )
 
 declare -Ar influxdb_config=(

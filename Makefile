@@ -81,7 +81,7 @@ openapi:
 ./users/rest/server/user.gen.go: ./openapi/users-openapi.yaml
 	@printf "\nRunning oapi-codegen for $<...\n"
 	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
-	go mod tidy
+	@go mod tidy
 
 generate: openapi $(openapi_src)
 

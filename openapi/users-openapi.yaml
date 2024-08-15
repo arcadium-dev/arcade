@@ -49,6 +49,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+    post:
+      summary: Create creates a user.
+      description: On successful completion, this creates a new user.
+      operationId: Create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersResponse"
+        "400":
+          description: A bad request was sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: An internal server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /v1/user/{id}:
     get:
       summary: Get returns a user.
@@ -145,6 +175,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+
+    UserCreateRequest:
+      type: object
+      description: UserCreateRequest is used to request a user be created.
+      required:
+        - login
+        - publicKey
+        - playerID
+      properties:
+        login:
+          type: string
+          x-order: 1
+        publicKey:
+          type: string
+          x-order: 2
+        playerID:
+          type: string
+          x-order: 3
 
     ErrorResponse:
       type: object

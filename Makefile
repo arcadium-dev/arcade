@@ -62,11 +62,33 @@ export ldflags := -s -w \
 
 .PHONY: all
 
-all: test lint
+all: generate test lint
+
+
+# ____ generate ______________________________________________________________
+
+.PHONY: generate openapi
+
+openapi_src := ./users/rest/server/user.gen.go
+
+openapi:
+	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
+    printf "\nInstalling oapi-codegen...\n"; \
+    go get "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
+		go mod tidy; \
+    go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
+  fi
+
+./users/rest/server/user.gen.go: ./openapi/users-openapi.yaml
+	@printf "\nRunning oapi-codegen for $<...\n"
+	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
+	go mod tidy
+
+generate: openapi $(openapi_src)
 
 # ____ lint __________________________________________________________________
 
-.PHONY: fmt tidy vet staticcheck vuln openapi lint
+.PHONY: fmt tidy vet staticcheck vuln lint
 
 fmt:
 	@printf "\nRunning go fmt...\n"
@@ -100,18 +122,7 @@ vuln:
 	@printf "\nRunning govulncheck...\n"
 	$$(go env GOPATH)/bin/govulncheck ./...
 
-openapi:
-	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
-    printf "\nInstalling oapi-codegen...\n"; \
-    go get "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
-		go mod tidy; \
-    go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
-  fi
-	@printf "\nRunning oapi-codegen...\n"
-	#$$(go env GOPATH)/bin/oapi-codegen --config=./api/users-server.yaml ./api/users-api.yaml
-	#go mod tidy
-
-lint: fmt tidy vet staticcheck vuln
+lint: fmt tidy vet staticcheck vuln openapi ./users/rest/server/user.gen.go
 	@printf "\nChecking for changed files...\n"
 	git status --porcelain
 	@printf "\n"
@@ -190,3 +201,4 @@ clean:
 	-rm -f $$(go env GOPATH)/bin/staticcheck
 	-rm -f $$(go env GOPATH)/bin/govulncheck
 	-rm -f $$(go env GOPATH)/bin/swagger
+	-rm -f $$(go env GOPATH)/bin/oapi-codegen

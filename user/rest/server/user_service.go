@@ -56,11 +56,18 @@ type (
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
 	r := router.PathPrefix(V1UserRoute).Subrouter()
-	r.HandleFunc("", s.List).Methods(http.MethodGet)
 	r.HandleFunc("/{id}", s.Get).Methods(http.MethodGet)
 	r.HandleFunc("", s.Create).Methods(http.MethodPost)
 	r.HandleFunc("/{id}", s.Update).Methods(http.MethodPut)
 	r.HandleFunc("/{id}", s.Remove).Methods(http.MethodDelete)
+
+	options := GorillaServerOptions{
+		BaseRouter: router,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			server.Response(r.Context(), w, err)
+		},
+	}
+	HandlerWithOptions(s, options)
 }
 
 // Name returns the name of the service.
@@ -72,8 +79,10 @@ func (UsersService) Name() string {
 func (UsersService) Shutdown() {}
 
 // List handles a request to retrieve multiple users.
-func (s UsersService) List(w http.ResponseWriter, r *http.Request) {
+func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListParams) {
 	ctx := r.Context()
+
+	// TODO: start here
 
 	// Create a filter from the quesry parameters.
 	filter, err := NewUserFilter(r)
@@ -90,16 +99,16 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Translate from user users, to network users.
-	users := make([]rest.User, 0)
+	users := make([]User, 0)
 	for _, uUser := range uUsers {
-		users = append(users, TranslateUser(uUser))
+		users = append(users, NewTranslateUser(uUser))
 	}
 
 	// Return list as body.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(rest.UsersResponse{Users: users})
+	err = json.NewEncoder(w).Encode(UsersResponse{Users: users})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -310,6 +319,33 @@ func NewUserFilter(r *http.Request) (user.Filter, error) {
 	return filter, nil
 }
 
+// NewNewUserFilter creates an user users filter from the the given request's query parameters.
+func NewNewUserFilter(params ListParams) (user.Filter, error) {
+	filter := user.Filter{
+		Limit: user.DefaultUserFilterLimit,
+	}
+
+	if params.Offset != nil {
+		o := *params.Offset
+		offset, err := strconv.Atoi(o)
+		if err != nil || offset <= 0 {
+			return user.Filter{}, fmt.Errorf("%w: invalid offset query parameter: '%s'", errors.ErrBadRequest, o)
+		}
+		filter.Offset = uint(offset)
+	}
+
+	if params.Limit != nil {
+		l := *params.Limit
+		limit, err := strconv.Atoi(l)
+		if err != nil || limit <= 0 || limit > user.MaxUserFilterLimit {
+			return user.Filter{}, fmt.Errorf("%w: invalid limit query parameter: '%s'", errors.ErrBadRequest, l)
+		}
+		filter.Limit = uint(limit)
+	}
+
+	return filter, nil
+}
+
 // TranslateUserRequest translates a network user user request to an user user request.
 func TranslateUserRequest(u rest.UserRequest) (user.Change, error) {
 	empty := user.Change{}
@@ -343,6 +379,18 @@ func TranslateUserRequest(u rest.UserRequest) (user.Change, error) {
 // TranslateUser translates an user user to a network user.
 func TranslateUser(u *user.User) rest.User {
 	return rest.User{
+		ID:        u.ID.String(),
+		Login:     u.Login,
+		PublicKey: string(u.PublicKey),
+		PlayerID:  u.PlayerID.String(),
+		Created:   u.Created,
+		Updated:   u.Updated,
+	}
+}
+
+// NewTranslateUser translates an user user to a network user.
+func NewTranslateUser(u *user.User) User {
+	return User{
 		ID:        u.ID.String(),
 		Login:     u.Login,
 		PublicKey: string(u.PublicKey),

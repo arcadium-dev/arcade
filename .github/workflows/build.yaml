@@ -37,6 +37,10 @@ jobs:
         check-latest: true
         cache: true
 
+    - name: generate
+      run: |
+        make generate
+
     - name: lint
       run: |
         make lint

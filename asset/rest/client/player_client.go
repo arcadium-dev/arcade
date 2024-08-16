@@ -97,7 +97,7 @@ func (c Client) CreatePlayer(ctx context.Context, player asset.PlayerCreate) (*a
 	failMsg := "failed to create player"
 
 	// Build the request body.
-	change, err := convertPlayerChange(player.PlayerChange)
+	change, err := TranslatePlayerChange(player.PlayerChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -130,7 +130,7 @@ func (c Client) UpdatePlayer(ctx context.Context, id asset.PlayerID, player asse
 	failMsg := "failed to update player"
 
 	// Build the request body.
-	change, err := convertPlayerChange(player.PlayerChange)
+	change, err := TranslatePlayerChange(player.PlayerChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -186,7 +186,7 @@ func playersResponse(body io.ReadCloser, failMsg string) ([]*asset.Player, error
 	}
 	var aPlayers []*asset.Player
 	for _, p := range playersResp.Players {
-		aPlayer, err := convertPlayer(p)
+		aPlayer, err := TranslatePlayer(p)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
@@ -201,14 +201,14 @@ func playerResponse(body io.ReadCloser, failMsg string) (*asset.Player, error) {
 	if err := json.NewDecoder(body).Decode(&playerResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aPlayer, err := convertPlayer(playerResp.Player)
+	aPlayer, err := TranslatePlayer(playerResp.Player)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	return aPlayer, nil
 }
 
-func convertPlayer(p rest.Player) (*asset.Player, error) {
+func TranslatePlayer(p rest.Player) (*asset.Player, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid player ID: '%s': %w", p.ID, err)
@@ -235,7 +235,7 @@ func convertPlayer(p rest.Player) (*asset.Player, error) {
 	return player, nil
 }
 
-func convertPlayerChange(i asset.PlayerChange) (rest.PlayerRequest, error) {
+func TranslatePlayerChange(i asset.PlayerChange) (rest.PlayerRequest, error) {
 	emptyResp := rest.PlayerRequest{}
 
 	if i.Name == "" {

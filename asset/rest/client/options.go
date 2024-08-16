@@ -37,7 +37,16 @@ type (
 func WithTimeout(timeout time.Duration) ClientOption {
 	return newClientOption(func(c *Client) {
 		if timeout > 0 {
-			c.timeout = timeout
+			c.client.Timeout = timeout
+		}
+	})
+}
+
+// WithTLSConfig sets the client tls config.
+func WithTLSConfig(cfg *tls.Config) ClientOption {
+	return newClientOption(func(c *Client) {
+		c.client.Transport = &http.Transport{
+			TLSClientConfig: cfg,
 		}
 	})
 }
@@ -45,7 +54,7 @@ func WithTimeout(timeout time.Duration) ClientOption {
 // WithInsecure is only for use with integration testing.
 func WithInsecure() ClientOption {
 	return newClientOption(func(c *Client) {
-		c.transport = &http.Transport{
+		c.client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},

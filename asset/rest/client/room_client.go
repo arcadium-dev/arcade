@@ -100,7 +100,7 @@ func (c Client) CreateRoom(ctx context.Context, room asset.RoomCreate) (*asset.R
 	failMsg := "failed to create room"
 
 	// Build the request body.
-	change, err := convertRoomChange(room.RoomChange)
+	change, err := TranslateRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -133,7 +133,7 @@ func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.Room
 	failMsg := "failed to update room"
 
 	// Build the request body.
-	change, err := convertRoomChange(room.RoomChange)
+	change, err := TranslateRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -189,7 +189,7 @@ func roomsResponse(body io.ReadCloser, failMsg string) ([]*asset.Room, error) {
 	}
 	var aRooms []*asset.Room
 	for _, p := range roomsResp.Rooms {
-		aRoom, err := convertRoom(p)
+		aRoom, err := TranslateRoom(p)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
@@ -204,14 +204,14 @@ func roomResponse(body io.ReadCloser, failMsg string) (*asset.Room, error) {
 	if err := json.NewDecoder(body).Decode(&roomResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aRoom, err := convertRoom(roomResp.Room)
+	aRoom, err := TranslateRoom(roomResp.Room)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	return aRoom, nil
 }
 
-func convertRoom(p rest.Room) (*asset.Room, error) {
+func TranslateRoom(p rest.Room) (*asset.Room, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid room ID: '%s': %w", p.ID, err)
@@ -238,7 +238,7 @@ func convertRoom(p rest.Room) (*asset.Room, error) {
 	return room, nil
 }
 
-func convertRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
+func TranslateRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
 	emptyResp := rest.RoomRequest{}
 
 	if i.Name == "" {

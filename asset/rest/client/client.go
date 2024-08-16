@@ -34,10 +34,8 @@ const (
 type (
 	// Client provides a client for the asset api.
 	Client struct {
-		baseURL   string
-		timeout   time.Duration
-		transport *http.Transport
-		client    *http.Client
+		baseURL string
+		client  *http.Client
 	}
 
 	ResponseError struct {
@@ -50,22 +48,15 @@ func (e ResponseError) Error() string { return e.Detail }
 
 // New returns a new client for the asset API.
 func New(baseURL string, opts ...ClientOption) *Client {
-	// Set defaults.
 	c := &Client{
 		baseURL: baseURL,
-		timeout: defaultTimeout,
+		client: &http.Client{
+			Timeout: defaultTimeout,
+		},
 	}
 
-	// Load options.
 	for _, opt := range opts {
 		opt.apply(c)
-	}
-
-	c.client = &http.Client{
-		Timeout: c.timeout,
-	}
-	if c.transport != nil {
-		c.client.Transport = c.transport
 	}
 
 	return c

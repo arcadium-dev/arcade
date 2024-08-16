@@ -30,6 +30,7 @@ import (
 	"arcadium.dev/core/http/server"
 
 	"arcadium.dev/arcade/asset"
+	oapi "arcadium.dev/arcade/internal/user/server"
 	"arcadium.dev/arcade/user"
 )
 
@@ -56,13 +57,13 @@ type (
 
 // Register sets up the http handler for this service with the given router.
 func (s UsersService) Register(router *mux.Router) {
-	options := GorillaServerOptions{
+	options := oapi.GorillaServerOptions{
 		BaseRouter: router,
 		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
 			server.Response(r.Context(), w, err)
 		},
 	}
-	HandlerWithOptions(s, options)
+	oapi.HandlerWithOptions(s, options)
 }
 
 // Name returns the name of the service.
@@ -74,7 +75,7 @@ func (UsersService) Name() string {
 func (UsersService) Shutdown() {}
 
 // List handles a request to retrieve multiple users.
-func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListParams) {
+func (s UsersService) List(w http.ResponseWriter, r *http.Request, params oapi.ListParams) {
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
@@ -92,7 +93,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 	}
 
 	// Translate from user users, to network users.
-	users := make([]User, 0)
+	users := make([]oapi.User, 0)
 	for _, uUser := range uUsers {
 		users = append(users, TranslateUser(uUser))
 	}
@@ -101,7 +102,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(UsersResponse{Users: users})
+	err = json.NewEncoder(w).Encode(oapi.UsersResponse{Users: users})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to create response: %s", errors.ErrInternal, err,
@@ -133,7 +134,7 @@ func (s UsersService) Get(w http.ResponseWriter, r *http.Request, id string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
 			"%w: unable to write response: %s", errors.ErrInternal, err,
@@ -163,7 +164,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createReq UserCreateRequest
+	var createReq oapi.UserCreateRequest
 	err = json.Unmarshal(body, &createReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -191,7 +192,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 
-	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Msgf("failed to encode create user response, error %s", err)
 		return
@@ -228,7 +229,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 	}
 
 	// Populate the network user from the body.
-	var updateReq UserUpdateRequest
+	var updateReq oapi.UserUpdateRequest
 	err = json.Unmarshal(body, &updateReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -254,7 +255,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
 		return
@@ -290,7 +291,7 @@ func (s UsersService) AssociatePlayer(w http.ResponseWriter, r *http.Request, id
 	}
 
 	// Populate the network user from the body.
-	var assocPlayerReq AssociatePlayerRequest
+	var assocPlayerReq oapi.AssociatePlayerRequest
 	err = json.Unmarshal(body, &assocPlayerReq)
 	if err != nil {
 		server.Response(ctx, w, fmt.Errorf(
@@ -316,7 +317,7 @@ func (s UsersService) AssociatePlayer(w http.ResponseWriter, r *http.Request, id
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
+	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
 		return
@@ -344,7 +345,7 @@ func (s UsersService) Remove(w http.ResponseWriter, r *http.Request, id string) 
 }
 
 // UserFilter creates an user users filter from the the given request's query parameters.
-func UserFilter(params ListParams) (user.Filter, error) {
+func UserFilter(params oapi.ListParams) (user.Filter, error) {
 	filter := user.Filter{
 		Limit: user.DefaultUserFilterLimit,
 	}
@@ -371,7 +372,7 @@ func UserFilter(params ListParams) (user.Filter, error) {
 }
 
 // CreateChange translates a user create request to an user change.
-func CreateChange(r UserCreateRequest) (user.Change, error) {
+func CreateChange(r oapi.UserCreateRequest) (user.Change, error) {
 	empty := user.Change{}
 
 	if r.Login == "" {
@@ -394,7 +395,7 @@ func CreateChange(r UserCreateRequest) (user.Change, error) {
 }
 
 // UpdateChange translates a user create request to an user change.
-func UpdateChange(r UserUpdateRequest) (user.Change, error) {
+func UpdateChange(r oapi.UserUpdateRequest) (user.Change, error) {
 	empty := user.Change{}
 
 	if r.Login == "" {
@@ -417,7 +418,7 @@ func UpdateChange(r UserUpdateRequest) (user.Change, error) {
 }
 
 // AssocPlayer translates a user player update request to an user change.
-func AssocPlayer(r AssociatePlayerRequest) (user.AssociatePlayer, error) {
+func AssocPlayer(r oapi.AssociatePlayerRequest) (user.AssociatePlayer, error) {
 	empty := user.AssociatePlayer{}
 
 	playerID, err := uuid.Parse(r.PlayerID)
@@ -431,8 +432,8 @@ func AssocPlayer(r AssociatePlayerRequest) (user.AssociatePlayer, error) {
 }
 
 // TranslateUser translates an user user to a network user.
-func TranslateUser(u *user.User) User {
-	return User{
+func TranslateUser(u *user.User) oapi.User {
+	return oapi.User{
 		ID:        u.ID.String(),
 		Login:     u.Login,
 		PublicKey: string(u.PublicKey),

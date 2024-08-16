@@ -68,7 +68,9 @@ all: generate test lint
 
 .PHONY: generate openapi
 
-openapi_src := ./users/rest/server/user.gen.go
+openapi_src := \
+	./internal/user/server/users_service.gen.go \
+	./internal/user/client/users_client.gen.go
 
 openapi:
 	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
@@ -78,12 +80,16 @@ openapi:
     go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
   fi
 
-./users/rest/server/user.gen.go: ./openapi/users-openapi.yaml
-	@printf "\nRunning oapi-codegen for $<...\n"
+./internal/user/server/users_service.gen.go: ./openapi/users-openapi.yaml ./openapi/users-server.yaml
+	@printf "\nRunning oapi-codegen for $@...\n"
 	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
-	@go mod tidy
+
+./internal/user/client/users_client.gen.go: ./openapi/users-openapi.yaml ./openapi/users-client.yaml
+	@printf "\nRunning oapi-codegen for $@...\n"
+	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-client.yaml ./openapi/users-openapi.yaml
 
 generate: openapi $(openapi_src)
+	@go mod tidy
 
 # ____ lint __________________________________________________________________
 

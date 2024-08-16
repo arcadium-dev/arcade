@@ -103,7 +103,7 @@ func (c Client) CreateLink(ctx context.Context, link asset.LinkCreate) (*asset.L
 	failMsg := "failed to create link"
 
 	// Build the request body.
-	change, err := TranslateLinkChange(link.LinkChange)
+	change, err := convertLinkChange(link.LinkChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -136,7 +136,7 @@ func (c Client) UpdateLink(ctx context.Context, id asset.LinkID, link asset.Link
 	failMsg := "failed to update link"
 
 	// Build the request body.
-	change, err := TranslateLinkChange(link.LinkChange)
+	change, err := convertLinkChange(link.LinkChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -192,7 +192,7 @@ func linksResponse(body io.ReadCloser, failMsg string) ([]*asset.Link, error) {
 	}
 	var aLinks []*asset.Link
 	for _, p := range linksResp.Links {
-		aLink, err := TranslateLink(p)
+		aLink, err := convertLink(p)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
@@ -207,15 +207,14 @@ func linkResponse(body io.ReadCloser, failMsg string) (*asset.Link, error) {
 	if err := json.NewDecoder(body).Decode(&linkResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aLink, err := TranslateLink(linkResp.Link)
+	aLink, err := convertLink(linkResp.Link)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	return aLink, nil
 }
 
-// TranslateLink translates a network link into an asset link.
-func TranslateLink(p rest.Link) (*asset.Link, error) {
+func convertLink(p rest.Link) (*asset.Link, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid link ID: '%s': %w", p.ID, err)
@@ -247,8 +246,7 @@ func TranslateLink(p rest.Link) (*asset.Link, error) {
 	return link, nil
 }
 
-// TranslateLinkChange translates an asset link change struct to a network link request.
-func TranslateLinkChange(i asset.LinkChange) (rest.LinkRequest, error) {
+func convertLinkChange(i asset.LinkChange) (rest.LinkRequest, error) {
 	emptyResp := rest.LinkRequest{}
 
 	if i.Name == "" {

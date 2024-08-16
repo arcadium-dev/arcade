@@ -100,7 +100,7 @@ func (c Client) CreateRoom(ctx context.Context, room asset.RoomCreate) (*asset.R
 	failMsg := "failed to create room"
 
 	// Build the request body.
-	change, err := TranslateRoomChange(room.RoomChange)
+	change, err := convertRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -133,7 +133,7 @@ func (c Client) UpdateRoom(ctx context.Context, id asset.RoomID, room asset.Room
 	failMsg := "failed to update room"
 
 	// Build the request body.
-	change, err := TranslateRoomChange(room.RoomChange)
+	change, err := convertRoomChange(room.RoomChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -189,7 +189,7 @@ func roomsResponse(body io.ReadCloser, failMsg string) ([]*asset.Room, error) {
 	}
 	var aRooms []*asset.Room
 	for _, p := range roomsResp.Rooms {
-		aRoom, err := TranslateRoom(p)
+		aRoom, err := convertRoom(p)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
@@ -204,15 +204,14 @@ func roomResponse(body io.ReadCloser, failMsg string) (*asset.Room, error) {
 	if err := json.NewDecoder(body).Decode(&roomResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aRoom, err := TranslateRoom(roomResp.Room)
+	aRoom, err := convertRoom(roomResp.Room)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	return aRoom, nil
 }
 
-// TranslateRoom translates a network room into an asset room.
-func TranslateRoom(p rest.Room) (*asset.Room, error) {
+func convertRoom(p rest.Room) (*asset.Room, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid room ID: '%s': %w", p.ID, err)
@@ -239,8 +238,7 @@ func TranslateRoom(p rest.Room) (*asset.Room, error) {
 	return room, nil
 }
 
-// TranslateRoomChange translates an asset room change struct to a network room request.
-func TranslateRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
+func convertRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
 	emptyResp := rest.RoomRequest{}
 
 	if i.Name == "" {

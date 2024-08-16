@@ -104,7 +104,7 @@ func (c Client) CreateItem(ctx context.Context, item asset.ItemCreate) (*asset.I
 	failMsg := "failed to create item"
 
 	// Build the request body.
-	change, err := TranslateItemChange(item.ItemChange)
+	change, err := convertItemChange(item.ItemChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -137,7 +137,7 @@ func (c Client) UpdateItem(ctx context.Context, id asset.ItemID, item asset.Item
 	failMsg := "failed to update item"
 
 	// Build the request body.
-	change, err := TranslateItemChange(item.ItemChange)
+	change, err := convertItemChange(item.ItemChange)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
@@ -193,7 +193,7 @@ func itemsResponse(body io.ReadCloser, failMsg string) ([]*asset.Item, error) {
 	}
 	var aItems []*asset.Item
 	for _, i := range itemsResp.Items {
-		aItem, err := TranslateItem(i)
+		aItem, err := convertItem(i)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", failMsg, err)
 		}
@@ -208,15 +208,14 @@ func itemResponse(body io.ReadCloser, failMsg string) (*asset.Item, error) {
 	if err := json.NewDecoder(body).Decode(&itemResp); err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
-	aItem, err := TranslateItem(itemResp.Item)
+	aItem, err := convertItem(itemResp.Item)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", failMsg, err)
 	}
 	return aItem, nil
 }
 
-// TranslateItem translates a network item into an asset item.
-func TranslateItem(i rest.Item) (*asset.Item, error) {
+func convertItem(i rest.Item) (*asset.Item, error) {
 	id, err := uuid.Parse(i.ID)
 	if err != nil {
 		return nil, fmt.Errorf("received invalid item ID: '%s': %w", i.ID, err)
@@ -255,8 +254,7 @@ func TranslateItem(i rest.Item) (*asset.Item, error) {
 	return item, nil
 }
 
-// TranslateItemChange translates an asset item change struct to a network item request.
-func TranslateItemChange(i asset.ItemChange) (rest.ItemRequest, error) {
+func convertItemChange(i asset.ItemChange) (rest.ItemRequest, error) {
 	emptyResp := rest.ItemRequest{}
 
 	if i.Name == "" {

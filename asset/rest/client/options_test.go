@@ -1,10 +1,13 @@
 package client
 
 import (
+	"crypto/tls"
+	"net/http"
 	"testing"
 	"time"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/require"
 )
 
 func TestWithTimeout(t *testing.T) {
@@ -20,9 +23,10 @@ func TestWithTimeout(t *testing.T) {
 	})
 }
 
-/*
 func TestWithTLSConfig(t *testing.T) {
-		client := New("", WithTLSConfig(&tls.Config{ InsecureSkipVerify: true})
-		assert.Equal(t, client.client.Timeout, defaultTimeout)
+	client := New("", WithTLSConfig(&tls.Config{InsecureSkipVerify: true}))
+	require.NotNil(t, client.client.Transport)
+	transport, ok := client.client.Transport.(*http.Transport)
+	require.True(t, ok)
+	assert.True(t, transport.TLSClientConfig.InsecureSkipVerify)
 }
-*/

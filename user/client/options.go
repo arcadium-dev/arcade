@@ -30,7 +30,9 @@ type (
 // WithTimeout sets the client timeout.
 func WithTimeout(timeout time.Duration) Option {
 	return newOption(func(c *UsersClient) {
-		c.httpClient.Timeout = timeout
+		if timeout > 0 {
+			c.httpClient.Timeout = timeout
+		}
 	})
 }
 

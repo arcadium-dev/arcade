@@ -43,12 +43,13 @@ type (
 		Storage UserStorage
 	}
 
-	// UserStorage defines the expected behavior of the user manager in the domain layer.
+	// UserStorage defines the expected behavior of the user manager in the data layer.
 	UserStorage interface {
 		List(context.Context, user.Filter) ([]*user.User, error)
 		Get(context.Context, user.ID) (*user.User, error)
 		Create(context.Context, user.Create) (*user.User, error)
 		Update(context.Context, user.ID, user.Update) (*user.User, error)
+		AssociatePlayer(context.Context, user.ID, user.AssociatePlayer) (*user.User, error)
 		Remove(context.Context, user.ID) error
 	}
 )
@@ -77,7 +78,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params ListPa
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
-	filter, err := NewUserFilter(params)
+	filter, err := UserFilter(params)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -172,7 +173,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the user request to the user manager.
-	change, err := TranslateUserCreateRequest(createReq)
+	change, err := CreateChange(createReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -237,7 +238,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 	}
 
 	// Translate the user request.
-	change, err := TranslateUserUpdateRequest(updateReq)
+	change, err := UpdateChange(updateReq)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -245,6 +246,68 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 
 	// Send the user to the user manager.
 	user, err := s.Storage.Update(ctx, user.ID(userID), user.Update{Change: change})
+	if err != nil {
+		server.Response(ctx, w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	err = json.NewEncoder(w).Encode(UserResponse{User: TranslateUser(user)})
+	if err != nil {
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
+		return
+	}
+}
+
+func (s UsersService) AssociatePlayer(w http.ResponseWriter, r *http.Request, id string) {
+	ctx := r.Context()
+
+	// Grab the userID from the uri.
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		err := fmt.Errorf("%w: invalid user id, not a well formed uuid: '%s'", errors.ErrBadRequest, id)
+		server.Response(ctx, w, err)
+		return
+	}
+
+	// Process the request body.
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		server.Response(ctx, w, fmt.Errorf(
+			"%w: unable to read request body: %s", errors.ErrBadRequest, err,
+		))
+		return
+	}
+	defer r.Body.Close()
+
+	if len(body) == 0 {
+		server.Response(ctx, w, fmt.Errorf(
+			"%w: invalid json: a json encoded body is required", errors.ErrBadRequest,
+		))
+		return
+	}
+
+	// Populate the network user from the body.
+	var assocPlayerReq AssociatePlayerRequest
+	err = json.Unmarshal(body, &assocPlayerReq)
+	if err != nil {
+		server.Response(ctx, w, fmt.Errorf(
+			"%w: invalid body: %s", errors.ErrBadRequest, err,
+		))
+		return
+	}
+
+	// Translate the user request.
+	assocPlayer, err := AssocPlayer(assocPlayerReq)
+	if err != nil {
+		server.Response(ctx, w, err)
+		return
+	}
+
+	// Send the user to the user manager.
+	user, err := s.Storage.AssociatePlayer(ctx, user.ID(userID), assocPlayer)
 	if err != nil {
 		server.Response(ctx, w, err)
 		return
@@ -280,8 +343,8 @@ func (s UsersService) Remove(w http.ResponseWriter, r *http.Request, id string) 
 	}
 }
 
-// NewUserFilter creates an user users filter from the the given request's query parameters.
-func NewUserFilter(params ListParams) (user.Filter, error) {
+// UserFilter creates an user users filter from the the given request's query parameters.
+func UserFilter(params ListParams) (user.Filter, error) {
 	filter := user.Filter{
 		Limit: user.DefaultUserFilterLimit,
 	}
@@ -307,8 +370,8 @@ func NewUserFilter(params ListParams) (user.Filter, error) {
 	return filter, nil
 }
 
-// TranslateUserCreateRequest translates a user create request to an user change.
-func TranslateUserCreateRequest(r UserCreateRequest) (user.Change, error) {
+// CreateChange translates a user create request to an user change.
+func CreateChange(r UserCreateRequest) (user.Change, error) {
 	empty := user.Change{}
 
 	if r.Login == "" {
@@ -323,22 +386,15 @@ func TranslateUserCreateRequest(r UserCreateRequest) (user.Change, error) {
 	if len(r.PublicKey) > user.MaxPublicKeyLen {
 		return empty, fmt.Errorf("%w: user ssh public key exceeds maximum length", errors.ErrBadRequest)
 	}
-	playerID, err := uuid.Parse(r.PlayerID)
-	if err != nil {
-		return empty, fmt.Errorf("%w: invalid playerID: '%s'", errors.ErrBadRequest, r.PlayerID)
-	}
 
-	userReq := user.Change{
+	return user.Change{
 		Login:     r.Login,
 		PublicKey: []byte(r.PublicKey),
-		PlayerID:  asset.PlayerID(playerID),
-	}
-
-	return userReq, nil
+	}, nil
 }
 
-// TranslateUserUpdateRequest translates a user create request to an user change.
-func TranslateUserUpdateRequest(r UserUpdateRequest) (user.Change, error) {
+// UpdateChange translates a user create request to an user change.
+func UpdateChange(r UserUpdateRequest) (user.Change, error) {
 	empty := user.Change{}
 
 	if r.Login == "" {
@@ -353,18 +409,25 @@ func TranslateUserUpdateRequest(r UserUpdateRequest) (user.Change, error) {
 	if len(r.PublicKey) > user.MaxPublicKeyLen {
 		return empty, fmt.Errorf("%w: user ssh public key exceeds maximum length", errors.ErrBadRequest)
 	}
+
+	return user.Change{
+		Login:     r.Login,
+		PublicKey: []byte(r.PublicKey),
+	}, nil
+}
+
+// AssocPlayer translates a user player update request to an user change.
+func AssocPlayer(r AssociatePlayerRequest) (user.AssociatePlayer, error) {
+	empty := user.AssociatePlayer{}
+
 	playerID, err := uuid.Parse(r.PlayerID)
 	if err != nil {
 		return empty, fmt.Errorf("%w: invalid playerID: '%s'", errors.ErrBadRequest, r.PlayerID)
 	}
 
-	userReq := user.Change{
-		Login:     r.Login,
-		PublicKey: []byte(r.PublicKey),
-		PlayerID:  asset.PlayerID(playerID),
-	}
-
-	return userReq, nil
+	return user.AssociatePlayer{
+		PlayerID: asset.PlayerID(playerID),
+	}, nil
 }
 
 // TranslateUser translates an user user to a network user.

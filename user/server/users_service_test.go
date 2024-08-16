@@ -24,7 +24,11 @@ import (
 	"arcadium.dev/arcade/user/server"
 )
 
-func TestUsersList(t *testing.T) {
+var (
+	nobody = asset.PlayerID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+)
+
+func TestUsersService_List(t *testing.T) {
 	route := server.V1UserRoute
 
 	t.Run("new filter failure", func(t *testing.T) {
@@ -37,7 +41,7 @@ func TestUsersList(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
-	t.Run("user manager list failure", func(t *testing.T) {
+	t.Run("user storage list failure", func(t *testing.T) {
 		m := mockUserStorage{
 			t: t,
 			filter: user.Filter{
@@ -104,7 +108,7 @@ func TestUsersList(t *testing.T) {
 	})
 }
 
-func TestUserGet(t *testing.T) {
+func TestUsersService_Get(t *testing.T) {
 	userID := user.ID(uuid.New())
 
 	t.Run("userID failure", func(t *testing.T) {
@@ -116,7 +120,7 @@ func TestUserGet(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid user id, not a well formed uuid: 'bad_userID'")
 	})
 
-	t.Run("user manager get failure", func(t *testing.T) {
+	t.Run("user storage get failure", func(t *testing.T) {
 		m := mockUserStorage{
 			t:      t,
 			getID:  userID,
@@ -176,7 +180,7 @@ func TestUserGet(t *testing.T) {
 	})
 }
 
-func TestUserCreate(t *testing.T) {
+func TestUserService_Create(t *testing.T) {
 	var (
 		login = "ajones"
 	)
@@ -238,15 +242,6 @@ func TestUserCreate(t *testing.T) {
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user ssh public key exceeds maximum length",
 			},
-			{
-				req: server.UserCreateRequest{
-					Login:     randString(256),
-					PublicKey: randString(4096),
-					PlayerID:  "bad player id",
-				},
-				status: http.StatusBadRequest,
-				errMsg: "bad request: invalid playerID: 'bad player id'",
-			},
 		}
 
 		for _, test := range tests {
@@ -258,11 +253,10 @@ func TestUserCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("user manager create failure", func(t *testing.T) {
+	t.Run("user storage create failure", func(t *testing.T) {
 		var (
 			login     = "ajones"
 			publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
-			playerID  = asset.PlayerID(uuid.New())
 		)
 
 		m := mockUserStorage{
@@ -271,7 +265,6 @@ func TestUserCreate(t *testing.T) {
 				Change: user.Change{
 					Login:     login,
 					PublicKey: publicKey,
-					PlayerID:  playerID,
 				},
 			},
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
@@ -280,7 +273,6 @@ func TestUserCreate(t *testing.T) {
 		create := server.UserCreateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
-			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(create)
 		assert.Nil(t, err)
@@ -294,7 +286,6 @@ func TestUserCreate(t *testing.T) {
 			userID    = user.ID(uuid.New())
 			login     = "ajones"
 			publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
-			playerID  = asset.PlayerID(uuid.New())
 			created   = arcade.Timestamp{Time: time.Now()}
 			updated   = arcade.Timestamp{Time: time.Now()}
 		)
@@ -305,14 +296,13 @@ func TestUserCreate(t *testing.T) {
 				Change: user.Change{
 					Login:     login,
 					PublicKey: publicKey,
-					PlayerID:  playerID,
 				},
 			},
 			createUser: &user.User{
 				ID:        userID,
 				Login:     login,
 				PublicKey: publicKey,
-				PlayerID:  playerID,
+				PlayerID:  nobody,
 				Created:   created,
 				Updated:   updated,
 			},
@@ -321,7 +311,6 @@ func TestUserCreate(t *testing.T) {
 		createReq := server.UserCreateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
-			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(createReq)
 		assert.Nil(t, err)
@@ -342,14 +331,14 @@ func TestUserCreate(t *testing.T) {
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
-			PlayerID:  playerID.String(),
+			PlayerID:  nobody.String(),
 			Created:   created,
 			Updated:   updated,
 		}}, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
 	})
 }
 
-func TestUserUpdate(t *testing.T) {
+func TestUsersService_Update(t *testing.T) {
 	t.Run("userID failure", func(t *testing.T) {
 		m := mockUserStorage{}
 
@@ -424,15 +413,6 @@ func TestUserUpdate(t *testing.T) {
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user ssh public key exceeds maximum length",
 			},
-			{
-				req: server.UserUpdateRequest{
-					Login:     randString(256),
-					PublicKey: randString(4096),
-					PlayerID:  "bad player id",
-				},
-				status: http.StatusBadRequest,
-				errMsg: "bad request: invalid playerID: 'bad player id'",
-			},
 		}
 
 		for _, test := range tests {
@@ -447,12 +427,11 @@ func TestUserUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("user manager update failure", func(t *testing.T) {
+	t.Run("user storage update failure", func(t *testing.T) {
 		var (
 			userID    = user.ID(uuid.New())
 			login     = "ajones"
 			publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
-			playerID  = asset.PlayerID(uuid.New())
 		)
 
 		m := mockUserStorage{
@@ -462,7 +441,6 @@ func TestUserUpdate(t *testing.T) {
 				Change: user.Change{
 					Login:     login,
 					PublicKey: publicKey,
-					PlayerID:  playerID,
 				},
 			},
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
@@ -471,7 +449,6 @@ func TestUserUpdate(t *testing.T) {
 		updateReq := server.UserUpdateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
-			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -499,7 +476,6 @@ func TestUserUpdate(t *testing.T) {
 				Change: user.Change{
 					Login:     login,
 					PublicKey: publicKey,
-					PlayerID:  playerID,
 				},
 			},
 			updateUser: &user.User{
@@ -515,7 +491,6 @@ func TestUserUpdate(t *testing.T) {
 		updateReq := server.UserUpdateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
-			PlayerID:  playerID.String(),
 		}
 		body, err := json.Marshal(updateReq)
 		assert.Nil(t, err)
@@ -523,6 +498,152 @@ func TestUserUpdate(t *testing.T) {
 		route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
 
 		w := invokeUsersEndpoint(t, m, http.MethodPut, route, body)
+
+		resp := w.Result()
+		assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+		respBody, err := io.ReadAll(resp.Body)
+		assert.Nil(t, err)
+		defer resp.Body.Close()
+
+		var userResp server.UserResponse
+		assert.Nil(t, json.Unmarshal(respBody, &userResp))
+
+		assert.Compare(t, userResp, server.UserResponse{User: server.User{
+			ID:        userID.String(),
+			Login:     login,
+			PublicKey: string(publicKey),
+			PlayerID:  playerID.String(),
+			Created:   created,
+			Updated:   updated,
+		}}, cmpopts.EquateApproxTime(time.Duration(1*time.Microsecond)))
+	})
+}
+
+func TestUsersService_AssociatePlayer(t *testing.T) {
+	t.Run("userID failure", func(t *testing.T) {
+		m := mockUserStorage{}
+
+		route := fmt.Sprintf("%s/%s", server.V1UserRoute, "bad_userID")
+
+		w := invokeUsersEndpoint(t, m, http.MethodPatch, route, nil)
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid user id, not a well formed uuid: 'bad_userID'")
+	})
+
+	t.Run("empty body", func(t *testing.T) {
+		m := mockUserStorage{}
+
+		userID := uuid.New()
+		route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
+
+		w := invokeUsersEndpoint(t, m, http.MethodPatch, route, nil)
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
+
+		w = invokeUsersEndpoint(t, m, http.MethodPatch, route, []byte(""))
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid json: a json encoded body is required")
+	})
+
+	t.Run("invalid body", func(t *testing.T) {
+		m := mockUserStorage{}
+
+		userID := uuid.New()
+		route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
+
+		w := invokeUsersEndpoint(t, m, http.MethodPatch, route, []byte(`{"id": `))
+		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid body: unexpected end of JSON input")
+	})
+
+	t.Run("assoc player req failure", func(t *testing.T) {
+		m := mockUserStorage{}
+
+		tests := []struct {
+			req    server.AssociatePlayerRequest
+			status int
+			errMsg string
+		}{
+			{
+				req: server.AssociatePlayerRequest{
+					PlayerID: "bad player id",
+				},
+				status: http.StatusBadRequest,
+				errMsg: "bad request: invalid playerID: 'bad player id'",
+			},
+		}
+
+		for _, test := range tests {
+			body, err := json.Marshal(test.req)
+			assert.Nil(t, err)
+
+			userID := uuid.New()
+			route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
+
+			w := invokeUsersEndpoint(t, m, http.MethodPatch, route, body)
+			assertRespError(t, w, test.status, test.errMsg)
+		}
+	})
+
+	t.Run("user storage assoc player failure", func(t *testing.T) {
+		var (
+			userID   = user.ID(uuid.New())
+			playerID = asset.PlayerID(uuid.New())
+		)
+
+		m := mockUserStorage{
+			t:       t,
+			assocID: userID,
+			assoc: user.AssociatePlayer{
+				PlayerID: playerID,
+			},
+			assocErr: errors.New("assoc player failure"),
+		}
+
+		assocReq := server.AssociatePlayerRequest{
+			PlayerID: playerID.String(),
+		}
+		body, err := json.Marshal(assocReq)
+		assert.Nil(t, err)
+
+		route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
+
+		w := invokeUsersEndpoint(t, m, http.MethodPatch, route, body)
+		assertRespError(t, w, http.StatusInternalServerError, "assoc player failure")
+	})
+
+	t.Run("success", func(t *testing.T) {
+		var (
+			userID    = user.ID(uuid.New())
+			login     = "ajones"
+			publicKey = []byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXPLG0x/V6kk7BdlgY1YR61xWjt3HLvEhdlscUs4GjO foo@bar")
+			playerID  = asset.PlayerID(uuid.New())
+			created   = arcade.Timestamp{Time: time.Now()}
+			updated   = arcade.Timestamp{Time: time.Now()}
+		)
+
+		m := mockUserStorage{
+			t:       t,
+			assocID: userID,
+			assoc: user.AssociatePlayer{
+				PlayerID: playerID,
+			},
+			assocUser: &user.User{
+				ID:        userID,
+				Login:     login,
+				PublicKey: publicKey,
+				PlayerID:  playerID,
+				Created:   created,
+				Updated:   updated,
+			},
+		}
+
+		assocReq := server.AssociatePlayerRequest{
+			PlayerID: playerID.String(),
+		}
+		body, err := json.Marshal(assocReq)
+		assert.Nil(t, err)
+
+		route := fmt.Sprintf("%s/%s", server.V1UserRoute, userID.String())
+
+		w := invokeUsersEndpoint(t, m, http.MethodPatch, route, body)
 
 		resp := w.Result()
 		assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -557,7 +678,7 @@ func TestUserRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid user id, not a well formed uuid: 'bad_userID'")
 	})
 
-	t.Run("user manager remove failure", func(t *testing.T) {
+	t.Run("user storage remove failure", func(t *testing.T) {
 		m := mockUserStorage{
 			t:         t,
 			removeID:  userID,
@@ -640,6 +761,11 @@ type (
 		updateUser *user.User
 		updateErr  error
 
+		assocID   user.ID
+		assoc     user.AssociatePlayer
+		assocUser *user.User
+		assocErr  error
+
 		removeID  user.ID
 		removeErr error
 	}
@@ -664,6 +790,12 @@ func (m mockUserStorage) Update(ctx context.Context, id user.ID, update user.Upd
 	assert.Compare(m.t, id, m.updateID)
 	assert.Compare(m.t, update, m.update)
 	return m.updateUser, m.updateErr
+}
+
+func (m mockUserStorage) AssociatePlayer(ctx context.Context, id user.ID, assoc user.AssociatePlayer) (*user.User, error) {
+	assert.Compare(m.t, id, m.assocID)
+	assert.Compare(m.t, assoc, m.assoc)
+	return m.assocUser, m.assocErr
 }
 
 func (m mockUserStorage) Remove(ctx context.Context, id user.ID) error {

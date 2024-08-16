@@ -40,6 +40,7 @@ type (
 		GetQuery() string
 		CreateQuery() string
 		UpdateQuery() string
+		AssociatePlayerQuery() string
 		RemoveQuery() string
 	}
 )
@@ -121,7 +122,6 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 	err := u.DB.QueryRow(ctx, u.Driver.CreateQuery(),
 		create.Login,
 		create.PublicKey,
-		create.PlayerID,
 	).Scan(
 		&user.ID,
 		&user.Login,
@@ -132,19 +132,10 @@ func (u UserStorage) Create(ctx context.Context, create user.Create) (*user.User
 	)
 
 	switch {
-	// A ForeignKeyViolation means the referenced plaerID does not exist
-	// in the player table, thus we will return an invalid argument error.
-	case u.Driver.IsForeignKeyViolation(err):
-		return nil, fmt.Errorf(
-			"%s: %w: the given playerID does not exist, playerID: '%s'",
-			failMsg, errors.ErrBadRequest, create.PlayerID,
-		)
-
 	// A UniqueViolation means the inserted user violated a uniqueness
-	// constraint. The user record already exists in the table or the login
-	// is not unique.
+	// constraint. The login is not unique.
 	case u.Driver.IsUniqueViolation(err):
-		return nil, fmt.Errorf("%s: %w: user login '%s' already exists", failMsg, errors.ErrBadRequest, create.Login)
+		return nil, fmt.Errorf("%s: %w: user login '%s' already exists", failMsg, errors.ErrConflict, create.Login)
 
 	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err)
@@ -170,7 +161,6 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 		userID,
 		update.Login,
 		update.PublicKey,
-		update.PlayerID,
 	).Scan(
 		&user.ID,
 		&user.Login,
@@ -185,18 +175,50 @@ func (u UserStorage) Update(ctx context.Context, userID user.ID, update user.Upd
 	case errors.Is(err, sql.ErrNoRows):
 		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
 
-	// A ForeignKeyViolation means the referenced homeID or locationID does not exist
-	// in the rooms table, thus we will return an invalid argument error.
+	case err != nil:
+		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
+	}
+
+	logger.Info().Msgf("updated user, login: '%s' id: '%s'", user.Login, user.ID)
+
+	return &user, nil
+}
+
+// AssociatePlayer associates a player with the user, returning the updated user.
+func (u UserStorage) AssociatePlayer(ctx context.Context, userID user.ID, assoc user.AssociatePlayer) (*user.User, error) {
+	failMsg := "failed to associate player with user"
+	logger := zerolog.Ctx(ctx)
+
+	logger.Info().Msgf("update user, id: '%s'", userID)
+
+	var (
+		user user.User
+	)
+
+	err := u.DB.QueryRow(ctx, u.Driver.AssociatePlayerQuery(),
+		userID,
+		assoc.PlayerID,
+	).Scan(
+		&user.ID,
+		&user.Login,
+		&user.PublicKey,
+		&user.PlayerID,
+		&user.Created,
+		&user.Updated,
+	)
+
+	switch {
+	// Tried to update a user that doesn't exist.
+	case errors.Is(err, sql.ErrNoRows):
+		return nil, fmt.Errorf("%s: %w", failMsg, errors.ErrNotFound)
+
+	// A ForeignKeyViolation means the referenced playerID does not exist
+	// in the players table, thus we will return an invalid argument error.
 	case u.Driver.IsForeignKeyViolation(err):
 		return nil, fmt.Errorf(
-			"%s: %w: the given playerID not exist, playerID: '%s'",
-			failMsg, errors.ErrBadRequest, update.PlayerID,
+			"%s: %w: the given playerID does not exist, playerID: '%s'",
+			failMsg, errors.ErrBadRequest, assoc.PlayerID,
 		)
-
-	// A UniqueViolation means the inserted user violated a uniqueness
-	// constraint. The user login is not unique.
-	case u.Driver.IsUniqueViolation(err):
-		return nil, fmt.Errorf("%s: %w: user login '%s' already exists", failMsg, errors.ErrBadRequest, update.Login)
 
 	case err != nil:
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())

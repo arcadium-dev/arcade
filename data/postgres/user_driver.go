@@ -27,10 +27,13 @@ type (
 const (
 	UserListQuery   = `SELECT id, login, public_key, player_id, created, updated FROM users`
 	UserGetQuery    = `SELECT id, login, public_key, player_id, created, updated FROM users WHERE id = $1`
-	UserCreateQuery = `INSERT INTO users (login, public_key, player_id) ` +
-		`VALUES ($1, $2, $3) ` +
+	UserCreateQuery = `INSERT INTO users (login, public_key) ` +
+		`VALUES ($1, $2) ` +
 		`RETURNING id, login, public_key, player_id, created, updated`
-	UserUpdateQuery = `UPDATE users SET login = $2, public_key = $3, player_id = $4 ` +
+	UserUpdateQuery = `UPDATE users SET login = $2, public_key = $3 ` +
+		`WHERE id = $1 ` +
+		`RETURNING id, login, public_key, player_id, created, updated`
+	AssociatePlayerQuery = `UPDATE users SET player_id = $2 ` +
 		`WHERE id = $1 ` +
 		`RETURNING id, login, public_key, player_id, created, updated`
 	UserRemoveQuery = `DELETE FROM users WHERE id = $1`
@@ -50,6 +53,9 @@ func (UserDriver) CreateQuery() string { return UserCreateQuery }
 
 // UpdateQuery returns the Update query string.
 func (UserDriver) UpdateQuery() string { return UserUpdateQuery }
+
+// AssociatePlayerQuery returns the AssociatePlayer query string.
+func (UserDriver) AssociatePlayerQuery() string { return AssociatePlayerQuery }
 
 // RemoveQuery returns the Remove query string.
 func (UserDriver) RemoveQuery() string { return UserRemoveQuery }

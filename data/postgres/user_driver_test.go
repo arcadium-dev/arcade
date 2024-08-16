@@ -61,17 +61,27 @@ func TestUserDriver(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		login := randLogin(8)
-		pubKey := randPublicKey(login)
+		pubKey1 := randPublicKey(login)
+		pubKey2 := randPublicKey(login)
 
 		u1, err := userStore.Create(ctx, user.Create{
 			Change: user.Change{
 				Login:     login,
-				PublicKey: pubKey,
-				PlayerID:  nobody,
+				PublicKey: pubKey1,
 			},
 		})
 		require.Nil(t, err)
 		users[u1.Login] = u1
+
+		u2, err := userStore.Update(ctx, u1.ID, user.Update{
+			Change: user.Change{
+				Login:     u1.Login,
+				PublicKey: pubKey2,
+			},
+		})
+		require.Nil(t, err)
+		assert.Equal(t, u1.Login, u2.Login)
+		assert.Compare(t, u2.PublicKey, pubKey2)
 
 		name := randName(8)
 		player, err := playerStore.Create(ctx, asset.PlayerCreate{
@@ -85,16 +95,11 @@ func TestUserDriver(t *testing.T) {
 		require.Nil(t, err)
 		players[player.Name] = player
 
-		u2, err := userStore.Update(ctx, u1.ID, user.Update{
-			Change: user.Change{
-				Login:     u1.Login,
-				PublicKey: u1.PublicKey,
-				PlayerID:  player.ID,
-			},
-		})
+		u3, err := userStore.AssociatePlayer(ctx, u1.ID, user.AssociatePlayer{PlayerID: player.ID})
 		require.Nil(t, err)
-		assert.Equal(t, u1.Login, u2.Login)
-		assert.Compare(t, u1.PublicKey, u2.PublicKey)
+		assert.Equal(t, u1.Login, u3.Login)
+		assert.Compare(t, u2.PublicKey, u3.PublicKey)
+		assert.Compare(t, u3.PlayerID, player.ID)
 	}
 
 	playerList, err := playerStore.List(ctx, asset.PlayerFilter{})

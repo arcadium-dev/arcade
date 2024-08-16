@@ -12,6 +12,11 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// AssociatePlayerRequest AssociatePlayerRequest is used to associate a player to the user.
+type AssociatePlayerRequest struct {
+	PlayerID string `json:"playerID"`
+}
+
 // User holds a user's information, and is sent in a response.
 type User struct {
 	ID        string           `json:"id"`
@@ -26,7 +31,6 @@ type User struct {
 type UserCreateRequest struct {
 	Login     string `json:"login"`
 	PublicKey string `json:"publicKey"`
-	PlayerID  string `json:"playerID"`
 }
 
 // UserResponse returns a single user in the response.
@@ -39,7 +43,6 @@ type UserResponse struct {
 type UserUpdateRequest struct {
 	Login     string `json:"login"`
 	PublicKey string `json:"publicKey"`
-	PlayerID  string `json:"playerID"`
 }
 
 // UsersResponse returns a multiple users.
@@ -59,6 +62,9 @@ type ListParams struct {
 // CreateJSONRequestBody defines body for Create for application/json ContentType.
 type CreateJSONRequestBody = UserCreateRequest
 
+// AssociatePlayerJSONRequestBody defines body for AssociatePlayer for application/json ContentType.
+type AssociatePlayerJSONRequestBody = AssociatePlayerRequest
+
 // UpdateJSONRequestBody defines body for Update for application/json ContentType.
 type UpdateJSONRequestBody = UserUpdateRequest
 
@@ -76,6 +82,9 @@ type ServerInterface interface {
 	// Get returns a user.
 	// (GET /v1/user/{id})
 	Get(w http.ResponseWriter, r *http.Request, id string)
+	// Associates a player with a user.
+	// (PATCH /v1/user/{id})
+	AssociatePlayer(w http.ResponseWriter, r *http.Request, id string)
 	// Update updates a user.
 	// (PUT /v1/user/{id})
 	Update(w http.ResponseWriter, r *http.Request, id string)
@@ -184,6 +193,32 @@ func (siw *ServerInterfaceWrapper) Get(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Get(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AssociatePlayer operation middleware
+func (siw *ServerInterfaceWrapper) AssociatePlayer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", mux.Vars(r)["id"], &id, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AssociatePlayer(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -339,6 +374,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Remove).Methods("DELETE")
 
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Get).Methods("GET")
+
+	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.AssociatePlayer).Methods("PATCH")
 
 	r.HandleFunc(options.BaseURL+"/v1/user/{id}", wrapper.Update).Methods("PUT")
 

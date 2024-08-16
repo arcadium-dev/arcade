@@ -72,10 +72,14 @@ type (
 		Change
 	}
 
-	// UserChange holds information to change an user.
+	// Change holds information to change an user.
 	Change struct {
 		Login     string
 		PublicKey []byte
-		PlayerID  asset.PlayerID
+	}
+
+	// AssociatePlayer holds information to assocuate a player to a user.
+	AssociatePlayer struct {
+		PlayerID asset.PlayerID
 	}
 )

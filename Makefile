@@ -127,7 +127,7 @@ vuln:
 	@printf "\nRunning govulncheck...\n"
 	$$(go env GOPATH)/bin/govulncheck ./...
 
-lint: fmt tidy vet staticcheck vuln openapi ./users/rest/server/user.gen.go
+lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
 	git status --porcelain
 	@printf "\n"
@@ -152,6 +152,7 @@ yellow := $(esc)[1;33m
 
 integration_test_up:
 	@mkdir -m 0777 -p ./asset/test/coverage
+	@rm -rf ./asset/test/coverage/*
 	dev start
 	@sleep 1
 
@@ -161,11 +162,6 @@ integration_test: integration_test_up
 	dev stop assets
 	@echo -e "\n$(yellow)Assets Coverage$(clear)"
 	@go tool covdata percent -i=./asset/test/coverage
-
-integration_test_down:
-	@echo ""
-	@dev stop
-	@rm -rf ./asset/test/coverage/*
 
 # ____ docs __________________________________________________________________
 

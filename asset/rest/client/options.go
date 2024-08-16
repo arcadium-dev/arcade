@@ -51,17 +51,6 @@ func WithTLSConfig(cfg *tls.Config) ClientOption {
 	})
 }
 
-// WithInsecure is only for use with integration testing.
-func WithInsecure() ClientOption {
-	return newClientOption(func(c *Client) {
-		c.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		}
-	})
-}
-
 func newClientOption(f func(*Client)) clientOption {
 	return clientOption{f: f}
 }

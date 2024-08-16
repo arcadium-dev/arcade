@@ -215,7 +215,6 @@ func itemResponse(body io.ReadCloser, failMsg string) (*asset.Item, error) {
 	return aItem, nil
 }
 
-// TranslateItem translates a network item into an asset item.
 func TranslateItem(i rest.Item) (*asset.Item, error) {
 	id, err := uuid.Parse(i.ID)
 	if err != nil {
@@ -255,7 +254,6 @@ func TranslateItem(i rest.Item) (*asset.Item, error) {
 	return item, nil
 }
 
-// TranslateItemChange translates an asset item change struct to a network item request.
 func TranslateItemChange(i asset.ItemChange) (rest.ItemRequest, error) {
 	emptyResp := rest.ItemRequest{}
 

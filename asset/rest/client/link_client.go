@@ -214,7 +214,6 @@ func linkResponse(body io.ReadCloser, failMsg string) (*asset.Link, error) {
 	return aLink, nil
 }
 
-// TranslateLink translates a network link into an asset link.
 func TranslateLink(p rest.Link) (*asset.Link, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
@@ -247,7 +246,6 @@ func TranslateLink(p rest.Link) (*asset.Link, error) {
 	return link, nil
 }
 
-// TranslateLinkChange translates an asset link change struct to a network link request.
 func TranslateLinkChange(i asset.LinkChange) (rest.LinkRequest, error) {
 	emptyResp := rest.LinkRequest{}
 

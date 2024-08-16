@@ -65,7 +65,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsersResponse"
+                $ref: "#/components/schemas/UserResponse"
         "400":
           description: A bad request was sent.
           content:
@@ -99,7 +99,7 @@ paths:
             type: string
       responses:
         "200":
-          description: UserResponse returns the user.
+          description: OK
           content:
             application/json:
               schema:
@@ -146,7 +146,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsersResponse"
+                $ref: "#/components/schemas/UserResponse"
         "400":
           description: A bad request was sent.
           content:
@@ -189,7 +189,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsersResponse"
+                $ref: "#/components/schemas/UserResponse"
         "400":
           description: A bad request was sent.
           content:
@@ -222,7 +222,7 @@ paths:
             type: string
       responses:
         "200":
-          description: UserResponse returns the user.
+          description: OK
         "500":
           description: An internal server error occurred.
           content:

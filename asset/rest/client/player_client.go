@@ -208,7 +208,6 @@ func playerResponse(body io.ReadCloser, failMsg string) (*asset.Player, error) {
 	return aPlayer, nil
 }
 
-// TranslatePlayer translates a network player into an asset player.
 func TranslatePlayer(p rest.Player) (*asset.Player, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
@@ -236,7 +235,6 @@ func TranslatePlayer(p rest.Player) (*asset.Player, error) {
 	return player, nil
 }
 
-// TranslatePlayerChange translates an asset player change struct to a network player request.
 func TranslatePlayerChange(i asset.PlayerChange) (rest.PlayerRequest, error) {
 	emptyResp := rest.PlayerRequest{}
 

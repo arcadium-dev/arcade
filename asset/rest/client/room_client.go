@@ -211,7 +211,6 @@ func roomResponse(body io.ReadCloser, failMsg string) (*asset.Room, error) {
 	return aRoom, nil
 }
 
-// TranslateRoom translates a network room into an asset room.
 func TranslateRoom(p rest.Room) (*asset.Room, error) {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
@@ -239,7 +238,6 @@ func TranslateRoom(p rest.Room) (*asset.Room, error) {
 	return room, nil
 }
 
-// TranslateRoomChange translates an asset room change struct to a network room request.
 func TranslateRoomChange(i asset.RoomChange) (rest.RoomRequest, error) {
 	emptyResp := rest.RoomRequest{}
 

@@ -68,7 +68,9 @@ all: generate test lint
 
 .PHONY: generate openapi
 
-openapi_src := ./users/rest/server/user.gen.go
+openapi_src := \
+	./internal/user/server/users_service.gen.go \
+	./internal/user/client/users_client.gen.go
 
 openapi:
 	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
@@ -78,12 +80,16 @@ openapi:
     go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
   fi
 
-./users/rest/server/user.gen.go: ./openapi/users-openapi.yaml
-	@printf "\nRunning oapi-codegen for $<...\n"
+./internal/user/server/users_service.gen.go: ./openapi/users-openapi.yaml ./openapi/users-server.yaml
+	@printf "\nRunning oapi-codegen for $@...\n"
 	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
-	@go mod tidy
+
+./internal/user/client/users_client.gen.go: ./openapi/users-openapi.yaml ./openapi/users-client.yaml
+	@printf "\nRunning oapi-codegen for $@...\n"
+	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-client.yaml ./openapi/users-openapi.yaml
 
 generate: openapi $(openapi_src)
+	@go mod tidy
 
 # ____ lint __________________________________________________________________
 
@@ -121,7 +127,7 @@ vuln:
 	@printf "\nRunning govulncheck...\n"
 	$$(go env GOPATH)/bin/govulncheck ./...
 
-lint: fmt tidy vet staticcheck vuln openapi ./users/rest/server/user.gen.go
+lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
 	git status --porcelain
 	@printf "\n"
@@ -146,6 +152,7 @@ yellow := $(esc)[1;33m
 
 integration_test_up:
 	@mkdir -m 0777 -p ./asset/test/coverage
+	@rm -rf ./asset/test/coverage/*
 	dev start
 	@sleep 1
 
@@ -155,11 +162,6 @@ integration_test: integration_test_up
 	dev stop assets
 	@echo -e "\n$(yellow)Assets Coverage$(clear)"
 	@go tool covdata percent -i=./asset/test/coverage
-
-integration_test_down:
-	@echo ""
-	@dev stop
-	@rm -rf ./asset/test/coverage/*
 
 # ____ docs __________________________________________________________________
 

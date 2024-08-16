@@ -20,6 +20,7 @@ import (
 
 	"arcadium.dev/arcade"
 	"arcadium.dev/arcade/asset"
+	oapi "arcadium.dev/arcade/internal/user/server"
 	"arcadium.dev/arcade/user"
 	"arcadium.dev/arcade/user/server"
 )
@@ -92,10 +93,10 @@ func TestUsersService_List(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var usersResp server.UsersResponse
+		var usersResp oapi.UsersResponse
 		assert.Nil(t, json.Unmarshal(body, &usersResp))
 
-		assert.Compare(t, usersResp, server.UsersResponse{Users: []server.User{
+		assert.Compare(t, usersResp, oapi.UsersResponse{Users: []oapi.User{
 			{
 				ID:        userID.String(),
 				Login:     login,
@@ -166,10 +167,10 @@ func TestUsersService_Get(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp server.UserResponse
+		var userResp oapi.UserResponse
 		assert.Nil(t, json.Unmarshal(body, &userResp))
 
-		assert.Compare(t, userResp, server.UserResponse{User: server.User{
+		assert.Compare(t, userResp, oapi.UserResponse{User: oapi.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
@@ -208,26 +209,26 @@ func TestUserService_Create(t *testing.T) {
 		m := mockUserStorage{}
 
 		tests := []struct {
-			req    server.UserCreateRequest
+			req    oapi.UserCreateRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: server.UserCreateRequest{
+				req: oapi.UserCreateRequest{
 					Login: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty user login",
 			},
 			{
-				req: server.UserCreateRequest{
+				req: oapi.UserCreateRequest{
 					Login: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user login exceeds maximum length",
 			},
 			{
-				req: server.UserCreateRequest{
+				req: oapi.UserCreateRequest{
 					Login:     login,
 					PublicKey: "",
 				},
@@ -235,7 +236,7 @@ func TestUserService_Create(t *testing.T) {
 				errMsg: "bad request: empty user ssh public key",
 			},
 			{
-				req: server.UserCreateRequest{
+				req: oapi.UserCreateRequest{
 					Login:     login,
 					PublicKey: randString(4097),
 				},
@@ -270,7 +271,7 @@ func TestUserService_Create(t *testing.T) {
 			createErr: fmt.Errorf("%w: %s", errors.ErrConflict, "create failure"),
 		}
 
-		create := server.UserCreateRequest{
+		create := oapi.UserCreateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
 		}
@@ -308,7 +309,7 @@ func TestUserService_Create(t *testing.T) {
 			},
 		}
 
-		createReq := server.UserCreateRequest{
+		createReq := oapi.UserCreateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
 		}
@@ -324,10 +325,10 @@ func TestUserService_Create(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp server.UserResponse
+		var userResp oapi.UserResponse
 		assert.Nil(t, json.Unmarshal(respBody, &userResp))
 
-		assert.Compare(t, userResp, server.UserResponse{User: server.User{
+		assert.Compare(t, userResp, oapi.UserResponse{User: oapi.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
@@ -379,26 +380,26 @@ func TestUsersService_Update(t *testing.T) {
 		m := mockUserStorage{}
 
 		tests := []struct {
-			req    server.UserUpdateRequest
+			req    oapi.UserUpdateRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: server.UserUpdateRequest{
+				req: oapi.UserUpdateRequest{
 					Login: "",
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: empty user login",
 			},
 			{
-				req: server.UserUpdateRequest{
+				req: oapi.UserUpdateRequest{
 					Login: randString(257),
 				},
 				status: http.StatusBadRequest,
 				errMsg: "bad request: user login exceeds maximum length",
 			},
 			{
-				req: server.UserUpdateRequest{
+				req: oapi.UserUpdateRequest{
 					Login:     login,
 					PublicKey: "",
 				},
@@ -406,7 +407,7 @@ func TestUsersService_Update(t *testing.T) {
 				errMsg: "bad request: empty user ssh public key",
 			},
 			{
-				req: server.UserUpdateRequest{
+				req: oapi.UserUpdateRequest{
 					Login:     login,
 					PublicKey: randString(4097),
 				},
@@ -446,7 +447,7 @@ func TestUsersService_Update(t *testing.T) {
 			updateErr: fmt.Errorf("%w: %s", errors.ErrNotFound, "update failure"),
 		}
 
-		updateReq := server.UserUpdateRequest{
+		updateReq := oapi.UserUpdateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
 		}
@@ -488,7 +489,7 @@ func TestUsersService_Update(t *testing.T) {
 			},
 		}
 
-		updateReq := server.UserUpdateRequest{
+		updateReq := oapi.UserUpdateRequest{
 			Login:     login,
 			PublicKey: string(publicKey),
 		}
@@ -506,10 +507,10 @@ func TestUsersService_Update(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp server.UserResponse
+		var userResp oapi.UserResponse
 		assert.Nil(t, json.Unmarshal(respBody, &userResp))
 
-		assert.Compare(t, userResp, server.UserResponse{User: server.User{
+		assert.Compare(t, userResp, oapi.UserResponse{User: oapi.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),
@@ -557,12 +558,12 @@ func TestUsersService_AssociatePlayer(t *testing.T) {
 		m := mockUserStorage{}
 
 		tests := []struct {
-			req    server.AssociatePlayerRequest
+			req    oapi.AssociatePlayerRequest
 			status int
 			errMsg string
 		}{
 			{
-				req: server.AssociatePlayerRequest{
+				req: oapi.AssociatePlayerRequest{
 					PlayerID: "bad player id",
 				},
 				status: http.StatusBadRequest,
@@ -597,7 +598,7 @@ func TestUsersService_AssociatePlayer(t *testing.T) {
 			assocErr: errors.New("assoc player failure"),
 		}
 
-		assocReq := server.AssociatePlayerRequest{
+		assocReq := oapi.AssociatePlayerRequest{
 			PlayerID: playerID.String(),
 		}
 		body, err := json.Marshal(assocReq)
@@ -635,7 +636,7 @@ func TestUsersService_AssociatePlayer(t *testing.T) {
 			},
 		}
 
-		assocReq := server.AssociatePlayerRequest{
+		assocReq := oapi.AssociatePlayerRequest{
 			PlayerID: playerID.String(),
 		}
 		body, err := json.Marshal(assocReq)
@@ -652,10 +653,10 @@ func TestUsersService_AssociatePlayer(t *testing.T) {
 		assert.Nil(t, err)
 		defer resp.Body.Close()
 
-		var userResp server.UserResponse
+		var userResp oapi.UserResponse
 		assert.Nil(t, json.Unmarshal(respBody, &userResp))
 
-		assert.Compare(t, userResp, server.UserResponse{User: server.User{
+		assert.Compare(t, userResp, oapi.UserResponse{User: oapi.User{
 			ID:        userID.String(),
 			Login:     login,
 			PublicKey: string(publicKey),

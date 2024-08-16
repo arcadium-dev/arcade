@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"crypto/tls"
 	"math/rand"
 	"os"
 	"testing"
@@ -20,7 +21,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	assets = client.New("https://localhost:4210", client.WithInsecure())
+	assets = client.New("https://localhost:4210", client.WithTLSConfig(&tls.Config{InsecureSkipVerify: true}))
 	os.Exit(m.Run())
 }
 

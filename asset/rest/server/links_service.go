@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
@@ -123,9 +124,7 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.LinksResponse{Links: links})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to create response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode link list response, error %s", err)
 		return
 	}
 }
@@ -173,9 +172,7 @@ func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode link get response, error %s", err)
 		return
 	}
 }
@@ -240,12 +237,11 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 	// Prepare the returned link for delivery in the response.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusCreated)
 
 	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode link create response, error %s", err)
 		return
 	}
 }
@@ -328,9 +324,7 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.LinkResponse{Link: TranslateLink(link)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode link update response, error %s", err)
 		return
 	}
 }

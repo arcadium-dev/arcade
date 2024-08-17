@@ -56,7 +56,7 @@ func TestItemsList(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
-	t.Run("item manager list failure", func(t *testing.T) {
+	t.Run("item storage list failure", func(t *testing.T) {
 		m := mockItemStorage{
 			t: t,
 			filter: asset.ItemFilter{
@@ -145,7 +145,7 @@ func TestItemGet(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
 	})
 
-	t.Run("item manager get failure", func(t *testing.T) {
+	t.Run("item storage get failure", func(t *testing.T) {
 		m := mockItemStorage{
 			t:      t,
 			getID:  itemID,
@@ -316,7 +316,7 @@ func TestItemCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("item manager create failure", func(t *testing.T) {
+	t.Run("item storage create failure", func(t *testing.T) {
 		var (
 			ownerID = asset.PlayerID(uuid.New())
 			locID   = asset.RoomID(uuid.New())
@@ -403,7 +403,7 @@ func TestItemCreate(t *testing.T) {
 		w := invokeItemsEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
+		assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 		respBody, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)
@@ -546,7 +546,7 @@ func TestItemUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("item manager update failure", func(t *testing.T) {
+	t.Run("item storage update failure", func(t *testing.T) {
 		const (
 			name = "name"
 			desc = "desc"
@@ -680,7 +680,7 @@ func TestItemRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid item id, not a well formed uuid: 'bad_itemID'")
 	})
 
-	t.Run("item manager remove failure", func(t *testing.T) {
+	t.Run("item storage remove failure", func(t *testing.T) {
 		m := mockItemStorage{
 			t:         t,
 			removeID:  itemID,

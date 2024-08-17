@@ -104,9 +104,7 @@ func (s UsersService) List(w http.ResponseWriter, r *http.Request, params oapi.L
 
 	err = json.NewEncoder(w).Encode(oapi.UsersResponse{Users: users})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to create response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode user list response, error %s", err)
 		return
 	}
 }
@@ -136,9 +134,7 @@ func (s UsersService) Get(w http.ResponseWriter, r *http.Request, id string) {
 
 	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode user get response, error %s", err)
 		return
 	}
 }
@@ -194,7 +190,7 @@ func (s UsersService) Create(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		zerolog.Ctx(ctx).Warn().Msgf("failed to encode create user response, error %s", err)
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode user create response, error %s", err)
 		return
 	}
 }
@@ -257,7 +253,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 
 	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode user update response, error %s", err)
 		return
 	}
 }
@@ -320,7 +316,7 @@ func (s UsersService) AssociatePlayer(w http.ResponseWriter, r *http.Request, id
 
 	err = json.NewEncoder(w).Encode(oapi.UserResponse{User: TranslateUser(user)})
 	if err != nil {
-		zerolog.Ctx(ctx).Warn().Msgf("failed to encode update user response, error %s", err)
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode user asociate player response, error %s", err)
 		return
 	}
 }

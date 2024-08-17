@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
@@ -119,9 +120,7 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.PlayersResponse{Players: players})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to create response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode player list response, error %s", err)
 		return
 	}
 }
@@ -169,9 +168,7 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode player get response, error %s", err)
 		return
 	}
 }
@@ -236,12 +233,11 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 	// Prepare the returned player for delivery in the response.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusCreated)
 
 	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode player create response, error %s", err)
 		return
 	}
 }
@@ -325,9 +321,7 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.PlayerResponse{Player: TranslatePlayer(player)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode player update response, error %s", err)
 		return
 	}
 }

@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -13,15 +12,12 @@ import (
 
 	"arcadium.dev/arcade/asset"
 	aclient "arcadium.dev/arcade/asset/rest/client"
-	"arcadium.dev/arcade/user"
 	uclient "arcadium.dev/arcade/user/client"
 )
 
 var (
 	users  *uclient.UsersClient
 	assets *aclient.Client
-
-	ctx = context.Background()
 
 	nobody  = asset.PlayerID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 	nowhere = asset.RoomID(uuid.MustParse("00000000-0000-0000-0000-000000000001"))
@@ -76,22 +72,4 @@ func randName(size int) string {
 		b[i] = s[rand.Intn(len(s))]
 	}
 	return string(b)
-}
-
-func createUsers(count int) ([]*user.User, error) {
-	us := make([]*user.User, count)
-	for i := 0; i < count; i++ {
-		login := randLogin(8)
-		u, err := users.Create(ctx, user.Create{
-			Change: user.Change{
-				Login:     login,
-				PublicKey: randPublicKey(login),
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-		us[i] = u
-	}
-	return us, nil
 }

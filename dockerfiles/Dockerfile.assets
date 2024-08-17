@@ -2,7 +2,7 @@
 ARG go_version
 ARG arch
 
-FROM --platform=linux/${arch:-amd64} golang:${go_version:-1.22}-alpine AS builder
+FROM --platform=linux/${arch:-amd64} golang:${go_version:-1.23}-alpine AS builder
 LABEL stage=intermediate
 
 ENV GOPRIVATE=arcadium.dev

@@ -16,7 +16,7 @@ export app := arcade
 
 export SHELL := /bin/bash
 
-go_version := 1.22
+go_version := 1.23
 ifeq ($(shell uname -m),arm64)
   arch := arm64
 else

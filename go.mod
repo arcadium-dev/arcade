@@ -1,9 +1,9 @@
 module arcadium.dev/arcade
 
-go 1.22.6
+go 1.23.0
 
 require (
-	arcadium.dev/core v0.1.1
+	arcadium.dev/core v0.1.3
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/go-cmp v0.6.0

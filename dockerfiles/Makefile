@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go_version := 1.22
+go_version := 1.23
 migrate_version := v4.17.1
 mkcert_version := v1.4.4
 

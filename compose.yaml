@@ -25,6 +25,7 @@ services:
       - 4220:443
     volumes:
       - certificates_volume:/etc/certs
+      - ./user/test/coverage:/arcadium/coverage
     networks:
       - arcadium_network
       - database_network

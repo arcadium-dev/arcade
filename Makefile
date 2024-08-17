@@ -143,25 +143,43 @@ unit_test:
 
 test: unit_test
 
+
+.PHONY: integration_test_build assets_integration_test_up users_integration_test_up users_integration_test_up assets_integration_test users_integration_test integration_test
+
 integration_test_build:
 	dev nuke && make dev-images && dev init && dev pull telegraf
+
+assets_integration_test_up:
+	@mkdir -m 0777 -p ./asset/test/coverage
+	@rm -rf ./asset/test/coverage/*
+
+users_integration_test_up:
+	@mkdir -m 0777 -p ./user/test/coverage
+	@rm -rf ./user/test/coverage/*
+
+integration_test_up: assets_integration_test_up users_integration_test_up
+	dev start
+	@sleep 5
 
 esc := \033
 clear := $(esc)[0;39m
 yellow := $(esc)[1;33m
 
-integration_test_up:
-	@mkdir -m 0777 -p ./asset/test/coverage
-	@rm -rf ./asset/test/coverage/*
-	dev start
-	@sleep 1
-
-integration_test: integration_test_up
+assets_integration_test:
 	@echo -e "\n$(yellow)Running Assets Integration Tests$(clear)"
 	@-INTEGRATION=1 go test -v --timeout 20s -count=1 ./asset/test
-	dev stop assets
+
+users_integration_test:
+	@echo -e "\n$(yellow)Running Users Integration Tests$(clear)"
+	@-INTEGRATION=1 go test -v --timeout 20s -count=1 ./user/test
+
+integration_test: integration_test_up assets_integration_test users_integration_test
+	dev stop assets users
+	@sleep 5
 	@echo -e "\n$(yellow)Assets Coverage$(clear)"
 	@go tool covdata percent -i=./asset/test/coverage
+	@echo -e "\n$(yellow)Users Coverage$(clear)"
+	@go tool covdata percent -i=./user/test/coverage
 
 # ____ docs __________________________________________________________________
 

@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
@@ -124,9 +125,7 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.ItemsResponse{Items: items})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to create response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode item list response, error %s", err)
 		return
 	}
 }
@@ -174,9 +173,7 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode item get response, error %s", err)
 		return
 	}
 }
@@ -241,12 +238,11 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 	// Prepare the returned item for delivery in the response.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusCreated)
 
 	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode item create response, error %s", err)
 		return
 	}
 }
@@ -330,9 +326,7 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.ItemResponse{Item: TranslateItem(item)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode item update response, error %s", err)
 		return
 	}
 }

@@ -52,7 +52,7 @@ func TestLinksList(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
-	t.Run("link manager list failure", func(t *testing.T) {
+	t.Run("link storage list failure", func(t *testing.T) {
 		m := mockLinkStorage{
 			t: t,
 			filter: asset.LinkFilter{
@@ -140,7 +140,7 @@ func TestLinkGet(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
-	t.Run("link manager get failure", func(t *testing.T) {
+	t.Run("link storage get failure", func(t *testing.T) {
 		m := mockLinkStorage{
 			t:      t,
 			getID:  linkID,
@@ -307,7 +307,7 @@ func TestLinkCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("link manager create failure", func(t *testing.T) {
+	t.Run("link storage create failure", func(t *testing.T) {
 		var (
 			ownerID = asset.PlayerID(uuid.New())
 			locID   = asset.RoomID(uuid.New())
@@ -396,7 +396,7 @@ func TestLinkCreate(t *testing.T) {
 		w := invokeLinksEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
+		assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 		respBody, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)
@@ -533,7 +533,7 @@ func TestLinkUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("link manager update failure", func(t *testing.T) {
+	t.Run("link storage update failure", func(t *testing.T) {
 		const (
 			name = "name"
 			desc = "desc"
@@ -667,7 +667,7 @@ func TestLinkRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid link id, not a well formed uuid: 'bad_linkID'")
 	})
 
-	t.Run("link manager remove failure", func(t *testing.T) {
+	t.Run("link storage remove failure", func(t *testing.T) {
 		m := mockLinkStorage{
 			t:            t,
 			removeLinkID: linkID,

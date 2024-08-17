@@ -48,7 +48,7 @@ func TestRoomsList(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
-	t.Run("room manager list failure", func(t *testing.T) {
+	t.Run("room storage list failure", func(t *testing.T) {
 		m := mockRoomStorage{
 			t: t,
 			filter: asset.RoomFilter{
@@ -133,7 +133,7 @@ func TestRoomGet(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
 	})
 
-	t.Run("room manager get failure", func(t *testing.T) {
+	t.Run("room storage get failure", func(t *testing.T) {
 		m := mockRoomStorage{
 			t:      t,
 			getID:  roomID,
@@ -286,7 +286,7 @@ func TestRoomCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("room manager create failure", func(t *testing.T) {
+	t.Run("room storage create failure", func(t *testing.T) {
 		var (
 			ownerID  = asset.PlayerID(uuid.New())
 			parentID = asset.RoomID(uuid.New())
@@ -368,7 +368,7 @@ func TestRoomCreate(t *testing.T) {
 		w := invokeRoomsEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
+		assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 		respBody, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)
@@ -493,7 +493,7 @@ func TestRoomUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("room manager update failure", func(t *testing.T) {
+	t.Run("room storage update failure", func(t *testing.T) {
 		const (
 			name = "name"
 			desc = "desc"
@@ -619,7 +619,7 @@ func TestRoomRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid room id, not a well formed uuid: 'bad_roomID'")
 	})
 
-	t.Run("room manager remove failure", func(t *testing.T) {
+	t.Run("room storage remove failure", func(t *testing.T) {
 		m := mockRoomStorage{
 			t:         t,
 			removeID:  roomID,

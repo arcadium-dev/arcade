@@ -44,7 +44,7 @@ func TestPlayersList(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid limit query parameter: 'bad limit'")
 	})
 
-	t.Run("player manager list failure", func(t *testing.T) {
+	t.Run("player storage list failure", func(t *testing.T) {
 		m := mockPlayerStorage{
 			t: t,
 			filter: asset.PlayerFilter{
@@ -129,7 +129,7 @@ func TestPlayerGet(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
-	t.Run("player manager get failure", func(t *testing.T) {
+	t.Run("player storage get failure", func(t *testing.T) {
 		m := mockPlayerStorage{
 			t:      t,
 			getID:  playerID,
@@ -282,7 +282,7 @@ func TestPlayerCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("player manager create failure", func(t *testing.T) {
+	t.Run("player storage create failure", func(t *testing.T) {
 		var (
 			homeID = asset.RoomID(uuid.New())
 			locID  = asset.RoomID(uuid.New())
@@ -364,7 +364,7 @@ func TestPlayerCreate(t *testing.T) {
 		w := invokePlayersEndpoint(t, m, http.MethodPost, route, body)
 
 		resp := w.Result()
-		assert.Equal(t, resp.StatusCode, http.StatusOK)
+		assert.Equal(t, resp.StatusCode, http.StatusCreated)
 
 		respBody, err := io.ReadAll(resp.Body)
 		assert.Nil(t, err)
@@ -489,7 +489,7 @@ func TestPlayerUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("player manager update failure", func(t *testing.T) {
+	t.Run("player storage update failure", func(t *testing.T) {
 		const (
 			name = "name"
 			desc = "desc"
@@ -615,7 +615,7 @@ func TestPlayerRemove(t *testing.T) {
 		assertRespError(t, w, http.StatusBadRequest, "bad request: invalid player id, not a well formed uuid: 'bad_playerID'")
 	})
 
-	t.Run("player manager remove failure", func(t *testing.T) {
+	t.Run("player storage remove failure", func(t *testing.T) {
 		m := mockPlayerStorage{
 			t:         t,
 			removeID:  playerID,

@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/http/server"
@@ -121,9 +122,7 @@ func (s RoomsService) List(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.RoomsResponse{Rooms: rooms})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to create response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode room list response, error %s", err)
 		return
 	}
 }
@@ -171,9 +170,7 @@ func (s RoomsService) Get(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode room get response, error %s", err)
 		return
 	}
 }
@@ -238,12 +235,11 @@ func (s RoomsService) Create(w http.ResponseWriter, r *http.Request) {
 	// Prepare the returned room for delivery in the response.
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusCreated)
 
 	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode room create response, error %s", err)
 		return
 	}
 }
@@ -327,9 +323,7 @@ func (s RoomsService) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(rest.RoomResponse{Room: TranslateRoom(room)})
 	if err != nil {
-		server.Response(ctx, w, fmt.Errorf(
-			"%w: unable to write response: %s", errors.ErrInternal, err,
-		))
+		zerolog.Ctx(ctx).Warn().Msgf("failed to encode room update response, error %s", err)
 		return
 	}
 }

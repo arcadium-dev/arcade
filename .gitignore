@@ -9,4 +9,4 @@ go.work
 go.work.sum
 core
 
-asset/test/coverage
+*/test/coverage

@@ -262,6 +262,7 @@ func (s UsersService) Update(w http.ResponseWriter, r *http.Request, id string) 
 	}
 }
 
+// AssociatePlayer associates a player with the given user.
 func (s UsersService) AssociatePlayer(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 

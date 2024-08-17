@@ -189,7 +189,7 @@ func (u UserStorage) AssociatePlayer(ctx context.Context, userID user.ID, assoc 
 	failMsg := "failed to associate player with user"
 	logger := zerolog.Ctx(ctx)
 
-	logger.Info().Msgf("update user, id: '%s'", userID)
+	logger.Info().Msgf("associate player with user, user id: '%s', player id: '%s'", userID, assoc.PlayerID)
 
 	var (
 		user user.User
@@ -224,7 +224,7 @@ func (u UserStorage) AssociatePlayer(ctx context.Context, userID user.ID, assoc 
 		return nil, fmt.Errorf("%s: %w: %s", failMsg, errors.ErrInternal, err.Error())
 	}
 
-	logger.Info().Msgf("updated user, login: '%s' id: '%s'", user.Login, user.ID)
+	logger.Info().Msgf("associated player with user, login: '%s' user id: '%s', player id: '%s'", user.Login, user.ID, assoc.PlayerID)
 
 	return &user, nil
 }

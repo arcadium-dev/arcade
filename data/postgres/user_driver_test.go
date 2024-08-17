@@ -59,7 +59,7 @@ func TestUserDriver(t *testing.T) {
 
 	var err error
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 50; i++ {
 		login := randLogin(8)
 		pubKey1 := randPublicKey(login)
 		pubKey2 := randPublicKey(login)

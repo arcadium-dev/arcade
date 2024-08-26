@@ -69,7 +69,7 @@ func (LinksService) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (LinksService) Shutdown() {}
+func (LinksService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple links.
 func (s LinksService) List(w http.ResponseWriter, r *http.Request) {

@@ -69,7 +69,7 @@ func (PlayersService) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (PlayersService) Shutdown() {}
+func (PlayersService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple players.
 func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {

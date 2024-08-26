@@ -3,7 +3,7 @@ module arcadium.dev/arcade
 go 1.23.0
 
 require (
-	arcadium.dev/core v0.1.3
+	arcadium.dev/core v0.2.2
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/go-cmp v0.6.0
@@ -67,7 +67,7 @@ require (
 	github.com/opencontainers/runc v1.1.13 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.20.0 // indirect
+	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect

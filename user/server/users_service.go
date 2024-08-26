@@ -72,7 +72,7 @@ func (UsersService) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (UsersService) Shutdown() {}
+func (UsersService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple users.
 func (s UsersService) List(w http.ResponseWriter, r *http.Request, params oapi.ListParams) {

@@ -70,7 +70,7 @@ func (ItemsService) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (ItemsService) Shutdown() {}
+func (ItemsService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple items.
 func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {

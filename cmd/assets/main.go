@@ -22,7 +22,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	httpserver "arcadium.dev/core/http/server"
-	"arcadium.dev/core/rest"
+	"arcadium.dev/core/mpserver"
 
 	"arcadium.dev/arcade/asset/rest/server"
 	"arcadium.dev/arcade/data"
@@ -37,10 +37,9 @@ var (
 )
 
 type (
-	// RestServer defines the expected behavior of a rest server.
-	RestServer interface {
-		Init(...string) error
-		Start(...httpserver.Service) error
+	// Server defines the expected behavior of a server.
+	Server interface {
+		Serve() error
 		Ctx() context.Context
 	}
 
@@ -54,30 +53,39 @@ const (
 	postgresDatabase = "postgres"
 )
 
-// New creates a new rest server. This is provided as a function variable to
-// allow for easier unit testing.
-var New = func(v, b, c, d string) RestServer {
-	return rest.NewServer(v, b, c, d)
-}
-
 // Main is the testable entry point into the assets server.
 func Main() error {
-	s := New(Version, Branch, Commit, Date)
-
-	prefix := "assets"
-
 	cfg := Config{}
-	if err := envconfig.Process(prefix, &cfg); err != nil {
+	if err := envconfig.Process("assets", &cfg); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	if err := s.Init(prefix); err != nil {
-		return err
+	mpCfg, err := mpserver.NewConfig("assets")
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
+
+	httpCfg, err := httpserver.NewConfig("assets_http")
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	s, err := mpserver.New(Version, Branch, Commit, Date, mpCfg.ToOptions()...)
+	if err != nil {
+		return fmt.Errorf("failed to create new mpserver: %w", err)
+	}
+	ctx := s.Ctx()
+
+	httpServer, err := httpserver.New(ctx, httpCfg.ToOptions()...)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	s.Register(ctx, httpServer)
 
 	switch cfg.Database {
 	case postgresDatabase:
-		if err := startPostgres(s, cfg.PostgresDsn); err != nil {
+		if err := createPostgresServices(ctx, httpServer, cfg.PostgresDsn); err != nil {
 			return err
 		}
 	default:
@@ -93,12 +101,12 @@ func main() {
 	}
 }
 
-func startPostgres(s RestServer, dsn string) error {
+func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn string) error {
 	if dsn == "" {
 		return fmt.Errorf("postgres dsn required")
 	}
 
-	db, err := postgres.Open(s.Ctx(), dsn)
+	db, err := postgres.Open(ctx, dsn)
 	if err != nil {
 		return err
 	}
@@ -139,5 +147,6 @@ func startPostgres(s RestServer, dsn string) error {
 		},
 	}
 
-	return s.Start(items, links, players, rooms)
+	s.Register(ctx, items, links, players, rooms)
+	return nil
 }

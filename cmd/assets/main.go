@@ -19,8 +19,11 @@ import (
 	"fmt"
 	l "log"
 
+	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog"
 
+	"arcadium.dev/core/http/middleware"
 	httpserver "arcadium.dev/core/http/server"
 	"arcadium.dev/core/mpserver"
 
@@ -59,12 +62,10 @@ func Main() error {
 	if err := envconfig.Process("assets", &cfg); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
-
 	mpCfg, err := mpserver.NewConfig("assets")
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
-
 	httpCfg, err := httpserver.NewConfig("assets_http")
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
@@ -78,7 +79,7 @@ func Main() error {
 
 	httpServer, err := httpserver.New(ctx, httpCfg.ToOptions()...)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to create new http server: %w", err)
 	}
 
 	s.Register(ctx, httpServer)
@@ -90,6 +91,10 @@ func Main() error {
 		}
 	default:
 		return fmt.Errorf("unknown database configured: %s", cfg.Database)
+	}
+
+	if err := s.Serve(); err != nil {
+		return err
 	}
 
 	return nil
@@ -146,6 +151,14 @@ func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn strin
 			},
 		},
 	}
+
+	logger := zerolog.Ctx(ctx)
+	mw := []mux.MiddlewareFunc{
+		middleware.Recover{Logger: logger}.Panics,
+		middleware.Logging{Logger: logger}.Requests,
+		middleware.Metrics,
+	}
+	s.Middleware(mw...)
 
 	s.Register(ctx, items, links, players, rooms)
 	return nil

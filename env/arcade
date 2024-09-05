@@ -16,8 +16,8 @@ ASSETS_HTTP_TLS_KEY="/etc/certs/assets_key.pem"
 ASSETS_HTTP_TLS_CERT="/etc/certs/assets.pem"
 
 # TLS_CACERT and MTLS_ENABLED are used to require MTLS communication.
-ASSETS_HTTP_TLS_CACERT="/etc/certs/rootCA.pem"
-ASSETS_HTTP_MTLS_ENABLED="true"
+#ASSETS_HTTP_TLS_CACERT="/etc/certs/rootCA.pem"
+#ASSETS_HTTP_MTLS_ENABLED="true"
 
 # ALLOWED_ORIGINS sets the allowed origins for CORS requests, as used in the
 # 'Allow-Access-Control-Origin' HTTP header. Note: Passing in a string "*"

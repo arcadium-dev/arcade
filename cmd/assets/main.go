@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	l "log"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
@@ -25,7 +26,9 @@ import (
 
 	"arcadium.dev/core/http/middleware"
 	httpserver "arcadium.dev/core/http/server"
+	"arcadium.dev/core/http/services"
 	"arcadium.dev/core/mpserver"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/asset/rest/server"
 	"arcadium.dev/arcade/data"
@@ -64,11 +67,11 @@ func Main() error {
 	}
 	mpCfg, err := mpserver.NewConfig("assets")
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to load mpserver configuration: %w", err)
 	}
 	httpCfg, err := httpserver.NewConfig("assets_http")
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to load http server configuration: %w", err)
 	}
 
 	s, err := mpserver.New(Version, Branch, Commit, Date, mpCfg.ToOptions()...)
@@ -81,17 +84,31 @@ func Main() error {
 	if err != nil {
 		return fmt.Errorf("failed to create new http server: %w", err)
 	}
-
 	s.Register(ctx, httpServer)
 
-	switch cfg.Database {
-	case postgresDatabase:
-		if err := createPostgresServices(ctx, httpServer, cfg.PostgresDsn); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown database configured: %s", cfg.Database)
+	svcs := []httpserver.Service{
+		services.Health{Start: time.Now(), Info: s.Info()},
+		services.Metrics{},
 	}
+	// if httpCfg.PProfEnabled() {
+	// svcs = append(svcs, services.PProf{})
+	// }
+
+	assetSvcs, err := createServices(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	svcs = append(svcs, assetSvcs...)
+
+	logger := zerolog.Ctx(ctx)
+	mw := []mux.MiddlewareFunc{
+		middleware.Recover{Logger: logger}.Panics,
+		middleware.Logging{Logger: logger}.Requests,
+		middleware.Metrics,
+	}
+	httpServer.Middleware(mw...)
+
+	httpServer.Register(ctx, svcs...)
 
 	if err := s.Serve(); err != nil {
 		return err
@@ -106,14 +123,29 @@ func main() {
 	}
 }
 
-func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn string) error {
-	if dsn == "" {
-		return fmt.Errorf("postgres dsn required")
+func createServices(ctx context.Context, cfg Config) ([]httpserver.Service, error) {
+	switch cfg.Database {
+	case postgresDatabase:
+		return createPostgresServices(ctx, cfg)
 	}
 
-	db, err := postgres.Open(ctx, dsn)
+	return nil, fmt.Errorf("unknown database configured: %s", cfg.Database)
+}
+
+func createPostgresServices(ctx context.Context, cfg Config) ([]httpserver.Service, error) {
+	var (
+		db   *sql.DB
+		err  error
+		svcs []httpserver.Service
+	)
+
+	if cfg.PostgresDsn == "" {
+		return nil, fmt.Errorf("postgres dsn required")
+	}
+
+	db, err = postgres.Open(ctx, cfg.PostgresDsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	items := server.ItemsService{
@@ -124,6 +156,7 @@ func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn strin
 			},
 		},
 	}
+	svcs = append(svcs, items)
 
 	links := server.LinksService{
 		Storage: data.LinkStorage{
@@ -133,6 +166,7 @@ func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn strin
 			},
 		},
 	}
+	svcs = append(svcs, links)
 
 	players := server.PlayersService{
 		Storage: data.PlayerStorage{
@@ -142,6 +176,7 @@ func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn strin
 			},
 		},
 	}
+	svcs = append(svcs, players)
 
 	rooms := server.RoomsService{
 		Storage: data.RoomStorage{
@@ -151,15 +186,7 @@ func createPostgresServices(ctx context.Context, s *httpserver.Server, dsn strin
 			},
 		},
 	}
+	svcs = append(svcs, rooms)
 
-	logger := zerolog.Ctx(ctx)
-	mw := []mux.MiddlewareFunc{
-		middleware.Recover{Logger: logger}.Panics,
-		middleware.Logging{Logger: logger}.Requests,
-		middleware.Metrics,
-	}
-	s.Middleware(mw...)
-
-	s.Register(ctx, items, links, players, rooms)
-	return nil
+	return svcs, nil
 }

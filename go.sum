@@ -1,5 +1,5 @@
-arcadium.dev/core v0.2.9 h1:htWUjBhYcagcXji4crHK/2fdyAxMroU7jfvXKMKnwbw=
-arcadium.dev/core v0.2.9/go.mod h1:NEF9H/9UKpuKo9GPT/nL9VtWFOzOs4PuMq56yQ1W4kw=
+arcadium.dev/core v0.2.10 h1:JDXboFPpwWjwDvTTABm843pJqUIWDmpBIDyJqiTYPLQ=
+arcadium.dev/core v0.2.10/go.mod h1:NEF9H/9UKpuKo9GPT/nL9VtWFOzOs4PuMq56yQ1W4kw=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=

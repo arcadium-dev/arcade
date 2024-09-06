@@ -18,11 +18,17 @@ import (
 	"context"
 	"fmt"
 	l "log"
+	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog"
 
+	"arcadium.dev/core/http/middleware"
 	httpserver "arcadium.dev/core/http/server"
-	"arcadium.dev/core/rest"
+	"arcadium.dev/core/http/services"
+	"arcadium.dev/core/mpserver"
+	"arcadium.dev/core/sql"
 
 	"arcadium.dev/arcade/data"
 	"arcadium.dev/arcade/data/postgres"
@@ -37,10 +43,9 @@ var (
 )
 
 type (
-	// RestServer defines the expected behavior of a rest server.
-	RestServer interface {
-		Init(...string) error
-		Start(...httpserver.Service) error
+	// Server defines the expected behavior of a server.
+	Server interface {
+		Serve() error
 		Ctx() context.Context
 	}
 
@@ -54,34 +59,59 @@ const (
 	postgresDatabase = "postgres"
 )
 
-// New creates a new rest server. This is provided as a function variable to
-// allow for easier unit testing.
-var New = func(v, b, c, d string) RestServer {
-	return rest.NewServer(v, b, c, d)
-}
-
 // Main is the testable entry point into the users server.
 func Main() error {
-	s := New(Version, Branch, Commit, Date)
-
-	prefix := "users"
-
 	cfg := Config{}
-	if err := envconfig.Process(prefix, &cfg); err != nil {
+	if err := envconfig.Process("users", &cfg); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
-
-	if err := s.Init(prefix); err != nil {
-		return err
+	mpCfg, err := mpserver.NewConfig("users")
+	if err != nil {
+		return fmt.Errorf("failed to load mpserver configuration: %w", err)
+	}
+	httpCfg, err := httpserver.NewConfig("users_http")
+	if err != nil {
+		return fmt.Errorf("failed to load http server configuration: %w", err)
 	}
 
-	switch cfg.Database {
-	case postgresDatabase:
-		if err := startPostgres(s, cfg.PostgresDsn); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown database configured: %s", cfg.Database)
+	s, err := mpserver.New(Version, Branch, Commit, Date, mpCfg.ToOptions()...)
+	if err != nil {
+		return fmt.Errorf("failed to create new mpserver: %w", err)
+	}
+	ctx := s.Ctx()
+
+	httpServer, err := httpserver.New(ctx, httpCfg.ToOptions()...)
+	if err != nil {
+		return fmt.Errorf("failed to create new http server: %w", err)
+	}
+	s.Register(ctx, httpServer)
+
+	svcs := []httpserver.Service{
+		services.Health{Start: time.Now(), Info: s.Info()},
+		services.Metrics{},
+	}
+	// if httpCfg.PProfEnabled() {
+	// svcs = append(svcs, services.PProf{})
+	// }
+
+	assetSvcs, err := createServices(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	svcs = append(svcs, assetSvcs...)
+
+	logger := zerolog.Ctx(ctx)
+	mw := []mux.MiddlewareFunc{
+		middleware.Recover{Logger: logger}.Panics,
+		middleware.Logging{Logger: logger}.Requests,
+		middleware.Metrics,
+	}
+	httpServer.Middleware(mw...)
+
+	httpServer.Register(ctx, svcs...)
+
+	if err := s.Serve(); err != nil {
+		return err
 	}
 
 	return nil
@@ -93,14 +123,29 @@ func main() {
 	}
 }
 
-func startPostgres(s RestServer, dsn string) error {
-	if dsn == "" {
-		return fmt.Errorf("postgres dsn required")
+func createServices(ctx context.Context, cfg Config) ([]httpserver.Service, error) {
+	switch cfg.Database {
+	case postgresDatabase:
+		return createPostgresServices(ctx, cfg)
 	}
 
-	db, err := postgres.Open(s.Ctx(), dsn)
+	return nil, fmt.Errorf("unknown database configured: %s", cfg.Database)
+}
+
+func createPostgresServices(ctx context.Context, cfg Config) ([]httpserver.Service, error) {
+	var (
+		db   *sql.DB
+		err  error
+		svcs []httpserver.Service
+	)
+
+	if cfg.PostgresDsn == "" {
+		return nil, fmt.Errorf("postgres dsn required")
+	}
+
+	db, err = postgres.Open(ctx, cfg.PostgresDsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	users := server.UsersService{
@@ -111,6 +156,7 @@ func startPostgres(s RestServer, dsn string) error {
 			},
 		},
 	}
+	svcs = append(svcs, users)
 
-	return s.Start(users)
+	return svcs, nil
 }

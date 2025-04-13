@@ -16,7 +16,7 @@ export app := arcade
 
 export SHELL := /bin/bash
 
-go_version := 1.23
+go_version := 1.24
 ifeq ($(shell uname -m),arm64)
   arch := arm64
 else
@@ -131,7 +131,7 @@ lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
 	git status --porcelain
 	@printf "\n"
-	@if [[ "$${CI}" == "true" ]]; then $$(exit $$(git status --porcelain | wc -l)); fi
+	@if [[ "$${CI}" == "true" ]]; then git diff && $$(exit $$(git status --porcelain | wc -l)); fi
 
 # ____ test __________________________________________________________________
 

@@ -14,7 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
-	github.com/oapi-codegen/runtime v1.1.1
+	github.com/oapi-codegen/runtime v1.1.2
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/vuln v1.1.4

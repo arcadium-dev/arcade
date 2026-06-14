@@ -10,3 +10,5 @@ go.work.sum
 core
 
 */test/coverage
+
+Session.vim

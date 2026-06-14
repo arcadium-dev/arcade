@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2026 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -73,25 +73,6 @@ func (PlayersService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple players.
 func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/players PlayerList
-	//
-	// List returns a list of players.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	//   + name: locationID
-	//     in: query
-	//   + name: offset
-	//     in: query
-	//   + name: limit
-	//     in: query
-	//
-	// Responses:
-	//  200: PlayerResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
@@ -127,23 +108,6 @@ func (s PlayersService) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles a request to retrieve a player.
 func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/players/{playerID} PlayerGet
-	//
-	// Get returns a player.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: player ID
-	//     required: true
-	//
-	// Responses:
-	//  200: PlayerResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the playerID from the uri.
@@ -175,20 +139,6 @@ func (s PlayersService) Get(w http.ResponseWriter, r *http.Request) {
 
 // Create handles a request to create a player.
 func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
-	// swagger:route POST /v1/players PlayerCreate
-	//
-	// Create will create a new player based on the player request in the body of the
-	// request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Responses:
-	//  200: PlayerResponse
-	//  400: ResponseError
-	//  409: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the player request from the body of the request.
@@ -244,26 +194,6 @@ func (s PlayersService) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update handles a request to update a player.
 func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
-	// swagger:route PUT /v1/players/{id} PlayerUpdate
-	//
-	// Update will update player based on the playerID and the player\ request in the
-	// body of the request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: player ID
-	//     required: true
-	//
-	// Responses:
-	//  200: PlayerResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Grab the playerID from the uri.
@@ -328,25 +258,6 @@ func (s PlayersService) Update(w http.ResponseWriter, r *http.Request) {
 
 // Remove handles a request to remove a player.
 func (s PlayersService) Remove(w http.ResponseWriter, r *http.Request) {
-	// swagger:route DELETE /v1/players/{id} PlayerRemove
-	//
-	// Remove deletes the player.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: player ID
-	//     required: true
-	//
-	// Responses:
-	//  200: PlayerResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the playerID from the uri.

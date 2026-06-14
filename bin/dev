@@ -51,14 +51,6 @@ declare -ar migrations=(
 	"migrate"
 )
 
-docker_compose() {
-	if command -v docker-compose; then
-		docker-compse "$@"
-	else
-		docker compose "$@"
-	fi
-}
-
 #----------------------------------------------------------------------------
 # init
 
@@ -94,7 +86,7 @@ init_certs() {
 
 	# Create the CA cert for TLS communication.
 	info "Installing root CA certificate"
-	if ! docker_compose run --rm mkcert -install; then
+	if ! docker compose run --rm mkcert -install; then
 		failed
 	fi
 
@@ -102,7 +94,7 @@ init_certs() {
 	local server_cert
 	for server_cert in "${tls_servers[@]}"; do
 		info "Creating ${server_cert} server cert"
-		if ! docker_compose run --rm mkcert -cert-file "${certs_dir}/${server_cert}.pem" -key-file "${certs_dir}/${server_cert}_key.pem" "${server_cert}"; then
+		if ! docker compose run --rm mkcert -cert-file "${certs_dir}/${server_cert}.pem" -key-file "${certs_dir}/${server_cert}_key.pem" "${server_cert}"; then
 			failed
 		fi
 	done
@@ -111,7 +103,7 @@ init_certs() {
 	local client_cert
 	for client_cert in "${tls_clients[@]}"; do
 		info "Creating ${client_cert} client cert"
-		if ! docker_compose run --rm mkcert -client -cert-file "${certs_dir}/${client_cert}_client.pem" -key-file "${certs_dir}/${client_cert}_client_key.pem" "${client_cert}"; then
+		if ! docker compose run --rm mkcert -client -cert-file "${certs_dir}/${client_cert}_client.pem" -key-file "${certs_dir}/${client_cert}_client_key.pem" "${client_cert}"; then
 			failed
 		fi
 	done
@@ -123,12 +115,12 @@ init_influxdb() {
 	info "Influxdb initialization"
 
 	# Remove the influxdb volume.
-	docker_compose down &>/dev/null
+	docker compose down &>/dev/null
 	docker volume rm arcade_influxdb_volume 2>/dev/null
-	docker_compose up -d "influxdb"
+	docker compose up -d "influxdb"
 	sleep 10
 
-	docker_compose run --rm influx setup \
+	docker compose run --rm influx setup \
 		--force \
 		--skip-verify \
 		--host "https://influxdb:8086" \
@@ -146,9 +138,9 @@ init_db() {
 }
 
 init_postgres_db() {
-	docker_compose down postgres &>/dev/null
+	docker compose down postgres &>/dev/null
 	docker volume rm arcade_postgres_volume #&>/dev/null
-	docker_compose up -d "postgres"
+	docker compose up -d "postgres"
 	sleep 10
 }
 
@@ -163,7 +155,7 @@ init_migrate() {
 	local migrate
 	for migrate in "${migrations[@]}"; do
 		info "Running ${migrate} ${args[*]}"
-		if ! docker_compose run --rm "${migrate}" "${args[@]}"; then
+		if ! docker compose run --rm "${migrate}" "${args[@]}"; then
 			failed
 		fi
 	done
@@ -185,7 +177,7 @@ start() {
 		s=("${infrastructure[@]}" "${services[@]}")
 	fi
 
-	if ! docker_compose up -d "${s[@]}"; then
+	if ! docker compose up -d "${s[@]}"; then
 		failed
 	fi
 }
@@ -196,7 +188,7 @@ up() {
 
 status() {
 	info "Services status"
-	docker_compose ps
+	docker compose ps
 }
 
 ps() {
@@ -204,7 +196,7 @@ ps() {
 }
 
 logs() {
-	docker_compose logs "$@"
+	docker compose logs "$@"
 }
 
 stop() {
@@ -216,9 +208,9 @@ stop() {
 	fi
 
 	if [[ ${#s[@]} -eq 0 ]]; then
-		docker_compose down
+		docker compose down
 	else
-		docker_compose stop "${s[@]}"
+		docker compose stop "${s[@]}"
 	fi
 }
 
@@ -227,7 +219,7 @@ down() {
 }
 
 pull() {
-	docker_compose pull "$@"
+	docker compose pull "$@"
 }
 
 #----------------------------------------------------------------------------
@@ -276,7 +268,7 @@ clean_network() {
 # run
 
 run() {
-	docker_compose run --rm --name "${1}-$(uuidgen)" "$@"
+	docker compose run --rm --name "${1}-$(uuidgen)" "$@"
 }
 
 #----------------------------------------------------------------------------

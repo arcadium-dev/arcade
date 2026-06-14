@@ -1,4 +1,4 @@
-//  Copyright 2022-2024 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2026 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -32,7 +32,8 @@ type (
 )
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", t.Time.UTC().Format(TimestampFormat))), nil
+	buf := []byte{}
+	return fmt.Appendf(buf, "\"%s\"", t.Time.UTC().Format(TimestampFormat)), nil
 }
 
 func (t *Timestamp) UnmarshalJSON(b []byte) error {

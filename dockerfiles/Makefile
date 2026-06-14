@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go_version := 1.24
-migrate_version := v4.18.2
+go_version := 1.26
+migrate_version := v4.19.1
 mkcert_version := v1.4.4
 
 # ____ all __________________________________________________________________

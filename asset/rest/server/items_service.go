@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2026 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -74,29 +74,6 @@ func (ItemsService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple items.
 func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/items ItemList
-	//
-	// List returns a list of items.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	//   + name ownerID
-	//     in: query
-	//   + name: locationID
-	//     in: query
-	//   + name: locationType
-	//     in: query
-	//   + name: offset
-	//     in: query
-	//   + name: limit
-	//     in: query
-	//
-	// Responses:
-	//  200: ItemResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
@@ -132,23 +109,6 @@ func (s ItemsService) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles a request to retrieve an item.
 func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/items/{itemID} ItemGet
-	//
-	// Get returns an item.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: item ID
-	//     required: true
-	//
-	// Responses:
-	//  200: ItemResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the itemID from the uri.
@@ -180,20 +140,6 @@ func (s ItemsService) Get(w http.ResponseWriter, r *http.Request) {
 
 // Create handles a request to create an item.
 func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
-	// swagger:route POST /v1/items ItemCreate
-	//
-	// Create will create a new item based on the item request in the body of the
-	// request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Responses:
-	//  200: ItemResponse
-	//  400: ResponseError
-	//  409: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the item request from the body of the request.
@@ -249,26 +195,6 @@ func (s ItemsService) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update handles a request to update an item.
 func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
-	// swagger:route PUT /v1/items/{id} ItemUpdate
-	//
-	// Update will update item based on the itemID and the item\ request in the
-	// body of the request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: item ID
-	//     required: true
-	//
-	// Responses:
-	//  200: ItemResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Grab the itemID from the uri.
@@ -333,25 +259,6 @@ func (s ItemsService) Update(w http.ResponseWriter, r *http.Request) {
 
 // Remove handles a request to remove an item.
 func (s ItemsService) Remove(w http.ResponseWriter, r *http.Request) {
-	// swagger:route DELETE /v1/items/{id} ItemRemove
-	//
-	// Remove deletes the item.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: item ID
-	//     required: true
-	//
-	// Responses:
-	//  200: ItemResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the itemID from the uri.

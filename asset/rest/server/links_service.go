@@ -1,4 +1,4 @@
-//  Copyright 2022-2023 arcadium.dev <info@arcadium.dev>
+//  Copyright 2022-2026 arcadium.dev <info@arcadium.dev>
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -73,29 +73,6 @@ func (LinksService) Shutdown(context.Context) {}
 
 // List handles a request to retrieve multiple links.
 func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/links LinkList
-	//
-	// List returns a list of links.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	//   + name ownerID
-	//     in: query
-	//   + name: locationID
-	//     in: query
-	//   + name: destinationID
-	//     in: query
-	//   + name: offset
-	//     in: query
-	//   + name: limit
-	//     in: query
-	//
-	// Responses:
-	//  200: LinkResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Create a filter from the quesry parameters.
@@ -131,23 +108,6 @@ func (s LinksService) List(w http.ResponseWriter, r *http.Request) {
 
 // Get handles a request to retrieve a link.
 func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
-	// swagger:route GET /v1/links/{id} LinkGet
-	//
-	// Get returns a link.
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: link ID
-	//     required: true
-	//
-	// Responses:
-	//  200: LinkResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the linkID from the uri.
@@ -179,20 +139,6 @@ func (s LinksService) Get(w http.ResponseWriter, r *http.Request) {
 
 // Create handles a request to create a link.
 func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
-	// swagger:route POST /v1/links LinkCreate
-	//
-	// Create will create a new link based on the link request in the body of the
-	// request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Responses:
-	//  200: LinkResponse
-	//  400: ResponseError
-	//  409: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the link request from the body of the request.
@@ -248,26 +194,6 @@ func (s LinksService) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update handles a request to update a link.
 func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
-	// swagger:route PUT /v1/links/{id} LinkUpdate
-	//
-	// Update will update link based on the linkID and the link request in the
-	// body of the request.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: link ID
-	//     required: true
-	//
-	// Responses:
-	//  200: LinkResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Grab the linkID from the uri.
@@ -331,25 +257,6 @@ func (s LinksService) Update(w http.ResponseWriter, r *http.Request) {
 
 // Remove handles a request to remove a link.
 func (s LinksService) Remove(w http.ResponseWriter, r *http.Request) {
-	// swagger:route DELETE /v1/links/{id} LinkRemove
-	//
-	// Remove deletes the link.
-	//
-	// Consumes: application/json
-	//
-	// Produces: application/json
-	//
-	// Parameters:
-	// 	 + name: id
-	//     in: path
-	//     description: link ID
-	//     required: true
-	//
-	// Responses:
-	//  200: LinkResponse
-	//  400: ResponseError
-	//  404: ResponseError
-	//  500: ResponseError
 	ctx := r.Context()
 
 	// Parse the linkID from the uri.

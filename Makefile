@@ -1,4 +1,4 @@
-# Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
+# Copyright 2021-2026 arcadium.dev <info@arcadium.dev>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,11 +62,11 @@ export ldflags := -s -w \
 
 .PHONY: all
 
-all: generate test lint
+all: test lint
 
 # ____ generate ______________________________________________________________
 
-.PHONY: generate openapi
+.PHONY: openapi
 
 openapi_src := \
 	./internal/user/server/users_service.gen.go \
@@ -160,17 +160,6 @@ integration_test: integration_test_up assets_integration_test users_integration_
 	@go tool covdata percent -i=./asset/test/coverage
 	@echo -e "\n$(yellow)Users Coverage$(clear)"
 	@go tool covdata percent -i=./user/test/coverage
-
-# ____ docs __________________________________________________________________
-
-.PHONY: docs
-docs:
-	@if [[ ! -x "$$(go env GOPATH)/bin/swagger" ]]; then \
-		printf "\nInstalling go-swagger...\n"; \
-		go install "github.com/go-swagger/go-swagger/cmd/swagger@latest"; \
-	fi
-	@printf "\nRunning swagger...\n"
-	$$(go env GOPATH)/bin/swagger generate spec -o ./docs/swagger.json
 
 # ____ image artifacts  __________________________________________________
 

@@ -16,7 +16,7 @@ export app := arcade
 
 export SHELL := /bin/bash
 
-go_version := 1.24
+go_version := 1.26
 ifeq ($(shell uname -m),arm64)
   arch := arm64
 else
@@ -72,23 +72,15 @@ openapi_src := \
 	./internal/user/server/users_service.gen.go \
 	./internal/user/client/users_client.gen.go
 
-openapi:
-	@if [[ ! -x "$$(go env GOPATH)/bin/oapi-codegen" ]]; then \
-    printf "\nInstalling oapi-codegen...\n"; \
-    go get "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
-		go mod tidy; \
-    go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"; \
-  fi
-
 ./internal/user/server/users_service.gen.go: ./openapi/users-openapi.yaml ./openapi/users-server.yaml
 	@printf "\nRunning oapi-codegen for $@...\n"
-	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
+	go tool oapi-codegen --config=./openapi/users-server.yaml ./openapi/users-openapi.yaml
 
 ./internal/user/client/users_client.gen.go: ./openapi/users-openapi.yaml ./openapi/users-client.yaml
 	@printf "\nRunning oapi-codegen for $@...\n"
-	$$(go env GOPATH)/bin/oapi-codegen --config=./openapi/users-client.yaml ./openapi/users-openapi.yaml
+	go tool oapi-codegen --config=./openapi/users-client.yaml ./openapi/users-openapi.yaml
 
-generate: openapi $(openapi_src)
+generate: $(openapi_src)
 	@go mod tidy
 
 # ____ lint __________________________________________________________________
@@ -108,24 +100,12 @@ vet:
 	go vet ./...
 
 staticcheck:
-	@if [[ ! -x "$$(go env GOPATH)/bin/staticcheck" ]]; then \
-		printf "\nInstalling staticcheck...\n"; \
-		go get "honnef.co/go/tools/cmd/staticcheck"; \
-		go mod tidy; \
-		go install "honnef.co/go/tools/cmd/staticcheck"; \
-	fi
 	@printf "\nRunning staticcheck...\n"
-	$$(go env GOPATH)/bin/staticcheck ./...
+	go tool staticcheck ./...
 
 vuln:
-	@if [[ ! -x "$$(go env GOPATH)/bin/govulncheck" ]]; then \
-		printf "\nInstalling govulncheck...\n"; \
-		go get "golang.org/x/vuln/cmd/govulncheck"; \
-		go mod tidy; \
-		go install "golang.org/x/vuln/cmd/govulncheck"; \
-	fi
 	@printf "\nRunning govulncheck...\n"
-	$$(go env GOPATH)/bin/govulncheck ./...
+	go tool govulncheck -show verbose ./...
 
 lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
@@ -139,7 +119,7 @@ lint: fmt tidy vet staticcheck vuln
 
 unit_test:
 	@printf "\nRunning go test...\n"
-	go test -cover -race ./...
+	go test -count=1 -cover -race ./...
 
 test: unit_test
 
@@ -217,7 +197,3 @@ clean:
 	-rm -rf ./dist ./test/seed
 	-rm -rf ./asset/test/coverage
 	-go clean -testcache -cache
-	-rm -f $$(go env GOPATH)/bin/staticcheck
-	-rm -f $$(go env GOPATH)/bin/govulncheck
-	-rm -f $$(go env GOPATH)/bin/swagger
-	-rm -f $$(go env GOPATH)/bin/oapi-codegen

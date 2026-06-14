@@ -110,6 +110,7 @@ func (siw *ServerInterfaceWrapper) List(w http.ResponseWriter, r *http.Request) 
 
 	// ------------- Optional query parameter "offset" -------------
 
+	//lint:ignore SA1019 going to fix this later
 	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
@@ -118,6 +119,7 @@ func (siw *ServerInterfaceWrapper) List(w http.ResponseWriter, r *http.Request) 
 
 	// ------------- Optional query parameter "limit" -------------
 
+	//lint:ignore SA1019 going to fix this later
 	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})

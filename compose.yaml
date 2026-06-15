@@ -123,7 +123,7 @@ services:
 
   # To create a new set of migrations run: `docker-compose run --rm create_migration <migration_name>`
   create_migration:
-    image: migrate/migrate:v4.17.0
+    image: migrate/migrate:v4.19.1
     entrypoint: ["/migrate", "create", "-ext", "sql", "-dir", "/migrations", "-seq"]
     volumes:
       - ./data/postgres/migrations:/migrations

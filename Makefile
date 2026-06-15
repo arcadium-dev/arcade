@@ -66,7 +66,7 @@ all: test lint
 
 # ____ generate ______________________________________________________________
 
-.PHONY: openapi
+.PHONY: generate
 
 openapi_src := \
 	./internal/user/server/users_service.gen.go \

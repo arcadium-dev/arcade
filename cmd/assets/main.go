@@ -22,7 +22,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/http/middleware"
 	httpserver "arcadium.dev/core/http/server"
@@ -57,6 +56,7 @@ type (
 
 const (
 	postgresDatabase = "postgres"
+	createTimeout    = time.Second * 10
 )
 
 // Main is the testable entry point into the assets server.
@@ -78,13 +78,14 @@ func Main() error {
 	if err != nil {
 		return fmt.Errorf("failed to create new mpserver: %w", err)
 	}
-	ctx := s.Ctx()
+	logger := s.Logger()
 
-	httpServer, err := httpserver.New(ctx, httpCfg.ToOptions()...)
+	httpOpts := append(httpCfg.ToOptions(), httpserver.WithLogger(logger))
+	httpServer, err := httpserver.New(httpOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create new http server: %w", err)
 	}
-	s.Register(ctx, httpServer)
+	s.Register(httpServer)
 
 	svcs := []httpserver.Service{
 		services.Health{Start: time.Now(), Info: s.Info()},
@@ -94,13 +95,17 @@ func Main() error {
 	// svcs = append(svcs, services.PProf{})
 	// }
 
+	// Give the server a timeout to create the services and connect to the
+	// database before it starts accepting requests.
+	ctx, cancel := context.WithTimeout(context.Background(), createTimeout)
+	defer cancel()
+
 	assetSvcs, err := createServices(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	svcs = append(svcs, assetSvcs...)
 
-	logger := zerolog.Ctx(ctx)
 	mw := []mux.MiddlewareFunc{
 		middleware.Recover{Logger: logger}.Panics,
 		middleware.Logging{Logger: logger}.Requests,
@@ -108,7 +113,7 @@ func Main() error {
 	}
 	httpServer.Middleware(mw...)
 
-	httpServer.Register(ctx, svcs...)
+	httpServer.Register(svcs...)
 
 	if err := s.Serve(); err != nil {
 		return err

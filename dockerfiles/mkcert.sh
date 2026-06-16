@@ -13,6 +13,10 @@ chown -R arcadium:arcadium \
 	/etc/certs/users.pem \
 	/etc/certs/users_client.pem \
 	/etc/certs/users_client_key.pem \
+	/etc/certs/tad_key.pem \
+	/etc/certs/tad.pem \
+	/etc/certs/tad_client.pem \
+	/etc/certs/tad_client_key.pem \
 	/etc/certs/rootCA.pem &>/dev/null
 chmod 0644 /etc/certs/influx* || true
 

@@ -31,10 +31,33 @@ services:
       - database_network
       - observability_network
 
+  tad:
+    image: tad:latest
+    container_name: tad
+    env_file:
+      - env/arcade
+    ports:
+      - 4201:23
+      - 4230:443
+    volumes:
+      - certificates_volume:/etc/certs
+      - ./tad/test/coverage:/arcadium/coverage
+    networks:
+      - arcadium_network
+      - observability_network
+
   # arcadium clients
   #------------------------------------------------------------------------
   curl:
     image: curl:latest
+    working_dir: /etc
+    volumes:
+      - certificates_volume:/etc/certs
+    networks:
+      - arcadium_network
+
+  telnet:
+    image: telnet:latest
     working_dir: /etc
     volumes:
       - certificates_volume:/etc/certs

@@ -1,4 +1,4 @@
-// Copyright 2024 arcadium.dev <info@arcadium.dev>
+// Copyright 2024-2026 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,12 +42,6 @@ var (
 )
 
 type (
-	// Server defines the expected behavior of a server.
-	Server interface {
-		Serve() error
-		Ctx() context.Context
-	}
-
 	Config struct {
 		Database    string `required:"true"`
 		PostgresDsn string `split_words:"true"`

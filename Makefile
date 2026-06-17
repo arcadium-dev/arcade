@@ -163,7 +163,7 @@ integration_test: integration_test_up assets_integration_test users_integration_
 
 # ____ image artifacts  __________________________________________________
 
-.PHONY: images assets users migrate mkcert curl
+.PHONY: images assets users tad migrate mkcert curl telnet tools
 
 export buildargs :=
 
@@ -174,7 +174,7 @@ dev-images: buildargs := -cover
 dev-images:
 	make -C dockerfiles all
 
-assets users migrate mkcert curl:
+assets users tad migrate mkcert curl telnet tools:
 	make -C dockerfiles $@
 
 # ____ clean artifacts _______________________________________________________

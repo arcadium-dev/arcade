@@ -14,12 +14,8 @@ RUN apk update && apk add --no-cache git libcap openssh \
     && git config --global url."git@github.com:".insteadOf "https://github.com/" \
     && mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-# Create a separate layer for the go dependencies to facilitate faster builds.
-COPY go.mod go.sum ./
-RUN --mount=type=ssh go mod download && go mod verify
-
-# Create a layer for the build.
 COPY . ./
+RUN --mount=type=ssh go mod download && go mod verify
 
 ARG version
 ARG branch
@@ -34,8 +30,8 @@ RUN GOOS="linux" GOARCH="${arch:-amd64}" CGO_ENAGLED=0 \
       -X 'main.Branch=${branch}' \
       -X 'main.Commit=${commit}' \
       -X 'main.Date=${build_date}'" \
-      -o ./dist/users ./cmd/users \
-    && setcap 'cap_net_bind_service=+ep' ./dist/users
+      -o ./dist/tad ./cmd/tad \
+    && setcap 'cap_net_bind_service=+ep' ./dist/tad
 
 
 # Users image.
@@ -52,10 +48,11 @@ RUN apk update && \
     --uid "10001" \
     arcadium
 
-COPY --from=builder --chown=arcadium:arcadium /src/dist/users /arcadium/users
+COPY --from=builder --chown=arcadium:arcadium /src/dist/tad /arcadium/tad
 
 USER  arcadium:arcadium
+EXPOSE 23
 EXPOSE 443
 VOLUME ["/etc/certs"]
 WORKDIR /arcadium
-ENTRYPOINT ["/arcadium/users"]
+ENTRYPOINT ["/arcadium/tad"]

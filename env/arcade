@@ -59,3 +59,21 @@ USERS_HTTP_TLS_CERT="/etc/certs/users.pem"
 
 USERS_DATABASE="postgres"
 USERS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=verify-full&sslcert=/etc/certs/users_client.pem&sslkey=/etc/certs/users_client_key.pem&sslrootcert=/etc/certs/rootCA.pem"
+
+#___ tad _________________________________________________________________
+
+# LOG_LEVEL defines the level of logging.
+TAD_LOG_LEVEL="info"
+
+# SERVER_ADDR defines the address the arcade API service will listen to.
+# This is required.
+TAD_TELNET_SERVER_ADDR=":23"
+
+# SERVER_ADDR defines the address the arcade API service will listen to.
+# This is required.
+TAD_HTTP_SERVER_ADDR=":443"
+
+# TLS_CERT and TLS_KEY define the file path where the certificates used to
+# serve https traffic are stored. These are optional.
+TAD_HTTP_TLS_KEY="/etc/certs/tad_key.pem"
+TAD_HTTP_TLS_CERT="/etc/certs/tad.pem"

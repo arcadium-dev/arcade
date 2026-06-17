@@ -32,7 +32,7 @@ func assertRespError(t *testing.T, w *httptest.ResponseRecorder, status int, err
 func randString(size int) string {
 	s := "abcdefghijklmnopqrstuvwxyz "
 	b := make([]byte, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		b[i] = s[rand.Intn(len(s))]
 	}
 	return string(b)

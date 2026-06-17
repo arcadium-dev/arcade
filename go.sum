@@ -1,5 +1,5 @@
-arcadium.dev/core v0.2.16 h1:fu68wyBbFCPb8Xmfbk7QBnwuUbebfPXmc9BHsCx2PDU=
-arcadium.dev/core v0.2.16/go.mod h1:BovjLSrIF+ORDCX0eEWt1cXH0wtc/75t2mPybJnTtdU=
+arcadium.dev/core v0.2.19 h1:S1qFNwQ0SdL7hwTxgsVvNKp9AKt/OSLutVjFtFgceX0=
+arcadium.dev/core v0.2.19/go.mod h1:BovjLSrIF+ORDCX0eEWt1cXH0wtc/75t2mPybJnTtdU=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c h1:udKWzYgxTojEKWjV8V+WSxDXJ4NFATAsZjh8iIbsQIg=
@@ -59,6 +59,8 @@ github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/getkin/kin-openapi v0.135.0 h1:751SjYfbiwqukYuVjwYEIKNfrSwS5YpA7DZnKSwQgtg=
 github.com/getkin/kin-openapi v0.135.0/go.mod h1:6dd5FJl6RdX4usBtFBaQhk9q62Yb2J0Mk5IhUO/QqFI=
+github.com/globalcyberalliance/telnet-go v0.0.0-20250807185007-4f349961b7ed h1:dKNkb1fQ7mQ0oF1YMtmOjaOuqv1AyqU/cvlT0CuXfVs=
+github.com/globalcyberalliance/telnet-go v0.0.0-20250807185007-4f349961b7ed/go.mod h1:41nB/znwz3qzhRwqc6ywxLzX8aIUmeuMsR5QF67IfQE=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=

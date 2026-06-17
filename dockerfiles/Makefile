@@ -27,7 +27,7 @@ all: images tools
 
 .PHONY: images assets users migrate
 
-images: assets users migrate
+images: assets users tad migrate
 
 assets: Dockerfile.assets
 	DOCKER_BUILDKIT=1 docker build \
@@ -59,6 +59,21 @@ users: Dockerfile.users
 		--tag users:latest \
 		..
 
+tad: Dockerfile.tad
+	DOCKER_BUILDKIT=1 docker build \
+		--file Dockerfile.tad \
+		--ssh default \
+		--build-arg go_version=$(go_version) \
+		--build-arg arc=$(arch) \
+		--build-arg version=$(version) \
+		--build-arg branch=$(branch) \
+		--build-arg commit=$(commit) \
+		--build-arg build_date=$(date) \
+		--build-arg buildargs=$(buildargs) \
+		--rm --force-rm \
+		--tag tad:latest \
+		..
+
 migrate: Dockerfile.migrate
 	DOCKER_BUILDKIT=1 docker build \
     --file Dockerfile.migrate \
@@ -69,9 +84,9 @@ migrate: Dockerfile.migrate
 
 # ____ tools _________________________________________________________________
 
-.PHONY: tools mkcert curl
+.PHONY: tools mkcert curl telnet
 
-tools: mkcert curl
+tools: mkcert curl telnet
 
 mkcert: Dockerfile.mkcert
 	docker build \
@@ -87,4 +102,11 @@ curl: Dockerfile.curl
 		--file Dockerfile.curl \
 		--rm --force-rm \
 		--tag curl:latest \
+		.
+
+telnet: Dockerfile.telnet
+	docker build \
+		--file Dockerfile.telnet \
+		--rm --force-rm \
+		--tag telnet:latest \
 		.

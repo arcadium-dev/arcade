@@ -63,7 +63,7 @@ USERS_POSTGRES_DSN="postgres://arcadium:arcadium@postgres:5432/arcade?sslmode=ve
 #___ tad _________________________________________________________________
 
 # LOG_LEVEL defines the level of logging.
-TAD_LOG_LEVEL="info"
+TAD_LOG_LEVEL="debug"
 
 # SERVER_ADDR defines the address the arcade API service will listen to.
 # This is required.

@@ -59,6 +59,13 @@ func Main() error {
 	}
 
 	telnetServer := telnet.NewServer(append(telnetCfg.ToOptions(), telnet.WithServerLogger(logger))...)
+
+	telnetMw := []telnet.MiddlewareFunc{
+		telnet.RecoveryMiddleware{Logger: logger}.Recover,
+		telnet.SessionMiddleware{Logger: logger}.Session,
+	}
+	telnetServer.Middleware(telnetMw...)
+
 	telnetServer.Register(&tad.Service{})
 	s.Register(telnetServer)
 
@@ -78,12 +85,12 @@ func Main() error {
 		services.Metrics{},
 	}
 
-	mw := []mux.MiddlewareFunc{
+	httpMw := []mux.MiddlewareFunc{
 		middleware.Recover{Logger: logger}.Panics,
 		middleware.Logging{Logger: logger}.Requests,
 		middleware.Metrics,
 	}
-	httpServer.Middleware(mw...)
+	httpServer.Middleware(httpMw...)
 
 	httpServer.Register(svcs...)
 	s.Register(httpServer)

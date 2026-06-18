@@ -5,7 +5,7 @@ go 1.26.4
 // replace arcadium.dev/core => ./core
 
 require (
-	arcadium.dev/core v0.2.19
+	arcadium.dev/core v0.2.20
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/go-cmp v0.7.0
@@ -41,7 +41,7 @@ require (
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getkin/kin-openapi v0.135.0 // indirect
-	github.com/globalcyberalliance/telnet-go v0.0.0-20250807185007-4f349961b7ed // indirect
+	github.com/globalcyberalliance/telnet-go v0.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
